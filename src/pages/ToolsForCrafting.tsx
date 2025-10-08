@@ -17,6 +17,8 @@ const ToolsForCrafting = () => {
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newUrl, setNewUrl] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -61,6 +63,8 @@ const ToolsForCrafting = () => {
       setNewName("");
       setNewDescription("");
       setNewUrl("");
+      setName("");
+      setEmail("");
       setIsDialogOpen(false);
 
       const { data } = await supabase
@@ -134,6 +138,25 @@ const ToolsForCrafting = () => {
                     onChange={(e) => setNewUrl(e.target.value)}
                     placeholder="https://example.com"
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Your name <span className="text-xs text-muted-foreground">(optional but encouraged)</span></Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Full name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Your email <span className="text-xs text-muted-foreground">(optional but encouraged)</span></Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your.email@example.com"
                   />
                 </div>
                 <Button type="submit" disabled={isSubmitting} className="w-full">
