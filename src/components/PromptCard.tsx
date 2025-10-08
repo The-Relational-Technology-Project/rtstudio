@@ -6,7 +6,7 @@ import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Wand2, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react";
 
 interface PromptCardProps {
   id: string;
@@ -74,23 +74,24 @@ export const PromptCard = ({ title, examplePrompt, description, exampleUrl }: Pr
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{description}</p>
         )}
         
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2">
           {exampleUrl && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               asChild
-              className="hover:bg-orange-50 hover:text-orange-700 dark:hover:bg-orange-950 dark:hover:text-orange-400"
+              className="flex-1 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 dark:hover:bg-orange-950 dark:hover:text-orange-400"
             >
               <a href={exampleUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Example
               </a>
             </Button>
           )}
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex-1 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 dark:hover:bg-orange-950 dark:hover:text-orange-400">
-                View
+                Read
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[80vh]">
@@ -116,7 +117,6 @@ export const PromptCard = ({ title, examplePrompt, description, exampleUrl }: Pr
           <Dialog open={isRemixDialogOpen} onOpenChange={setIsRemixDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex-1 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 dark:hover:bg-orange-950 dark:hover:text-orange-400">
-                <Wand2 className="w-4 h-4 mr-2" />
                 Remix
               </Button>
             </DialogTrigger>
