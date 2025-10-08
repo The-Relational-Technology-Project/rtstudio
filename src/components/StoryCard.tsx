@@ -123,13 +123,13 @@ export const StoryCard = ({ id, title, story, attribution }: StoryCardProps) => 
         <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
         
         <div className="flex gap-2 mb-4">
-          <Button variant="outline" size="sm" onClick={handleExpand}>
+          <Button variant="outline" size="sm" onClick={handleExpand} className="hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-950 dark:hover:text-green-400">
             {isExpanded ? "Hide Notes" : "Add a Note"}
           </Button>
           
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-950 dark:hover:text-green-400">
                 Get in Touch
               </Button>
             </DialogTrigger>
