@@ -144,6 +144,7 @@ const PromptPond = () => {
                 title={prompt.title}
                 category={prompt.category}
                 examplePrompt={prompt.example_prompt}
+                description={prompt.description}
               />
             ))
           )}

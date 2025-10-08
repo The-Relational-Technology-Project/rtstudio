@@ -13,9 +13,10 @@ interface PromptCardProps {
   title: string;
   category: string;
   examplePrompt: string;
+  description?: string;
 }
 
-export const PromptCard = ({ title, category, examplePrompt }: PromptCardProps) => {
+export const PromptCard = ({ title, examplePrompt, description }: PromptCardProps) => {
   const [userContext, setUserContext] = useState("");
   const [remixedPrompt, setRemixedPrompt] = useState("");
   const [isRemixing, setIsRemixing] = useState(false);
@@ -64,21 +65,18 @@ export const PromptCard = ({ title, category, examplePrompt }: PromptCardProps) 
   };
 
   return (
-    <Card className="border-l-4 border-l-orange-400 hover:shadow-lg transition-all hover:scale-[1.02] bg-gradient-to-br from-orange-50/50 via-pink-50/30 to-purple-50/20 dark:from-orange-950/20 dark:via-pink-950/10 dark:to-purple-950/10">
+    <Card className="border-l-4 border-l-orange-400 hover:shadow-lg transition-all">
       <CardContent className="p-6">
-        <div className="mb-2">
-          <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wide bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full">
-            {category}
-          </span>
-        </div>
         <h3 className="text-xl font-bold font-fraunces mb-4 text-foreground">{title}</h3>
+        {description && (
+          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{description}</p>
+        )}
         
         <div className="flex gap-2">
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex-1 border-orange-200 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-800 dark:hover:bg-orange-950">
-                <Eye className="w-4 h-4 mr-2" />
-                View Example
+              <Button variant="outline" size="sm" className="flex-1">
+                View
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[80vh]">
@@ -103,7 +101,7 @@ export const PromptCard = ({ title, category, examplePrompt }: PromptCardProps) 
 
           <Dialog open={isRemixDialogOpen} onOpenChange={setIsRemixDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white border-0">
+              <Button variant="outline" size="sm" className="flex-1">
                 <Wand2 className="w-4 h-4 mr-2" />
                 Remix
               </Button>
