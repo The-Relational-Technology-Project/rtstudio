@@ -74,6 +74,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          description: string | null
           example_prompt: string
           id: string
           title: string
@@ -81,6 +82,7 @@ export type Database = {
         Insert: {
           category: string
           created_at?: string
+          description?: string | null
           example_prompt: string
           id?: string
           title: string
@@ -88,6 +90,7 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
+          description?: string | null
           example_prompt?: string
           id?: string
           title?: string
