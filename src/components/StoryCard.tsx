@@ -124,7 +124,7 @@ export const StoryCard = ({ id, title, story, attribution }: StoryCardProps) => 
         
         <div className="flex gap-2 mb-4">
           <Button variant="outline" size="sm" onClick={handleExpand} className="hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-950 dark:hover:text-green-400">
-            {isExpanded ? "Hide Notes" : "Add a Note"}
+            {isExpanded ? "Hide Notes" : "Notes"}
           </Button>
           
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
