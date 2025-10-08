@@ -81,19 +81,19 @@ const PromptPond = () => {
     <div className="min-h-screen">
       <TopNav />
       
-      <main className="max-w-7xl mx-auto px-8 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-4xl font-black font-fraunces mb-2">Prompt Pond</h2>
-            <p className="text-muted-foreground">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex-1">
+            <h2 className="text-3xl sm:text-4xl font-black font-fraunces mb-2">Prompt Pond</h2>
+            <p className="text-muted-foreground text-sm sm:text-base">
               A collection of prompts to help you build with AI. Dip in and remix freely to make these your own.
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">Add a prompt</Button>
+              <Button variant="outline" className="w-full sm:w-auto shrink-0">Add a prompt</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Share a prompt</DialogTitle>
               </DialogHeader>
@@ -156,7 +156,7 @@ const PromptPond = () => {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {prompts.length === 0 ? (
             <p className="text-muted-foreground col-span-2">No prompts yet. Be the first to share!</p>
           ) : (

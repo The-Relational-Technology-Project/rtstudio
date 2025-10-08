@@ -88,22 +88,22 @@ const ToolsForCrafting = () => {
     <div className="min-h-screen">
       <TopNav />
       
-      <main className="max-w-7xl mx-auto px-8 py-12">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-4xl font-black font-fraunces mb-2">Tools for Crafting</h2>
-            <p className="text-muted-foreground mb-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex-1">
+            <h2 className="text-3xl sm:text-4xl font-black font-fraunces mb-3 sm:mb-2">Tools for Crafting</h2>
+            <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
               Use the tools. Share your tricks. Join a play group.
             </p>
-            <p className="text-sm italic text-muted-foreground">
+            <p className="text-xs sm:text-sm italic text-muted-foreground leading-relaxed">
               Every tool is better when shared. Add your tips, and join play groups when a handful of builders are ready.
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">Suggest a Tool</Button>
+              <Button variant="outline" className="w-full sm:w-auto shrink-0">Suggest a Tool</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Suggest a Tool</DialogTitle>
               </DialogHeader>
@@ -167,7 +167,7 @@ const ToolsForCrafting = () => {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {tools.map((tool) => (
             <ToolCard key={tool.id} {...tool} />
           ))}

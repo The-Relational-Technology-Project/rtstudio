@@ -114,27 +114,36 @@ export const ToolCard = ({ id, name, description, url }: ToolCardProps) => {
 
   return (
     <Card className="border-l-4 border-l-blue-400 hover:shadow-lg transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="text-xl font-bold font-fraunces text-foreground">{name}</h3>
-          <a href={url} target="_blank" rel="noopener noreferrer">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3 mb-3 sm:mb-2">
+          <h3 className="text-lg sm:text-xl font-bold font-fraunces text-foreground flex-1">{name}</h3>
+          <a href={url} target="_blank" rel="noopener noreferrer" className="shrink-0">
             <ExternalLink className="h-5 w-5 text-muted-foreground hover:text-blue-600 transition-colors" />
           </a>
         </div>
         <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{description}</p>
         
-        <div className="flex gap-2 mb-4">
-          <Button variant="outline" size="sm" onClick={handleExpand} className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 dark:hover:bg-blue-950 dark:hover:text-blue-400">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExpand} 
+            className="w-full sm:w-auto hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+          >
             {isExpanded ? "Hide Notes" : "Notes"}
           </Button>
           
           <Dialog open={isPlayGroupOpen} onOpenChange={setIsPlayGroupOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 dark:hover:bg-blue-950 dark:hover:text-blue-400">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full sm:w-auto hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 dark:hover:bg-blue-950 dark:hover:text-blue-400"
+              >
                 Play Group
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Express Interest in Play Group</DialogTitle>
               </DialogHeader>

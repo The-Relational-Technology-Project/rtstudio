@@ -117,23 +117,32 @@ export const StoryCard = ({ id, title, story, attribution }: StoryCardProps) => 
 
   return (
     <Card className="border-l-4 border-l-accent hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <h3 className="text-lg font-semibold font-fraunces mb-2">{title}</h3>
+      <CardContent className="p-4 sm:p-6">
+        <h3 className="text-base sm:text-lg font-semibold font-fraunces mb-2">{title}</h3>
         <p className="text-sm mb-4 leading-relaxed">{story}</p>
         <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
         
-        <div className="flex gap-2 mb-4">
-          <Button variant="outline" size="sm" onClick={handleExpand} className="hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-950 dark:hover:text-green-400">
+        <div className="flex flex-col sm:flex-row gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExpand} 
+            className="w-full sm:w-auto hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-950 dark:hover:text-green-400"
+          >
             {isExpanded ? "Hide Notes" : "Notes"}
           </Button>
           
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-950 dark:hover:text-green-400">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full sm:w-auto hover:bg-green-50 hover:text-green-700 hover:border-green-300 dark:hover:bg-green-950 dark:hover:text-green-400"
+              >
                 Get in Touch
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Get in touch</DialogTitle>
               </DialogHeader>
