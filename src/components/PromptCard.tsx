@@ -85,7 +85,7 @@ export const PromptCard = ({ title, examplePrompt, description }: PromptCardProp
               </DialogHeader>
               <div className="space-y-4 overflow-y-auto max-h-[calc(80vh-120px)] pr-4">
                 <div className="bg-gradient-to-br from-orange-50/50 to-pink-50/30 dark:from-orange-950/20 dark:to-pink-950/10 p-4 rounded-lg border border-orange-100 dark:border-orange-900">
-                  <pre className="text-sm whitespace-pre-wrap leading-relaxed font-sans">{examplePrompt}</pre>
+                  <p className="text-sm leading-relaxed">{examplePrompt}</p>
                 </div>
                 <Button
                   onClick={() => copyToClipboard(examplePrompt)}
@@ -131,7 +131,7 @@ export const PromptCard = ({ title, examplePrompt, description }: PromptCardProp
                   <div className="space-y-2 pt-4 border-t">
                     <Label className="font-semibold">Your Customized Prompt</Label>
                     <div className="bg-gradient-to-br from-green-50/50 to-blue-50/30 dark:from-green-950/20 dark:to-blue-950/10 p-4 rounded-lg border border-green-200 dark:border-green-900">
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{remixedPrompt}</p>
+                      <p className="text-sm leading-relaxed">{remixedPrompt}</p>
                     </div>
                     <Button
                       onClick={() => copyToClipboard(remixedPrompt)}
