@@ -11,14 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const { examplePrompt, userContext } = await req.json();
+    const { examplePrompt, communityContext, customizationIdeas } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    console.log("Remixing prompt with context:", userContext);
+    console.log("Remixing prompt with community context and customization ideas");
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -31,11 +31,11 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a helpful assistant that remixes prompts. Take the example prompt and the user\'s context/ideas, then create a customized version that incorporates their specific needs while maintaining the structure and quality of the original. Return only the remixed prompt, nothing else.' 
+            content: 'You are a helpful assistant that remixes prompts. Take the example prompt, the user\'s community context, and their customization ideas, then create a customized version that incorporates their specific needs while maintaining the quality of the original. Return ONLY the remixed prompt in plain text format - no markdown formatting, no bold (**), no italics (*), no headers (####), just clean flowing text that can be copied and used directly.' 
           },
           { 
             role: 'user', 
-            content: `Example prompt:\n${examplePrompt}\n\nUser's context and ideas:\n${userContext}\n\nPlease create a customized version of this prompt that incorporates the user's context.` 
+            content: `Example prompt:\n${examplePrompt}\n\nCommunity and place context:\n${communityContext}\n\nCustomization ideas:\n${customizationIdeas}\n\nPlease create a customized version of this prompt that incorporates the community context and customization ideas. Return only plain text without any markdown formatting.` 
           }
         ],
       }),

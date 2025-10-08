@@ -17,7 +17,8 @@ interface PromptCardProps {
 }
 
 export const PromptCard = ({ title, examplePrompt, description }: PromptCardProps) => {
-  const [userContext, setUserContext] = useState("");
+  const [communityContext, setCommunityContext] = useState("");
+  const [customizationIdeas, setCustomizationIdeas] = useState("");
   const [remixedPrompt, setRemixedPrompt] = useState("");
   const [isRemixing, setIsRemixing] = useState(false);
   const [isRemixDialogOpen, setIsRemixDialogOpen] = useState(false);
@@ -30,7 +31,7 @@ export const PromptCard = ({ title, examplePrompt, description }: PromptCardProp
 
     try {
       const { data, error } = await supabase.functions.invoke("remix-prompt", {
-        body: { examplePrompt, userContext },
+        body: { examplePrompt, communityContext, customizationIdeas },
       });
 
       if (error) throw error;
@@ -113,13 +114,24 @@ export const PromptCard = ({ title, examplePrompt, description }: PromptCardProp
               <div className="overflow-y-auto max-h-[calc(80vh-120px)] pr-4">
               <form onSubmit={handleRemix} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="context">Your Context & Ideas</Label>
+                  <Label htmlFor="community">What should we know about your community and place, to help inform your version of this tool?</Label>
                   <Textarea
-                    id="context"
-                    value={userContext}
-                    onChange={(e) => setUserContext(e.target.value)}
-                    rows={6}
-                    placeholder="Describe your specific use case, goals, or what you'd like to change about this prompt..."
+                    id="community"
+                    value={communityContext}
+                    onChange={(e) => setCommunityContext(e.target.value)}
+                    rows={4}
+                    placeholder="Tell us about your community, location, demographics, unique characteristics..."
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customization">What would you like to add, remove, or change about this tool? Anything goes!</Label>
+                  <Textarea
+                    id="customization"
+                    value={customizationIdeas}
+                    onChange={(e) => setCustomizationIdeas(e.target.value)}
+                    rows={4}
+                    placeholder="Share your ideas for customization, features to add/remove, changes you'd like to see..."
                     required
                   />
                 </div>
