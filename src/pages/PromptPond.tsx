@@ -82,7 +82,7 @@ const PromptPond = () => {
           <div>
             <h2 className="text-4xl font-black font-fraunces mb-2">Prompt Pond</h2>
             <p className="text-muted-foreground">
-              A collection of prompts to help you build with AI. View examples or remix them for your needs.
+              A collection of prompts to help you build with AI. Dip in and remix freely to make these your own.
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

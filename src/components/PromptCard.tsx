@@ -64,35 +64,35 @@ export const PromptCard = ({ title, category, examplePrompt }: PromptCardProps) 
   };
 
   return (
-    <Card className="border-l-4 border-l-primary hover:shadow-lg transition-shadow bg-gradient-to-br from-background to-muted/20">
+    <Card className="border-l-4 border-l-orange-400 hover:shadow-lg transition-all hover:scale-[1.02] bg-gradient-to-br from-orange-50/50 via-pink-50/30 to-purple-50/20 dark:from-orange-950/20 dark:via-pink-950/10 dark:to-purple-950/10">
       <CardContent className="p-6">
         <div className="mb-2">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <span className="text-xs font-semibold text-orange-600 dark:text-orange-400 uppercase tracking-wide bg-orange-100 dark:bg-orange-900/30 px-2 py-1 rounded-full">
             {category}
           </span>
         </div>
-        <h3 className="text-xl font-bold font-fraunces mb-4">{title}</h3>
+        <h3 className="text-xl font-bold font-fraunces mb-4 text-foreground">{title}</h3>
         
         <div className="flex gap-2">
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button variant="outline" size="sm" className="flex-1 border-orange-200 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-800 dark:hover:bg-orange-950">
                 <Eye className="w-4 h-4 mr-2" />
                 View Example
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>{title}</DialogTitle>
+                <DialogTitle className="font-fraunces">{title}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="bg-gradient-to-br from-orange-50/50 to-pink-50/30 dark:from-orange-950/20 dark:to-pink-950/10 p-4 rounded-lg border border-orange-100 dark:border-orange-900">
                   <p className="text-sm whitespace-pre-wrap leading-relaxed">{examplePrompt}</p>
                 </div>
                 <Button
                   onClick={() => copyToClipboard(examplePrompt)}
                   variant="outline"
-                  className="w-full"
+                  className="w-full border-orange-200 hover:bg-orange-50 hover:text-orange-700 dark:border-orange-800 dark:hover:bg-orange-950"
                 >
                   <Copy className="w-4 h-4 mr-2" />
                   Copy to Clipboard
@@ -103,14 +103,14 @@ export const PromptCard = ({ title, category, examplePrompt }: PromptCardProps) 
 
           <Dialog open={isRemixDialogOpen} onOpenChange={setIsRemixDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="default" size="sm" className="flex-1">
+              <Button size="sm" className="flex-1 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white border-0">
                 <Wand2 className="w-4 h-4 mr-2" />
                 Remix
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Remix: {title}</DialogTitle>
+                <DialogTitle className="font-fraunces">Remix: {title}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleRemix} className="space-y-4">
                 <div className="space-y-2">
@@ -124,21 +124,21 @@ export const PromptCard = ({ title, category, examplePrompt }: PromptCardProps) 
                     required
                   />
                 </div>
-                <Button type="submit" disabled={isRemixing} className="w-full">
+                <Button type="submit" disabled={isRemixing} className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white">
                   {isRemixing ? "Remixing..." : "Generate Custom Prompt"}
                 </Button>
 
                 {remixedPrompt && (
                   <div className="space-y-2 pt-4 border-t">
-                    <Label>Your Customized Prompt</Label>
-                    <div className="bg-muted/50 p-4 rounded-lg">
+                    <Label className="font-semibold">Your Customized Prompt</Label>
+                    <div className="bg-gradient-to-br from-green-50/50 to-blue-50/30 dark:from-green-950/20 dark:to-blue-950/10 p-4 rounded-lg border border-green-200 dark:border-green-900">
                       <p className="text-sm whitespace-pre-wrap leading-relaxed">{remixedPrompt}</p>
                     </div>
                     <Button
                       onClick={() => copyToClipboard(remixedPrompt)}
                       variant="outline"
                       type="button"
-                      className="w-full"
+                      className="w-full border-green-200 hover:bg-green-50 hover:text-green-700 dark:border-green-800 dark:hover:bg-green-950"
                     >
                       <Copy className="w-4 h-4 mr-2" />
                       Copy Customized Prompt
