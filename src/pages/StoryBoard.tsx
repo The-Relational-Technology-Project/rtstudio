@@ -14,6 +14,7 @@ const StoryBoard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [stories, setStories] = useState<any[]>([]);
+  const [newTitle, setNewTitle] = useState("");
   const [newStory, setNewStory] = useState("");
   const [attribution, setAttribution] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,6 +47,7 @@ const StoryBoard = () => {
       const { error } = await supabase
         .from("stories")
         .insert({
+          title: newTitle,
           story_text: newStory,
           attribution,
         });
@@ -57,6 +59,7 @@ const StoryBoard = () => {
         description: "Your spark has been shared with the community.",
       });
 
+      setNewTitle("");
       setNewStory("");
       setAttribution("");
       setIsDialogOpen(false);
@@ -92,7 +95,7 @@ const StoryBoard = () => {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">Add your idea</Button>
+              <Button variant="outline">Add your story</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -100,7 +103,17 @@ const StoryBoard = () => {
               </DialogHeader>
               <form onSubmit={handleStorySubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="story">Your story (1-3 sentences)</Label>
+                  <Label htmlFor="title">Title</Label>
+                  <Input
+                    id="title"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="Give your story a title..."
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="story">Your story (2-3 sentences)</Label>
                   <Textarea
                     id="story"
                     value={newStory}
@@ -136,6 +149,7 @@ const StoryBoard = () => {
               <StoryCard
                 key={story.id}
                 id={story.id}
+                title={story.title || "Untitled"}
                 story={story.story_text}
                 attribution={story.attribution}
               />

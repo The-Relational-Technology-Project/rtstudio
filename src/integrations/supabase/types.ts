@@ -76,6 +76,7 @@ export type Database = {
           created_at: string
           id: string
           story_text: string
+          title: string | null
           user_id: string | null
         }
         Insert: {
@@ -83,6 +84,7 @@ export type Database = {
           created_at?: string
           id?: string
           story_text: string
+          title?: string | null
           user_id?: string | null
         }
         Update: {
@@ -90,9 +92,45 @@ export type Database = {
           created_at?: string
           id?: string
           story_text?: string
+          title?: string | null
           user_id?: string | null
         }
         Relationships: []
+      }
+      story_notes: {
+        Row: {
+          author_name: string
+          created_at: string
+          id: string
+          note_text: string
+          story_id: string
+          user_id: string | null
+        }
+        Insert: {
+          author_name: string
+          created_at?: string
+          id?: string
+          note_text: string
+          story_id: string
+          user_id?: string | null
+        }
+        Update: {
+          author_name?: string
+          created_at?: string
+          id?: string
+          note_text?: string
+          story_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_notes_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tool_comments: {
         Row: {

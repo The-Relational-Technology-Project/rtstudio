@@ -10,17 +10,67 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface StoryCardProps {
   id: string;
+  title: string;
   story: string;
   attribution: string;
 }
 
-export const StoryCard = ({ id, story, attribution }: StoryCardProps) => {
+export const StoryCard = ({ id, title, story, attribution }: StoryCardProps) => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [newNote, setNewNote] = useState("");
+  const [noteName, setNoteName] = useState("");
+  const [isAddingNote, setIsAddingNote] = useState(false);
   const { toast } = useToast();
+
+  const loadNotes = async () => {
+    const { data } = await supabase
+      .from("story_notes")
+      .select("*")
+      .eq("story_id", id)
+      .order("created_at", { ascending: false });
+    
+    if (data) setNotes(data);
+  };
+
+  const handleNoteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingNote(true);
+
+    try {
+      const { error } = await supabase
+        .from("story_notes")
+        .insert({
+          story_id: id,
+          note_text: newNote,
+          author_name: noteName,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Note added!",
+        description: "Your note is now visible to others.",
+      });
+
+      setNewNote("");
+      setNoteName("");
+      await loadNotes();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add note. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingNote(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,58 +108,116 @@ export const StoryCard = ({ id, story, attribution }: StoryCardProps) => {
     }
   };
 
+  const handleExpand = async () => {
+    if (!isExpanded) {
+      await loadNotes();
+    }
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <Card className="border-l-4 border-l-accent hover:shadow-md transition-shadow">
       <CardContent className="p-6">
+        <h3 className="text-lg font-semibold font-fraunces mb-2">{title}</h3>
         <p className="text-sm mb-4 leading-relaxed">{story}</p>
         <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
         
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="text-xs">
-              Reach Out
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Get in touch</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="flex gap-2 mb-4">
+          <Button variant="outline" size="sm" onClick={handleExpand}>
+            {isExpanded ? "Hide Notes" : "Add a Note"}
+          </Button>
+          
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                Get in Touch
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Get in touch</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <Input
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="message">Message</Label>
+                  <Textarea
+                    id="message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={4}
+                    required
+                  />
+                </div>
+                <Button type="submit" disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? "Sending..." : "Send Message"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {isExpanded && (
+          <div className="border-t pt-4 space-y-4">
+            <div className="space-y-2">
+              {notes.length > 0 ? (
+                notes.map((note) => (
+                  <div key={note.id} className="bg-muted/50 p-3 rounded text-sm">
+                    <p className="mb-1">{note.note_text}</p>
+                    <p className="text-xs text-muted-foreground">— {note.author_name}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No notes yet. Be the first to add one!</p>
+              )}
+            </div>
+
+            <form onSubmit={handleNoteSubmit} className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
+                <Label htmlFor="note">Your note</Label>
                 <Textarea
-                  id="message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={4}
+                  id="note"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  rows={3}
+                  placeholder="Add your thoughts or ideas..."
                   required
                 />
               </div>
-              <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? "Sending..." : "Send Message"}
+              <div className="space-y-2">
+                <Label htmlFor="noteName">Your name</Label>
+                <Input
+                  id="noteName"
+                  value={noteName}
+                  onChange={(e) => setNoteName(e.target.value)}
+                  placeholder="Your first name or 'Anonymous'"
+                  required
+                />
+              </div>
+              <Button type="submit" disabled={isAddingNote} size="sm">
+                {isAddingNote ? "Adding..." : "Add Note"}
               </Button>
             </form>
-          </DialogContent>
-        </Dialog>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
