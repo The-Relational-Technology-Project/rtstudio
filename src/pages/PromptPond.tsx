@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { TopNav } from "@/components/TopNav";
 import { PromptCard } from "@/components/PromptCard";
+import { PromptChat } from "@/components/PromptChat";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ const PromptPond = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [remixPrompt, setRemixPrompt] = useState<string>("");
 
   useEffect(() => {
     const loadPrompts = async () => {
@@ -82,11 +84,25 @@ const PromptPond = () => {
       <TopNav />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+        <div className="mb-8 sm:mb-12">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl sm:text-4xl font-black font-fraunces mb-2">Prompt Pond</h2>
+            <p className="text-muted-foreground text-sm sm:text-base max-w-2xl mx-auto">
+              Chat with AI to remix prompts for your neighborhood, or browse our collection below.
+            </p>
+          </div>
+          
+          <PromptChat 
+            initialPrompt={remixPrompt} 
+            onClearInitialPrompt={() => setRemixPrompt("")}
+          />
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex-1">
-            <h2 className="text-3xl sm:text-4xl font-black font-fraunces mb-2">Prompt Pond</h2>
+            <h3 className="text-2xl sm:text-3xl font-bold font-fraunces mb-2">Browse Prompts</h3>
             <p className="text-muted-foreground text-sm sm:text-base">
-              A collection of prompts to help you build with AI. Dip in and remix freely to make these your own.
+              Click "Remix" on any prompt to customize it for your neighborhood in the chat above.
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -173,6 +189,10 @@ const PromptPond = () => {
                     ? "https://cozycorner.place/" 
                     : "#"
                 }
+                onRemix={(promptText) => {
+                  setRemixPrompt(promptText);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               />
             ))
           )}

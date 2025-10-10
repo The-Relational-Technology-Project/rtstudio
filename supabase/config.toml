@@ -1,1 +1,7 @@
 project_id = "ivrvpbqidysrwqrthpcp"
+
+[functions.remix-prompt]
+verify_jwt = false
+
+[functions.chat-remix]
+verify_jwt = false
