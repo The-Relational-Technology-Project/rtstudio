@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,9 +15,36 @@ serve(async (req) => {
   try {
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
+    }
+
+    // Initialize Supabase client
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // Get the latest user message for context search
+    const latestUserMessage = messages[messages.length - 1]?.content || '';
+
+    // Search for relevant prompts in the database
+    const { data: relevantPrompts, error: dbError } = await supabase
+      .from('prompts')
+      .select('title, category, description, example_prompt')
+      .or(`title.ilike.%${latestUserMessage}%,description.ilike.%${latestUserMessage}%,category.ilike.%${latestUserMessage}%,example_prompt.ilike.%${latestUserMessage}%`)
+      .limit(5);
+
+    if (dbError) {
+      console.error('Error fetching prompts:', dbError);
+    }
+
+    // Build prompt library context
+    let promptLibraryContext = '';
+    if (relevantPrompts && relevantPrompts.length > 0) {
+      promptLibraryContext = `\n\nRELEVANT PROMPTS FROM THE LIBRARY:\n${relevantPrompts.map(p => 
+        `\n---\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nExample Prompt:\n${p.example_prompt}\n---`
+      ).join('\n')}`;
     }
 
     const systemPrompt = `You are the Prompt Remix Assistant for the Relational Technology Project. Your job is to help people create customized prompts that they can use in AI builders like Lovable or Dyad to build relational tech tools for their neighborhoods.
@@ -68,7 +96,7 @@ IMPORTANT:
 - Always acknowledge the specific context they share about their neighborhood
 - Gently remind them that the tool will likely change and that's okay
 
-Begin by understanding what they want to build or remix, then guide them thoughtfully through the process.`;
+Begin by understanding what they want to build or remix, then guide them thoughtfully through the process.${promptLibraryContext}`;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
