@@ -7,6 +7,7 @@ import StoryBoard from "./pages/StoryBoard";
 import PromptPond from "./pages/PromptPond";
 import ToolsForCrafting from "./pages/ToolsForCrafting";
 import Auth from "./pages/Auth";
+import ChangePassword from "./pages/ChangePassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/prompt-pond" element={<PromptPond />} />
           <Route path="/tools" element={<ToolsForCrafting />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/change-password" element={<ChangePassword />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.verify-session]
 verify_jwt = false
+
+[functions.update-password]
+verify_jwt = false
