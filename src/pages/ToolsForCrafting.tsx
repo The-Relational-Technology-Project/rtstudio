@@ -23,21 +23,38 @@ const ToolsForCrafting = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    const access = localStorage.getItem("studio_access");
-    if (access !== "granted") {
-      navigate("/auth");
-    }
+    const verifyAccess = async () => {
+      const sessionToken = localStorage.getItem("studio_session");
+      if (!sessionToken) {
+        navigate("/auth");
+        return;
+      }
 
-    const loadTools = async () => {
-      const { data } = await supabase
-        .from("tools")
-        .select("*")
-        .order("created_at", { ascending: true });
-      
-      if (data) setTools(data);
+      try {
+        const { data, error } = await supabase.functions.invoke('verify-session', {
+          body: { token: sessionToken }
+        });
+
+        if (error || !data?.valid) {
+          localStorage.removeItem("studio_session");
+          navigate("/auth");
+          return;
+        }
+
+        const { data: toolsData } = await supabase
+          .from("tools")
+          .select("*")
+          .order("created_at", { ascending: true });
+        
+        if (toolsData) setTools(toolsData);
+      } catch (error) {
+        console.error('Session verification error:', error);
+        localStorage.removeItem("studio_session");
+        navigate("/auth");
+      }
     };
 
-    loadTools();
+    verifyAccess();
   }, [navigate]);
 
   const handleToolSubmit = async (e: React.FormEvent) => {

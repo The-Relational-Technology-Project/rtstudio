@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
+import { create } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,8 +46,35 @@ Deno.serve(async (req) => {
     // Verify password (simple comparison for now - in production use bcrypt)
     const isValid = data?.password_hash === password;
 
+    if (!isValid) {
+      return new Response(
+        JSON.stringify({ valid: false }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Generate a signed JWT token for session management
+    const jwtSecret = Deno.env.get('JWT_SECRET') || 'default-secret-change-in-production';
+    const encoder = new TextEncoder();
+    const keyBuf = encoder.encode(jwtSecret);
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyBuf,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign', 'verify']
+    );
+
+    const payload = {
+      iss: 'studio-auth',
+      exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 days
+      iat: Math.floor(Date.now() / 1000),
+    };
+
+    const token = await create({ alg: 'HS256', typ: 'JWT' }, payload, key);
+
     return new Response(
-      JSON.stringify({ valid: isValid }),
+      JSON.stringify({ valid: true, token }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

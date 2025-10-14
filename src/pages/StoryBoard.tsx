@@ -24,22 +24,38 @@ const StoryBoard = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    const access = localStorage.getItem("studio_access");
-    if (access !== "granted") {
-      navigate("/auth");
-      return;
-    }
+    const verifyAccess = async () => {
+      const sessionToken = localStorage.getItem("studio_session");
+      if (!sessionToken) {
+        navigate("/auth");
+        return;
+      }
 
-    const loadStories = async () => {
-      const { data } = await supabase
-        .from("stories")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (data) setStories(data);
+      try {
+        const { data, error } = await supabase.functions.invoke('verify-session', {
+          body: { token: sessionToken }
+        });
+
+        if (error || !data?.valid) {
+          localStorage.removeItem("studio_session");
+          navigate("/auth");
+          return;
+        }
+
+        const { data: storiesData } = await supabase
+          .from("stories")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (storiesData) setStories(storiesData);
+      } catch (error) {
+        console.error('Session verification error:', error);
+        localStorage.removeItem("studio_session");
+        navigate("/auth");
+      }
     };
 
-    loadStories();
+    verifyAccess();
   }, [navigate]);
 
   const handleStorySubmit = async (e: React.FormEvent) => {

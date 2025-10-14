@@ -41,8 +41,8 @@ const Auth = () => {
         return;
       }
 
-      if (data?.valid) {
-        localStorage.setItem("studio_access", "granted");
+      if (data?.valid && data?.token) {
+        localStorage.setItem("studio_session", data.token);
         toast({
           title: "Welcome to the Studio",
           description: "Access granted",
