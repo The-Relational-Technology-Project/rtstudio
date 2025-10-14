@@ -28,21 +28,63 @@ serve(async (req) => {
     // Get the latest user message for context search
     const latestUserMessage = messages[messages.length - 1]?.content || '';
 
-    // Sanitize user input to prevent SQL injection
-    // Remove special SQL characters and limit length
-    const sanitizedMessage = latestUserMessage
-      .replace(/[%_,]/g, '')
-      .slice(0, 100);
+    // Extract meaningful keywords from the user message
+    const stopWords = new Set([
+      'i', 'want', 'a', 'the', 'to', 'for', 'of', 'and', 'or', 'in', 'on', 'at',
+      'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+      'do', 'does', 'did', 'will', 'would', 'should', 'could', 'can', 'may',
+      'this', 'that', 'these', 'those', 'it', 'its', 'my', 'our', 'let', 'lets',
+      'remix', 'create', 'build', 'make', 'help', 'me', 'us', 'please'
+    ]);
+    
+    const keywords = latestUserMessage
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, ' ') // Remove special chars but keep hyphens
+      .split(/\s+/)
+      .filter((word: string) => word.length > 2 && !stopWords.has(word))
+      .slice(0, 5); // Limit to first 5 meaningful keywords
 
-    // Search for relevant prompts in the database
-    const { data: relevantPrompts, error: dbError } = await supabase
-      .from('prompts')
-      .select('title, category, description, example_prompt')
-      .or(`title.ilike.%${sanitizedMessage}%,description.ilike.%${sanitizedMessage}%,category.ilike.%${sanitizedMessage}%,example_prompt.ilike.%${sanitizedMessage}%`)
-      .limit(5);
+    console.log('Extracted keywords:', keywords);
 
-    if (dbError) {
-      console.error('Error fetching prompts:', dbError);
+    // Search for relevant prompts using weighted approach
+    let relevantPrompts: any[] = [];
+    
+    if (keywords.length > 0) {
+      // Build search conditions for each keyword
+      const searchConditions = keywords.map((keyword: string) => {
+        const sanitized = keyword.replace(/[%_]/g, '');
+        return `title.ilike.%${sanitized}%,category.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
+      }).join(',');
+
+      const { data: foundPrompts, error: dbError } = await supabase
+        .from('prompts')
+        .select('title, category, description, example_prompt')
+        .or(searchConditions)
+        .limit(10);
+
+      if (dbError) {
+        console.error('Error fetching prompts:', dbError);
+      } else if (foundPrompts) {
+        // Weight and score results
+        relevantPrompts = foundPrompts.map((prompt: any) => {
+          let score = 0;
+          const titleLower = prompt.title.toLowerCase();
+          const categoryLower = prompt.category.toLowerCase();
+          const descLower = (prompt.description || '').toLowerCase();
+          
+          keywords.forEach((keyword: string) => {
+            if (titleLower.includes(keyword)) score += 10; // Title matches are most important
+            if (categoryLower.includes(keyword)) score += 5;
+            if (descLower.includes(keyword)) score += 2;
+          });
+          
+          return { ...prompt, score };
+        })
+        .sort((a: any, b: any) => b.score - a.score) // Sort by score descending
+        .slice(0, 5); // Keep top 5
+        
+        console.log('Found prompts with scores:', relevantPrompts.map((p: any) => ({ title: p.title, score: p.score })));
+      }
     }
 
     // Build prompt library context
