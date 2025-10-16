@@ -46,9 +46,7 @@ export const FeaturedStory = () => {
               "What do you have to offer?" is not the same as "What is your job skill?" It invites the whole self to show up – whether that's fixing bikes, teaching a recipe, or listening with care. "What do you need?" is vulnerable and rarely asked between colleagues or neighbors. Naming needs allows others to step toward us with generosity – this is how our brains are meant to work! "What are you dreaming about?" leads to wonderful surprises. We've learned that people long to share their dreams, and when they do, it awakens curiosity and energy in others.
             </p>
 
-            <p>
-              When these three flows – offers, needs, and dreams – come together, a community's circulatory system comes alive. People feel cared for, they practice cooperation, and they discover new curiosities together.
-            </p>
+            
 
             <div className="my-6 sm:my-8">
               
