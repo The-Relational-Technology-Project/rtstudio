@@ -1,4 +1,3 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.74.0';
 import { create } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
 import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
 
@@ -24,29 +23,25 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client with service role key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Read password from secrets (prefer hash if available)
+    const passwordHash = Deno.env.get('STUDIO_PASSWORD_HASH');
+    const passwordPlain = Deno.env.get('STUDIO_PASSWORD');
 
-    // Query the most recent credentials row safely
-    const { data, error } = await supabase
-      .from('access_credentials')
-      .select('password_hash, created_at')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Database error:', error);
+    if (!passwordHash && !passwordPlain) {
+      console.error('Auth not configured: missing STUDIO_PASSWORD or STUDIO_PASSWORD_HASH');
       return new Response(
         JSON.stringify({ error: 'Authentication service unavailable' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verify password using bcrypt
-    const isValid = await bcrypt.compare(password, data?.password_hash || '');
+    let isValid = false;
+    if (passwordHash) {
+      isValid = await bcrypt.compare(password, passwordHash);
+    } else if (passwordPlain) {
+      isValid = password === passwordPlain;
+    }
+
 
     if (!isValid) {
       return new Response(
