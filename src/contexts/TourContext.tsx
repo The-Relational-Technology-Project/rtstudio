@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TourStep {
   title: string;
@@ -92,14 +93,20 @@ export const TourProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const location = useLocation();
 
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem('hasSeenTour');
-    if (!hasSeenTour) {
-      // Auto-start tour on first visit after a brief delay
-      const timer = setTimeout(() => {
-        setIsActive(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
+    const checkAuthAndStartTour = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const hasSeenTour = localStorage.getItem('hasSeenTour');
+      
+      // Only auto-start tour if user is authenticated and hasn't seen it
+      if (session && !hasSeenTour) {
+        const timer = setTimeout(() => {
+          setIsActive(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    };
+    
+    checkAuthAndStartTour();
   }, []);
 
   useEffect(() => {
