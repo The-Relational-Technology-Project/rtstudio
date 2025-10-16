@@ -40,9 +40,7 @@ export const FeaturedStory = () => {
 
             
 
-            <p>
-              As I began experimenting more formally with normalizing mutual support, we developed a simple shared practice: every member was invited to name what they can offer, what they need, and what they are dreaming about. These questions sound modest, but they open up whole worlds of possibility.
-            </p>
+            
 
             <p>
               "What do you have to offer?" is not the same as "What is your job skill?" It invites the whole self to show up – whether that's fixing bikes, teaching a recipe, or listening with care. "What do you need?" is vulnerable and rarely asked between colleagues or neighbors. Naming needs allows others to step toward us with generosity – this is how our brains are meant to work! "What are you dreaming about?" leads to wonderful surprises. We've learned that people long to share their dreams, and when they do, it awakens curiosity and energy in others.
