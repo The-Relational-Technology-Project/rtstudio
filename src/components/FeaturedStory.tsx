@@ -38,7 +38,7 @@ export const FeaturedStory = () => {
               <img src={blockPartyImage} alt="Cozy Corner block party with pirate ship bouncy house and neighbors gathering" className="w-full rounded-lg" />
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-bold mt-8 mb-4">Offers, Needs, and Dreams</h3>
+            
 
             <p>
               As I began experimenting more formally with normalizing mutual support, we developed a simple shared practice: every member was invited to name what they can offer, what they need, and what they are dreaming about. These questions sound modest, but they open up whole worlds of possibility.
