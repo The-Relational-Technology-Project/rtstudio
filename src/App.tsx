@@ -9,6 +9,8 @@ import ToolsForCrafting from "./pages/ToolsForCrafting";
 import Auth from "./pages/Auth";
 import ChangePassword from "./pages/ChangePassword";
 import NotFound from "./pages/NotFound";
+import { TourProvider } from "./contexts/TourContext";
+import { Tour } from "./components/Tour";
 
 const queryClient = new QueryClient();
 
@@ -18,15 +20,18 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<StoryBoard />} />
-          <Route path="/prompt-pond" element={<PromptPond />} />
-          <Route path="/tools" element={<ToolsForCrafting />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/change-password" element={<ChangePassword />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <TourProvider>
+          <Tour />
+          <Routes>
+            <Route path="/" element={<StoryBoard />} />
+            <Route path="/prompt-pond" element={<PromptPond />} />
+            <Route path="/tools" element={<ToolsForCrafting />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/change-password" element={<ChangePassword />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TourProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
