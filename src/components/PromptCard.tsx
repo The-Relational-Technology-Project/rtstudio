@@ -28,7 +28,7 @@ export const PromptCard = ({ title, examplePrompt, description, exampleUrl, onRe
   };
 
   return (
-    <Card className="border-l-4 border-l-primary hover:shadow-md transition-all">
+    <Card className="border-l-4 border-l-primary hover:shadow-md transition-all" data-tour="prompt-card">
       <CardContent className="p-4 sm:p-6">
         <h3 className="text-lg sm:text-xl font-bold font-fraunces mb-4 text-foreground">{title}</h3>
         {description && (

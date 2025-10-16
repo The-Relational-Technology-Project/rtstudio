@@ -75,7 +75,7 @@ const PromptPond = () => {
       <TopNav />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
-        <div className="mb-8 sm:mb-12">
+        <div className="mb-8 sm:mb-12" data-tour="chat-section">
           <div className="text-center mb-4">
             <h2 className="text-3xl sm:text-4xl font-black font-fraunces mb-2">Prompt Pond</h2>
             <p className="text-muted-foreground text-sm max-w-2xl mx-auto">
@@ -127,7 +127,7 @@ const PromptPond = () => {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6" data-tour="prompts-grid">
           {prompts.length === 0 ? <p className="text-muted-foreground col-span-2">No prompts yet. Be the first to share!</p> : prompts.map(prompt => <PromptCard key={prompt.id} id={prompt.id} title={prompt.title} category={prompt.category} examplePrompt={prompt.example_prompt} description={prompt.description} exampleUrl={prompt.title === "Hyperlocal Neighbor Hubs" ? "https://cozycorner.place/" : "#"} onRemix={promptText => {
           setRemixPrompt(promptText);
           window.scrollTo({

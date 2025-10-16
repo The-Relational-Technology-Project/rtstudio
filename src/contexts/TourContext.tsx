@@ -6,6 +6,8 @@ interface TourStep {
   description: string;
   route: string;
   action?: string;
+  target?: string;
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
 }
 
 const tourSteps: TourStep[] = [
@@ -13,44 +15,60 @@ const tourSteps: TourStep[] = [
     title: "Welcome to the Studio!",
     description: "Start by reading through some stories, gathering inspiration for what might unfold in your community.",
     route: "/",
+    target: "[data-tour='stories-section']",
+    position: "bottom",
   },
   {
     title: "Explore the Prompt Pond",
     description: "Read through the remixable prompts to see what's possible.",
     route: "/prompt-pond",
+    target: "[data-tour='prompts-grid']",
+    position: "top",
   },
   {
     title: "Look at Examples",
     description: "Each prompt has examples showing how it can be used in different contexts.",
     route: "/prompt-pond",
     action: "Click 'Example' on any prompt card to see real examples.",
+    target: "[data-tour='prompt-card']",
+    position: "right",
   },
   {
     title: "Pick One to Remix!",
     description: "When you find a prompt that resonates, click 'Remix' to start customizing it for your community.",
     route: "/prompt-pond",
     action: "Try clicking 'Remix' on a prompt that interests you.",
+    target: "[data-tour='prompt-card']",
+    position: "right",
   },
   {
     title: "Chat with Your Sidekick",
     description: "The relational tech sidekick will ask you questions about your context and vision, helping you craft the perfect prompt.",
     route: "/prompt-pond",
+    target: "[data-tour='chat-section']",
+    position: "left",
   },
   {
     title: "Copy Your Remixed Prompt",
     description: "Once you have your customized prompt, copy it and bring it into your preferred tool-builder.",
     route: "/prompt-pond",
+    target: "[data-tour='chat-section']",
+    position: "left",
   },
   {
     title: "Tools for Crafting",
     description: "Review the tools available here. Copy-paste your remixed prompt into a builder like Lovable or Dyad to spin up your hyperlocal tool!",
     route: "/tools",
+    target: "[data-tour='tools-grid']",
+    position: "top",
   },
   {
     title: "Contribute to the Commons",
     description: "Come back to share your story, the prompt you used, and the tools that helped you craft your relational tech.",
     route: "/",
     action: "Share your journey to inspire others!",
+    target: "[data-tour='contribute-button']",
+    position: "bottom",
   },
 ];
 

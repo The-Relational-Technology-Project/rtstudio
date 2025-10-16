@@ -116,7 +116,7 @@ const StoryBoard = () => {
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="w-full sm:w-auto shrink-0">Add your story</Button>
+              <Button variant="outline" className="w-full sm:w-auto shrink-0" data-tour="contribute-button">Add your story</Button>
             </DialogTrigger>
             <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
@@ -187,7 +187,7 @@ const StoryBoard = () => {
           <h3 className="text-2xl sm:text-3xl font-black font-fraunces mb-4">Community Stories</h3>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-4" data-tour="stories-section">
           {stories.length === 0 ? (
             <p className="text-muted-foreground col-span-2">No stories yet. Be the first to share!</p>
           ) : (
