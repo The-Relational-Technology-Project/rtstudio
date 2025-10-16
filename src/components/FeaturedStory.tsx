@@ -38,48 +38,13 @@ export const FeaturedStory = () => {
               <img src={blockPartyImage} alt="Cozy Corner block party with pirate ship bouncy house and neighbors gathering" className="w-full rounded-lg" />
             </div>
 
-            
-
-            
-
             <p>
               "What do you have to offer?" is not the same as "What is your job skill?" It invites the whole self to show up – whether that's fixing bikes, teaching a recipe, or listening with care. "What do you need?" is vulnerable and rarely asked between colleagues or neighbors. Naming needs allows others to step toward us with generosity – this is how our brains are meant to work! "What are you dreaming about?" leads to wonderful surprises. We've learned that people long to share their dreams, and when they do, it awakens curiosity and energy in others.
             </p>
 
-            
-
-            <div className="my-6 sm:my-8">
-              
-            </div>
-
-            <h3 className="text-xl sm:text-2xl font-bold mt-8 mb-4">Technology as Relational Craft</h3>
-
-            <p>
-              I believe technology has a role to play in the project of our times: reconnecting with the people around us. But the way we create and use technology must be different. Too often, technology sorts us into rigid roles of user and platform, consumer and product. It consolidates power and extracts value.
+            <p className="mt-6">
+              From these gatherings, we've been building small tools together to support our neighborhood connections:
             </p>
-
-            <p>
-              Relational technology, as we've come to call it, is built to support care, not to replace it. It is created by communities, not for them. It is human-scale, sharable, and remixable. A piece of relational tech can be as simple as a clipboard at a block party, or as sophisticated as a small piece of software that helps neighbors plan gatherings.
-            </p>
-
-            <p>The departures from business-as-usual tech design are clear:</p>
-
-            <ul className="space-y-2 ml-4 sm:ml-6 mb-6">
-              <li><strong>Purpose:</strong> reconnecting and caring for one another, not profit.</li>
-              <li><strong>Process:</strong> embedded design in everyday life, not experts designing from afar.</li>
-              <li><strong>Math:</strong> a ratio of one builder to ten co-creators, not one to a million "users."</li>
-              <li><strong>Path:</strong> scaling deep and horizontally, not top-down platforms that flatten diversity.</li>
-            </ul>
-
-            <p>
-              In this frame, building software is care work. Feedback loops are tight and relational because you know the people relying on it. Code is transparent, remixable, and co-stewarded. This is technology as craft and community service.
-            </p>
-
-            <div className="my-6 sm:my-8">
-              
-            </div>
-
-            <p>Lately, we've been building some new ones together:</p>
 
             <ul className="space-y-2 ml-4 sm:ml-6">
               <li>
@@ -127,25 +92,7 @@ export const FeaturedStory = () => {
               </li>
             </ul>
 
-            <h3 className="text-xl sm:text-2xl font-bold mt-8 mb-4">Care, Cooperation, Curiosity</h3>
-
-            <p>
-              In neighborhoods across the US, we are seeing people gather to talk and play, share their stories and stuff, and act on plans together. Care, cooperation, and curiosity are not abstract ideals – they are the building blocks of every collective action we're experiencing.
-            </p>
-
-            <p>
-              These are not qualities we have to manufacture. They are capacities already within us, waiting for the right conditions and invitations. My work in my community is about creating those conditions – small cultural infrastructures, local experiments, and tools that invite us to remember and practice who we already are. Our work at the Relational Tech Project is to create a new commons for this cultural project: community knowledge about how to build differently, remixable examples that can spread from neighborhood to neighborhood, and an open-source toolkit that becomes our workbench for relational technology.
-            </p>
-
-            <p>
-              The Outer Sunset story is one thread in a bigger tapestry. Across neighborhoods and towns, people are not waiting for platforms — we're making them, hyper-locally, with the people around us. Sometimes they're flyers and clipboards. Sometimes they're shared spreadsheets or little websites. Sometimes they're small, home-cooked apps. The point isn't scale — it's whether what we build brings us closer.
-            </p>
-
-            <p>
-              I am in pursuit of generalized reciprocity at the neighborhood level: the loops of caring about, for, and with one another. I believe we can act this out publicly, and then feel it together. In that practice lies the possibility of transforming not only our neighborhoods, but the culture of disconnection itself.
-            </p>
-
-            <p className="text-base sm:text-lg font-medium bg-secondary/30 border border-border p-4 sm:p-6 rounded-xl">
+            <p className="text-base sm:text-lg font-medium bg-secondary/30 border border-border p-4 sm:p-6 rounded-xl mt-8">
               So here's my invitation: take any of this — coffee and donuts, a group chat, an offers-needs-dreams circle, a neighbor hub, a local event site, a story circle — and <strong>remix it for your own unfolding story</strong>. Try something humble, and see what happens when people show up, care for each other, and build together. That's how new culture takes root.
             </p>
           </div>
