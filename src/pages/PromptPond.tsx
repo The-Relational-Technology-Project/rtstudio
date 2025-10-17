@@ -33,6 +33,19 @@ const PromptPond = () => {
     };
     loadPrompts();
   }, []);
+
+  // Scroll to specific prompt if hash is present
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash && prompts.length > 0) {
+      setTimeout(() => {
+        const element = document.getElementById(hash);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+    }
+  }, [prompts]);
   const handlePromptSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -128,13 +141,13 @@ const PromptPond = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6" data-tour="prompts-grid">
-          {prompts.length === 0 ? <p className="text-muted-foreground col-span-2">No prompts yet. Be the first to share!</p> : prompts.map(prompt => <PromptCard key={prompt.id} id={prompt.id} title={prompt.title} category={prompt.category} examplePrompt={prompt.example_prompt} description={prompt.description} exampleUrl={prompt.title === "Hyperlocal Neighbor Hubs" ? "https://cozycorner.place/" : "#"} onRemix={promptText => {
+          {prompts.length === 0 ? <p className="text-muted-foreground col-span-2">No prompts yet. Be the first to share!</p> : prompts.map(prompt => <div key={prompt.id} id={prompt.id}><PromptCard id={prompt.id} title={prompt.title} category={prompt.category} examplePrompt={prompt.example_prompt} description={prompt.description} exampleUrl={prompt.title === "Hyperlocal Neighbor Hubs" ? "https://cozycorner.place/" : "#"} onRemix={promptText => {
           setRemixPrompt(promptText);
           window.scrollTo({
             top: 0,
             behavior: 'smooth'
           });
-        }} />)}
+        }} /></div>)}
         </div>
       </main>
     </div>;

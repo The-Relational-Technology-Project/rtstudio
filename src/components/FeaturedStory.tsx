@@ -20,7 +20,7 @@ export const FeaturedStory = () => {
             </p>
 
             <p>
-              Our first piece of relational tech was a small <Link to="/prompt-pond" className="text-primary hover:underline font-medium">paper flyer</Link> that I co-created and co-distributed with my five-year-old daughter. We invited neighbors to a coffee and donuts hangout, just to say hello and consider forming a group.
+              Our first piece of relational tech was a small paper flyer that I co-created and co-distributed with my five-year-old daughter. We invited neighbors to a coffee and donuts hangout, just to say hello and consider forming a group.
             </p>
 
             <img src={flyerImage} alt="Coffee and donuts flyer invitation" className="w-full rounded-lg my-6" />
@@ -32,27 +32,27 @@ export const FeaturedStory = () => {
             <img src={coffeeAndDonutsImage} alt="Coffee and donuts gathering in the neighborhood" className="w-full rounded-lg my-6" />
 
             <p>
-              From there, we set up a WhatsApp group and I built a simple <Link to="/prompt-pond" className="text-primary hover:underline font-medium">neighbor hub</Link> at cozycorner.place. The stated point of the group was "support each other and plan our next party." When I asked what kind of party, people suggested closing the street so kids could play and everyone would know something social was happening. Soon we were planning our first block party.
+              From there, we set up a WhatsApp group and I built a simple <Link to="/prompt-pond#2285c760-50c0-4175-8b20-e361da86f391" className="text-primary hover:underline font-medium">neighbor hub</Link> at cozycorner.place. The stated point of the group was "support each other and plan our next party." When I asked what kind of party, people suggested closing the street so kids could play and everyone would know something social was happening. Soon we were planning our first block party.
             </p>
 
             <p>
-              My favorite early use of the hub was a simple sign-up for block party jobs and supplies. I could see coverage and gaps at a glance, then draft a day-of plan that went to 20+ volunteers. It was surreal to watch someone wave hello on the sidewalk, then minutes later sign up to help out.
+              My favorite early use of the hub was a simple sign-up for <Link to="/prompt-pond#795f759e-c9e3-4d63-8890-21dd8283dcb5" className="text-primary hover:underline font-medium">block party jobs and supplies</Link>. I could see coverage and gaps at a glance, then draft a day-of plan that went to 20+ volunteers. It was surreal to watch someone wave hello on the sidewalk, then minutes later sign up to help out.
             </p>
 
             <p>
-              As I paid attention to other block parties and third spaces, I noticed plenty of activity but no digital bulletin board. That inspired <Link to="/prompt-pond" className="text-primary hover:underline font-medium">Outer Sunset Today</Link>, a neighborhood calendar that pulls from dozens of sites and menus into one place. It lets anyone upload a flyer, which AI scans and formats for review. People were really excited to see this! Building this also led me to sketch out a Neighborhood API: a shared format for how neighbors, stewards, and organizations might publish events and updates and other things relevant to neighborhood life, with the Outer Sunset as a reference implementation.
+              As I paid attention to other block parties and third spaces, I noticed plenty of activity but no digital bulletin board. That inspired <Link to="/prompt-pond#3e51e21f-79df-40a3-9a0a-3687e6ab2f1d" className="text-primary hover:underline font-medium">Outer Sunset Today</Link>, a neighborhood calendar that pulls from dozens of sites and menus into one place. It lets anyone upload a flyer, which AI scans and formats for review. People were really excited to see this! Building this also led me to sketch out a <a href="https://github.com/The-Relational-Technology-Project/neighborhood-api" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Neighborhood API</a>: a shared format for how neighbors, stewards, and organizations might publish events and updates and other things relevant to neighborhood life, with the Outer Sunset as a reference implementation.
             </p>
 
             <img src={whatsappFeedbackImage} alt="WhatsApp feedback about Outer Sunset Today" className="w-full max-w-sm mx-auto rounded-lg my-6" />
 
             <p>
-              Mid-spring, a friend mentioned buying party supplies they wanted other families to use, too. He had this intention but no system to offer them up. That night I built the first version of <Link to="/prompt-pond" className="text-primary hover:underline font-medium">Community Supplies</Link> and texted him the link! Our local mutual aid group picked it up weeks later, asking me if they could spread it into parents' groups.
+              Mid-spring, a friend mentioned buying party supplies they wanted other families to use, too. He had this intention but no system to offer them up. That night I built the first version of <Link to="/prompt-pond#32f40f6c-879c-4269-bee7-01362ed8ea8f" className="text-primary hover:underline font-medium">Community Supplies</Link> and texted him the link! Our local mutual aid group picked it up weeks later, asking me if they could spread it into parents' groups.
             </p>
 
             <img src={birthdaySupplySiteImage} alt="Text conversation about Community Supplies site" className="w-full max-w-sm mx-auto rounded-lg my-6" />
 
             <p>
-              Other pieces fell into place as needed: a custom linktree-like site at byfor.us to help me do neighborhood demos, a human-readable <Link to="/prompt-pond" className="text-primary hover:underline font-medium">privacy and terms page</Link>, and a reusable footer that invited remixing each tool.
+              Other pieces fell into place as needed: a custom linktree-like site at byfor.us to help me do neighborhood demos, a human-readable <Link to="/prompt-pond#479bb82a-7276-4aba-8f6a-0e16f707dd4e" className="text-primary hover:underline font-medium">privacy and terms page</Link>, and a <Link to="/prompt-pond#65bfd6d7-b686-489e-8934-9261494a8fcf" className="text-primary hover:underline font-medium">reusable footer</Link> that invited remixing each tool.
             </p>
 
             <p>
@@ -68,7 +68,7 @@ export const FeaturedStory = () => {
             </p>
 
             <p>
-              Meanwhile, my curiosity about neighbors' stories grew! Inspired by the Human Library project, I created <Link to="/prompt-pond" className="text-primary hover:underline font-medium">Neighbor Stories</Link> as a way to organize small circles in local third spaces. My first attempt asked neighbors to propose stories – but the initial group was unsure of what to propose. Recently, I flipped the design to shared prompts that anyone could answer. My next step is to print flyers with QR codes for little free libraries.
+              Meanwhile, my curiosity about neighbors' stories grew! Inspired by the Human Library project, I created <Link to="/prompt-pond#a51ad35d-afd8-4142-8d58-2aebe90b62d1" className="text-primary hover:underline font-medium">Neighbor Stories</Link> as a way to organize small circles in local third spaces. My first attempt asked neighbors to propose stories – but the initial group was unsure of what to propose. Recently, I flipped the design to shared prompts that anyone could answer. My next step is to print flyers with QR codes for little free libraries.
             </p>
 
             <p className="text-base sm:text-lg font-medium bg-secondary/30 border border-border p-4 sm:p-6 rounded-xl mt-8">
