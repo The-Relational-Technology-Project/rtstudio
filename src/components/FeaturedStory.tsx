@@ -1,3 +1,9 @@
+import flyerImage from "@/assets/flyer.png";
+import coffeeAndDonutsImage from "@/assets/coffee_and_donuts.jpeg";
+import whatsappImage from "@/assets/whatsapp_screenshot.png";
+import blockPartyImage from "@/assets/block_party.png";
+import chalkFlyersImage from "@/assets/chalk_flyers.png";
+
 export const FeaturedStory = () => {
   return <article className="mb-8 sm:mb-12">
       <div className="border-l-4 border-l-accent bg-card rounded-lg overflow-hidden shadow-lg">
@@ -15,9 +21,13 @@ export const FeaturedStory = () => {
               Our first piece of relational tech was a small paper flyer that I co-created and co-distributed with my five-year-old daughter. We invited neighbors to a coffee and donuts hangout, just to say hello and consider forming a group.
             </p>
 
+            <img src={flyerImage} alt="Coffee and donuts flyer invitation" className="w-full rounded-lg my-6" />
+
             <p>
               The next tool was a sign-up sheet sitting beside the donuts. It gathered contact info, ideas, and votes on our block nickname ("Cozy Corner"). Neighbors also left little notes of gratitude (unprompted, very sweet) that became visible to all.
             </p>
+
+            <img src={coffeeAndDonutsImage} alt="Coffee and donuts gathering in the neighborhood" className="w-full rounded-lg my-6" />
 
             <p>
               From there, we set up a WhatsApp group and I built a simple neighbor hub at cozycorner.place. The stated point of the group was "support each other and plan our next party." When I asked what kind of party, people suggested closing the street so kids could play and everyone would know something social was happening. Soon we were planning our first block party.
@@ -31,6 +41,8 @@ export const FeaturedStory = () => {
               As I paid attention to other block parties and third spaces, I noticed plenty of activity but no digital bulletin board. That inspired Outer Sunset Today, a neighborhood calendar that pulls from dozens of sites and menus into one place. It lets anyone upload a flyer, which AI scans and formats for review. People were really excited to see this! Building this also led me to sketch out a Neighborhood API: a shared format for how neighbors, stewards, and organizations might publish events and updates and other things relevant to neighborhood life, with the Outer Sunset as a reference implementation.
             </p>
 
+            <img src={whatsappImage} alt="WhatsApp conversation about Community Supplies" className="w-full max-w-sm mx-auto rounded-lg my-6" />
+
             <p>
               Mid-spring, a friend mentioned buying party supplies they wanted other families to use, too. He had this intention but no system to offer them up. That night I built the first version of Community Supplies and texted him the link! Our local mutual aid group picked it up weeks later, asking me if they could spread it into parents' groups.
             </p>
@@ -42,6 +54,10 @@ export const FeaturedStory = () => {
             <p>
               For the September block party, we spread the word through email, chats, posters, and chalk signs. I printed handouts to orient folks, introduce the hub and WhatsApp, and share ideas for neighbor coupons and resilience frameworks (the wind kept us from using them all that day, rocks kept the critical ones in sight). The joyful party itself seeded the next round of ideas: digital coupons, a disaster prep page, and a system to extend microgrants for gatherings across SF. (Perhaps other blocks could get support for mini gatherings in the Spring and larger gatherings in the Fall.)
             </p>
+
+            <img src={blockPartyImage} alt="September block party with neighbors gathered" className="w-full rounded-lg my-6" />
+
+            <img src={chalkFlyersImage} alt="Chalk sign announcing neighbor block party" className="w-full rounded-lg my-6" />
 
             <p>
               It's worth noting that some experiments are on pause. A local organizer imagined using the same tools to care for Sunset Dunes Park, starting with community-led sand abatement. The organizing tool is ready, but because the park is so politically charged, we've held off for now.
