@@ -121,11 +121,19 @@ export const StoryCard = ({ id, title, story, attribution, fullStory }: StoryCar
     <Card className="border-l-4 border-l-accent hover:shadow-md transition-shadow">
       <CardContent className="p-4 sm:p-6">
         <h3 className="text-base sm:text-lg font-semibold font-fraunces mb-2">{title}</h3>
-        <p className="text-sm mb-4 leading-relaxed">{story}</p>
-        <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
-        
-        {showFullStory && fullStory && (
-          <div className="prose prose-sm max-w-none mb-4 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: fullStory }} />
+        {!showFullStory && (
+          <>
+            <p className="text-sm mb-4 leading-relaxed">{story}</p>
+            <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
+          </>
+        )}
+        {showFullStory && (
+          <>
+            <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
+            {fullStory && (
+              <div className="prose prose-sm max-w-none mb-4 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: fullStory }} />
+            )}
+          </>
         )}
         
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
