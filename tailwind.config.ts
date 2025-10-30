@@ -61,6 +61,11 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        page: {
+          stories: "hsl(var(--page-stories))",
+          prompts: "hsl(var(--page-prompts))",
+          tools: "hsl(var(--page-tools))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

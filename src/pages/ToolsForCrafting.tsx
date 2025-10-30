@@ -105,7 +105,7 @@ const ToolsForCrafting = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-page-tools">
       <TopNav />
       
       <div className="flex-1 flex overflow-hidden">
