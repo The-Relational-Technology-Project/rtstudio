@@ -86,7 +86,7 @@ const PromptPond = () => {
       setIsSubmitting(false);
     }
   };
-  return <div className="min-h-screen flex flex-col bg-page-prompts">
+  return <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
       
       <div className="flex-1 flex overflow-hidden">
