@@ -125,10 +125,18 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps)
         </div>
 
         {messages.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-center py-6 space-y-2">
-            <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
-              {getContextMessage()}
-            </p>
+          <div className="flex-1 flex flex-col items-center justify-center text-center px-4 py-8">
+            <div className="space-y-4 max-w-sm">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                <Sparkles className="w-6 h-6 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-base font-semibold">Start a conversation</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {getContextMessage()}
+                </p>
+              </div>
+            </div>
           </div>
         ) : (
           <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto pr-2 mb-4">
