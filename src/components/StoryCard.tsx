@@ -121,93 +121,166 @@ export const StoryCard = ({ id, title, story, attribution, fullStory }: StoryCar
     <Card className={`border-l-4 border-l-accent hover:shadow-md transition-shadow ${showFullStory ? 'lg:col-span-2' : ''}`}>
       <CardContent className="p-4 sm:p-6">
         <div className={showFullStory ? 'lg:max-w-4xl lg:mx-auto' : ''}>
-        <h3 className="text-base sm:text-lg font-semibold font-fraunces mb-2">{title}</h3>
-        {!showFullStory && (
+        {showFullStory ? (
           <>
-            <p className="text-sm mb-4 leading-relaxed">{story}</p>
-            <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
-          </>
-        )}
-        {showFullStory && (
-          <>
-            <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
-            {fullStory && (
-              <div className="prose prose-sm max-w-none mb-4 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: fullStory }} />
-            )}
-          </>
-        )}
-        
-        <div className="flex flex-col sm:flex-row gap-2 mb-4">
-          {fullStory && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowFullStory(!showFullStory)} 
-              className="w-full sm:w-auto"
-            >
-              {showFullStory ? "Hide Full Story" : "Read Full Story"}
-            </Button>
-          )}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleExpand} 
-            className="w-full sm:w-auto"
-          >
-            {isExpanded ? "Hide Notes" : "Notes"}
-          </Button>
-          
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex-1">
+                <h3 className="text-base sm:text-lg font-semibold font-fraunces mb-2">{title}</h3>
+                <p className="text-xs text-muted-foreground">— {attribution}</p>
+              </div>
               <Button 
                 variant="outline" 
                 size="sm" 
+                onClick={() => setShowFullStory(false)} 
+                className="shrink-0"
+              >
+                Hide Full Story
+              </Button>
+            </div>
+            {fullStory && (
+              <div className="prose prose-sm max-w-none mb-4 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: fullStory }} />
+            )}
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExpand} 
                 className="w-full sm:w-auto"
               >
-                Get in Touch
+                {isExpanded ? "Hide Notes" : "Notes"}
               </Button>
-            </DialogTrigger>
-            <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Get in touch</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
-                  <Textarea
-                    id="message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={4}
-                    required
-                  />
-                </div>
-                <Button type="submit" disabled={isSubmitting} className="w-full">
-                  {isSubmitting ? "Sending..." : "Send Message"}
+              
+              <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full sm:w-auto"
+                  >
+                    Get in Touch
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Get in touch</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="message">Message</Label>
+                      <Textarea
+                        id="message"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        rows={4}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" disabled={isSubmitting} className="w-full">
+                      {isSubmitting ? "Sending..." : "Send Message"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </>
+        ) : (
+          <>
+            <h3 className="text-base sm:text-lg font-semibold font-fraunces mb-2">{title}</h3>
+            <p className="text-sm mb-4 leading-relaxed">{story}</p>
+            <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
+            
+            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              {fullStory && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowFullStory(true)} 
+                  className="w-full sm:w-auto"
+                >
+                  Read Full Story
                 </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExpand} 
+                className="w-full sm:w-auto"
+              >
+                {isExpanded ? "Hide Notes" : "Notes"}
+              </Button>
+              
+              <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full sm:w-auto"
+                  >
+                    Get in Touch
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="w-[calc(100%-2rem)] sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Get in touch</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="message">Message</Label>
+                      <Textarea
+                        id="message"
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        rows={4}
+                        required
+                      />
+                    </div>
+                    <Button type="submit" disabled={isSubmitting} className="w-full">
+                      {isSubmitting ? "Sending..." : "Send Message"}
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </>
+        )}
 
         {isExpanded && (
           <div className="border-t pt-4 space-y-4">
