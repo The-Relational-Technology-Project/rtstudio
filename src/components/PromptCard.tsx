@@ -46,13 +46,13 @@ export const PromptCard = ({ title, examplePrompt, description, exampleUrl, onRe
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{description}</p>
         )}
         
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-wrap gap-2">
           {exampleUrl && (
             <Button
               variant="outline"
               size="sm"
               asChild
-              className="w-full sm:w-auto flex-1"
+              className="flex-1 min-w-[100px]"
             >
               <a href={exampleUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4 mr-2" />
@@ -62,7 +62,7 @@ export const PromptCard = ({ title, examplePrompt, description, exampleUrl, onRe
           )}
           <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto flex-1">
+              <Button variant="outline" size="sm" className="flex-1 min-w-[100px]">
                 Read
               </Button>
             </DialogTrigger>
@@ -89,7 +89,7 @@ export const PromptCard = ({ title, examplePrompt, description, exampleUrl, onRe
           <Button 
             variant="outline" 
             size="sm" 
-            className="w-full sm:w-auto flex-1"
+            className="flex-1 min-w-[100px]"
             onClick={handleRemix}
           >
             <Sparkles className="w-4 h-4 mr-2" />
