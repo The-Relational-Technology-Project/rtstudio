@@ -142,12 +142,12 @@ export const StoryCard = ({ id, title, story, attribution, fullStory }: StoryCar
             {fullStory && (
               <div className="prose prose-sm max-w-none mb-4 text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: fullStory }} />
             )}
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <div className="flex flex-col md:flex-row gap-2 mb-4">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleExpand} 
-                className="w-full sm:w-auto"
+                className="w-full md:w-auto"
               >
                 <Pencil className="w-4 h-4 mr-2" />
                 {isExpanded ? "Hide Notes" : "Notes"}
@@ -158,7 +158,7 @@ export const StoryCard = ({ id, title, story, attribution, fullStory }: StoryCar
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="w-full sm:w-auto"
+                    className="w-full md:w-auto"
                   >
                     <Mail className="w-4 h-4 mr-2" />
                     Get in Touch
@@ -212,13 +212,13 @@ export const StoryCard = ({ id, title, story, attribution, fullStory }: StoryCar
             <p className="text-sm mb-4 leading-relaxed">{story}</p>
             <p className="text-xs text-muted-foreground mb-4">— {attribution}</p>
             
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+            <div className="flex flex-col md:flex-row gap-2 mb-4">
               {fullStory && (
-              <Button 
+                <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setShowFullStory(true)} 
-                  className="w-full sm:w-auto"
+                  className="w-full md:w-auto"
                 >
                   <BookOpen className="w-4 h-4 mr-2" />
                   Read Full Story
@@ -228,7 +228,7 @@ export const StoryCard = ({ id, title, story, attribution, fullStory }: StoryCar
                 variant="outline" 
                 size="sm" 
                 onClick={handleExpand} 
-                className="w-full sm:w-auto"
+                className="w-full md:w-auto"
               >
                 <Pencil className="w-4 h-4 mr-2" />
                 {isExpanded ? "Hide Notes" : "Notes"}
@@ -239,7 +239,7 @@ export const StoryCard = ({ id, title, story, attribution, fullStory }: StoryCar
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="w-full sm:w-auto"
+                    className="w-full md:w-auto"
                   >
                     <Mail className="w-4 h-4 mr-2" />
                     Get in Touch
