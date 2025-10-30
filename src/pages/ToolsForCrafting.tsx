@@ -113,12 +113,9 @@ const ToolsForCrafting = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex-1">
-            <h2 className="text-3xl sm:text-4xl font-black font-fraunces mb-3 sm:mb-2">Tools for Crafting</h2>
-            <p className="text-muted-foreground mb-3 sm:mb-4 text-sm sm:text-base">
-              Use the tools. Share your tricks. Join a play group.
-            </p>
-            <p className="text-xs sm:text-sm italic text-muted-foreground leading-relaxed">
-              Every tool is better when shared. Add your tips, and join play groups when a handful of builders are ready.
+            <h2 className="text-3xl sm:text-4xl font-black font-fraunces mb-2">Tools for Crafting</h2>
+            <p className="text-muted-foreground text-sm">
+              Check out tools, add your notes, and join a play group.
             </p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
