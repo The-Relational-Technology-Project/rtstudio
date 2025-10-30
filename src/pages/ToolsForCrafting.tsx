@@ -195,7 +195,7 @@ const ToolsForCrafting = () => {
       </main>
       
       {!isMobile && (
-        <aside className="hidden lg:block w-96 border-l border-border bg-background sticky top-[57px] h-[calc(100vh-57px)] overflow-y-auto">
+        <aside className="hidden lg:block w-96 border-l border-border bg-background">
           <div className="h-full p-4">
             <Sidekick />
           </div>

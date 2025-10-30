@@ -49,9 +49,9 @@ All colors MUST be HSL.
     --sidebar-ring: 16 55% 50%;
 
     /* Page-specific backgrounds */
-    --page-stories: 25 45% 94%;
-    --page-prompts: 35 40% 93%;
-    --page-tools: 30 35% 90%;
+    --page-stories: 25 50% 96%;
+    --page-prompts: 40 45% 88%;
+    --page-tools: 18 30% 85%;
   }
 
   .dark {
@@ -94,9 +94,9 @@ All colors MUST be HSL.
     --sidebar-ring: 16 55% 55%;
 
     /* Page-specific backgrounds - dark mode */
-    --page-stories: 20 25% 14%;
-    --page-prompts: 20 22% 13%;
-    --page-tools: 22 20% 15%;
+    --page-stories: 20 30% 16%;
+    --page-prompts: 25 20% 10%;
+    --page-tools: 15 25% 12%;
   }
 }
 
