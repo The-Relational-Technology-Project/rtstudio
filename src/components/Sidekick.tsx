@@ -116,8 +116,9 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps)
   };
 
   return (
-    <Card className="h-full flex flex-col border border-border shadow-sm">
-      <div className="p-4 flex-1 flex flex-col overflow-hidden">
+    <div className="fixed top-[57px] left-1/2 -translate-x-1/2 w-full max-w-2xl z-40 px-4 py-4">
+      <Card className="flex flex-col border border-border shadow-lg max-h-[400px]">
+        <div className="p-4 flex flex-col overflow-hidden h-full">
         <div className="flex items-center gap-2 mb-4 shrink-0">
           <Sparkles className="w-5 h-5 text-primary" />
           <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
@@ -185,6 +186,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps)
           </Button>
         </form>
       </div>
-    </Card>
+      </Card>
+    </div>
   );
 };

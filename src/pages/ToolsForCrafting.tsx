@@ -107,10 +107,10 @@ const ToolsForCrafting = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
+      <Sidekick />
       
-      <div className="flex-1 flex overflow-hidden">
-        <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+      <div className="flex-1">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12 pt-[440px]">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 sm:mb-8">
           <div className="flex-1">
             <h2 className="text-3xl sm:text-4xl font-black font-fraunces mb-2">Tools for Crafting</h2>
@@ -192,15 +192,6 @@ const ToolsForCrafting = () => {
           ))}
           </div>
         </div>
-      </main>
-      
-      {!isMobile && (
-        <aside className="hidden lg:block w-96 border-l border-border bg-background">
-          <div className="h-full p-4">
-            <Sidekick />
-          </div>
-        </aside>
-      )}
       </div>
     </div>
   );
