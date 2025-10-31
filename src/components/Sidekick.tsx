@@ -21,14 +21,18 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps)
   const { toast } = useToast();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+  const scrollToLatestMessage = () => {
+    if (messagesContainerRef.current && messages.length > 0) {
+      const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-index]');
+      const lastMessageElement = messageElements[messageElements.length - 1];
+      if (lastMessageElement) {
+        lastMessageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
   };
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToLatestMessage();
   }, [messages]);
 
   useEffect(() => {
@@ -135,7 +139,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps)
         ) : (
           <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto pr-2 mb-4">
             {messages.map((message, idx) => (
-              <div key={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div key={idx} data-message-index={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[85%] p-3 rounded-xl ${
                     message.role === "user"
