@@ -120,7 +120,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps)
   };
 
   return (
-    <div id="sidekick-chat" className="w-full max-w-5xl mx-auto mb-8">
+    <div id="sidekick-chat" className="w-full max-w-5xl mx-auto mb-8 scroll-mt-20">
       <Card className="flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background max-h-[600px]">
         <div className="p-4 flex flex-col overflow-hidden h-full">
         <div className="flex items-center gap-2 mb-4 shrink-0">
