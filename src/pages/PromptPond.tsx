@@ -140,10 +140,13 @@ const PromptPond = () => {
               {prompts.length === 0 ? <p className="text-muted-foreground col-span-2">No prompts yet. Be the first to share!</p> : prompts.map(prompt => <div key={prompt.id} id={prompt.id}><PromptCard id={prompt.id} title={prompt.title} category={prompt.category} examplePrompt={prompt.example_prompt} description={prompt.description} exampleUrl={prompt.title === "Hyperlocal Neighbor Hubs" ? "https://cozycorner.place/" : "#"} onRemix={promptText => {
               setRemixPrompt(promptText);
               if (!isMobile) {
-                window.scrollTo({
-                  top: 0,
-                  behavior: 'smooth'
-                });
+                const sidekickElement = document.getElementById('sidekick-chat');
+                if (sidekickElement) {
+                  sidekickElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                  });
+                }
               }
             }} /></div>)}
             </div>
