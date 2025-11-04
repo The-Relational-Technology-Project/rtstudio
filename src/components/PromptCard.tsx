@@ -71,8 +71,18 @@ export const PromptCard = ({ title, examplePrompt, description, exampleUrl, onRe
                 <DialogTitle className="font-fraunces">{title}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-120px)] pr-2 sm:pr-4">
-                <div className="bg-secondary/50 border border-border p-3 sm:p-4 rounded-xl">
-                  <pre className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed font-sans">{examplePrompt}</pre>
+                <div className="bg-secondary/50 border border-border p-4 sm:p-6 rounded-xl">
+                  <div className="text-sm sm:text-base leading-relaxed font-sans space-y-4">
+                    {examplePrompt.split(/\\n\\n/).map((section, idx) => (
+                      <div key={idx} className="space-y-2">
+                        {section.split(/\\n/).map((line, lineIdx) => (
+                          <p key={lineIdx} className={line.trim() ? "" : "h-2"}>
+                            {line}
+                          </p>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <Button
                   onClick={() => copyToClipboard(examplePrompt)}
