@@ -132,25 +132,41 @@ serve(async (req) => {
       });
     }
 
-    // Build library context
+    // Fetch IDs for the relevant items to include in library item markers
+    const promptIds = relevantPrompts.length > 0 
+      ? (await supabase.from('prompts').select('id, title').in('title', relevantPrompts.map(p => p.title))).data || []
+      : [];
+    
+    const storyIds = relevantStories.length > 0
+      ? (await supabase.from('stories').select('id, title').in('title', relevantStories.map(s => s.title || 'Untitled').filter(t => t !== 'Untitled'))).data || []
+      : [];
+    
+    const toolIds = relevantTools.length > 0
+      ? (await supabase.from('tools').select('id, name').in('name', relevantTools.map(t => t.name))).data || []
+      : [];
+
+    // Build library context with IDs for markers
     let libraryContext = '';
     
     if (relevantPrompts.length > 0) {
-      libraryContext += `\n\nRELEVANT PROMPTS FROM THE LIBRARY:\n${relevantPrompts.map(p => 
-        `\n---\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nExample Prompt:\n${p.example_prompt}\n---`
-      ).join('\n')}`;
+      libraryContext += `\n\nRELEVANT PROMPTS FROM THE LIBRARY:\n${relevantPrompts.map(p => {
+        const promptId = promptIds.find(pi => pi.title === p.title)?.id || 'unknown';
+        return `\n---\nID: ${promptId}\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nExample Prompt:\n${p.example_prompt}\n---`;
+      }).join('\n')}`;
     }
 
     if (relevantStories.length > 0) {
-      libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map(s => 
-        `\n---\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nStory:\n${s.full_story_text || s.story_text}\n---`
-      ).join('\n')}`;
+      libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map(s => {
+        const storyId = storyIds.find(si => si.title === (s.title || 'Untitled'))?.id || 'unknown';
+        return `\n---\nID: ${storyId}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
+      }).join('\n')}`;
     }
 
     if (relevantTools.length > 0) {
-      libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map(t => 
-        `\n---\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\n---`
-      ).join('\n')}`;
+      libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map(t => {
+        const toolId = toolIds.find(ti => ti.name === t.name)?.id || 'unknown';
+        return `\n---\nID: ${toolId}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\n---`;
+      }).join('\n')}`;
     }
 
     const systemPrompt = `You are Sidekick, an AI assistant for the Relational Technology Studio. You help people explore stories, prompts, and tools from the library, and guide them in creating relational tech for their neighborhoods.
@@ -196,7 +212,16 @@ YOUR STYLE:
 - When delivering a final prompt, make it clear, actionable, and ready to use
 - Celebrate the small-scale, hyperlocal nature of what they're building
 - Remember: these are village-scale tools built by and for neighbors
-- When referencing specific library items, mention their titles so users can find them
+
+IMPORTANT: When referencing specific library items from the context above, use this format in your response:
+[LIBRARY_ITEM:type:id:title]
+
+For example:
+- [LIBRARY_ITEM:story:123e4567-e89b-12d3-a456-426614174000:Community Garden Story]
+- [LIBRARY_ITEM:prompt:987fcdeb-51a2-43f7-b789-123456789abc:Block Party Prompt]
+- [LIBRARY_ITEM:tool:456def78-90ab-12cd-ef34-567890abcdef:Neighborhood Directory]
+
+Include 2-3 relevant library item markers naturally in your responses when you're discussing items from the context. This allows users to see preview cards and easily navigate to the full items in the library.
 
 IMPORTANT FOR PROMPT REMIXING:
 - Don't rush to deliver the prompt - gather context first

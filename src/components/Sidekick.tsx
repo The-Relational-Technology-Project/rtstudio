@@ -7,11 +7,26 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Copy, Send, Sparkles } from "lucide-react";
 import { useSidekick } from "@/contexts/SidekickContext";
+import { LibraryItemPreview } from "@/components/LibraryItemPreview";
 
 interface SidekickProps {
   initialPrompt?: string;
   onClearInitialPrompt?: () => void;
   fullPage?: boolean;
+}
+
+interface LibraryItemData {
+  id: string;
+  type: "story" | "prompt" | "tool";
+  title: string;
+  summary: string;
+  author?: string;
+  category?: string;
+}
+
+interface ParsedContent {
+  type: "text" | "library-item";
+  content: string | LibraryItemData;
 }
 
 export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false }: SidekickProps) => {
@@ -45,6 +60,108 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
 
   const getWelcomeMessage = () => {
     return "Welcome! I can help you learn about relational tech and build your own tools. What are we building today?";
+  };
+
+  const parseMessageContent = (content: string): ParsedContent[] => {
+    const parts: ParsedContent[] = [];
+    const regex = /\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(content)) !== null) {
+      // Add text before the match
+      if (match.index > lastIndex) {
+        const textContent = content.slice(lastIndex, match.index).trim();
+        if (textContent) {
+          parts.push({ type: "text", content: textContent });
+        }
+      }
+
+      // Add library item
+      const [, type, id, title] = match;
+      parts.push({
+        type: "library-item",
+        content: {
+          id,
+          type: type as "story" | "prompt" | "tool",
+          title,
+          summary: "", // Will be fetched if needed
+        },
+      });
+
+      lastIndex = match.index + match[0].length;
+    }
+
+    // Add remaining text
+    if (lastIndex < content.length) {
+      const textContent = content.slice(lastIndex).trim();
+      if (textContent) {
+        parts.push({ type: "text", content: textContent });
+      }
+    }
+
+    // If no library items were found, return the original content as text
+    if (parts.length === 0) {
+      parts.push({ type: "text", content });
+    }
+
+    return parts;
+  };
+
+  const fetchLibraryItemDetails = async (id: string, type: string): Promise<LibraryItemData | null> => {
+    try {
+      if (type === "story") {
+        const { data, error } = await supabase
+          .from("stories")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error || !data) return null;
+        
+        return {
+          id: data.id,
+          type: "story",
+          title: data.title || "Untitled Story",
+          summary: data.story_text.slice(0, 120) + "...",
+          author: data.attribution,
+        };
+      } else if (type === "prompt") {
+        const { data, error } = await supabase
+          .from("prompts")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error || !data) return null;
+
+        return {
+          id: data.id,
+          type: "prompt",
+          title: data.title,
+          summary: data.description || "No description",
+          category: data.category,
+        };
+      } else {
+        const { data, error } = await supabase
+          .from("tools")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (error || !data) return null;
+
+        return {
+          id: data.id,
+          type: "tool",
+          title: data.name,
+          summary: data.description,
+        };
+      }
+    } catch (error) {
+      console.error("Error fetching library item:", error);
+      return null;
+    }
   };
 
   const handleRemixPrompt = async (promptText: string) => {
@@ -158,30 +275,48 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
           </div>
         ) : (
           <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto pr-2 mb-4">
-            {messages.map((message, idx) => (
-              <div key={idx} data-message-index={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div
-                  className={`max-w-[85%] p-3 rounded-xl ${
-                    message.role === "user"
-                      ? "bg-primary/10 border border-primary/20 text-foreground"
-                      : "bg-secondary/50 border border-border"
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                  {message.role === "assistant" && (
-                    <Button
-                      onClick={() => copyToClipboard(message.content)}
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2 h-7 text-xs"
-                    >
-                      <Copy className="w-3 h-3 mr-1" />
-                      Copy
-                    </Button>
-                  )}
+            {messages.map((message, idx) => {
+              const parsedContent = message.role === "assistant"
+                ? parseMessageContent(message.content)
+                : [{ type: "text" as const, content: message.content }];
+
+              return (
+                <div key={idx} data-message-index={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+                  <div className={`max-w-[85%] ${message.role === "user" ? "" : "space-y-2"}`}>
+                    {parsedContent.map((part, partIndex) => {
+                      if (part.type === "text") {
+                        return (
+                          <div
+                            key={partIndex}
+                            className={`p-3 rounded-xl ${
+                              message.role === "user"
+                                ? "bg-primary/10 border border-primary/20 text-foreground"
+                                : "bg-secondary/50 border border-border"
+                            }`}
+                          >
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{part.content as string}</p>
+                            {message.role === "assistant" && partIndex === parsedContent.length - 1 && (
+                              <Button
+                                onClick={() => copyToClipboard(message.content)}
+                                variant="ghost"
+                                size="sm"
+                                className="mt-2 h-7 text-xs"
+                              >
+                                <Copy className="w-3 h-3 mr-1" />
+                                Copy
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      } else {
+                        const itemData = part.content as LibraryItemData;
+                        return <LibraryItemPreview key={partIndex} {...itemData} />;
+                      }
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
             {isLoading && (
               <div className="flex justify-start">
                 <div className="max-w-[85%] p-3 rounded-xl bg-secondary/50 border border-border">

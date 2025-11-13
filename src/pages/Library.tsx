@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { TopNav } from "@/components/TopNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -25,11 +25,13 @@ interface LibraryItem {
 
 const Library = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<LibraryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<ItemType | "all">("all");
   const [isContributeOpen, setIsContributeOpen] = useState(false);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
 
   useEffect(() => {
     const verifyAccess = async () => {
@@ -60,6 +62,26 @@ const Library = () => {
 
     verifyAccess();
   }, [navigate]);
+
+  // Handle deep linking from URL parameters
+  useEffect(() => {
+    const itemId = searchParams.get("item");
+    if (itemId && items.length > 0) {
+      setHighlightedItemId(itemId);
+      // Scroll to the item after a brief delay to ensure rendering
+      setTimeout(() => {
+        const element = document.getElementById(`library-item-${itemId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 100);
+
+      // Clear highlight after 3 seconds
+      setTimeout(() => {
+        setHighlightedItemId(null);
+      }, 3000);
+    }
+  }, [searchParams, items]);
 
   const fetchLibraryItems = async () => {
     try {
@@ -198,7 +220,15 @@ const Library = () => {
               </div>
             ) : (
               filteredItems.map((item) => (
-                <LibraryCard key={item.id} item={item} />
+                <div
+                  key={item.id}
+                  id={`library-item-${item.id}`}
+                  className={`transition-all duration-300 ${
+                    highlightedItemId === item.id ? "ring-2 ring-primary rounded-lg" : ""
+                  }`}
+                >
+                  <LibraryCard item={item} />
+                </div>
               ))
             )}
           </div>
