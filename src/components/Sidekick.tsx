@@ -44,7 +44,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   }, [initialPrompt]);
 
   const getWelcomeMessage = () => {
-    return "Welcome! I'm your Sidekick. I can help you explore our Library of stories, prompts, and tools, remix prompts for your neighborhood, or help you contribute your own ideas. What are we building today?";
+    return "Welcome! I can help you learn about relational tech and build your own tools. What are we building today?";
   };
 
   const handleRemixPrompt = async (promptText: string) => {
@@ -143,7 +143,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                   onClick={() => setInput("Help me find a prompt about neighbor gatherings")}
                   className="text-xs"
                 >
-                  Find a Prompt
+                  Remix a Prompt
                 </Button>
                 <Button 
                   variant="outline" 
