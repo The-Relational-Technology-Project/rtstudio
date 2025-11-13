@@ -11,9 +11,10 @@ import { useSidekick } from "@/contexts/SidekickContext";
 interface SidekickProps {
   initialPrompt?: string;
   onClearInitialPrompt?: () => void;
+  fullPage?: boolean;
 }
 
-export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps) => {
+export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false }: SidekickProps) => {
   const location = useLocation();
   const { messages, setMessages } = useSidekick();
   const [input, setInput] = useState("");
@@ -42,15 +43,8 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps)
     }
   }, [initialPrompt]);
 
-  const getContextMessage = () => {
-    if (location.pathname === '/') {
-      return "Ask me about the stories and the relational tech in them!";
-    } else if (location.pathname === '/prompt-pond') {
-      return "Share a prompt you'd like to adapt or ask me any questions you have!";
-    } else if (location.pathname === '/tools') {
-      return "Ask me which tools might work best for you or get recommendations based on your needs!";
-    }
-    return "Ask me anything about community stories, prompts, and tools!";
+  const getWelcomeMessage = () => {
+    return "Welcome! I'm your Sidekick. I can help you explore our Library of stories, prompts, and tools, remix prompts for your neighborhood, or help you contribute your own ideas. What are we building today?";
   };
 
   const handleRemixPrompt = async (promptText: string) => {
@@ -120,20 +114,46 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt }: SidekickProps)
   };
 
   return (
-    <div id="sidekick-chat" className="w-full max-w-5xl mx-auto mb-8 scroll-mt-20">
-      <Card className="flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background max-h-[600px]">
-        <div className="p-4 flex flex-col overflow-hidden h-full">
+    <div id="sidekick-chat" className={`w-full ${fullPage ? 'max-w-4xl' : 'max-w-5xl'} mx-auto ${!fullPage && 'mb-8'} scroll-mt-20`}>
+      <Card className={`flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background ${fullPage ? 'min-h-[600px]' : 'max-h-[600px]'}`}>
+        <div className="p-4 sm:p-6 flex flex-col overflow-hidden h-full">
         <div className="flex items-center gap-2 mb-4 shrink-0">
           <Sparkles className="w-5 h-5 text-primary" />
           <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
         </div>
 
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center text-center px-4 py-12">
-            <div className="space-y-2 max-w-xs">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {getContextMessage()}
+          <div className="flex items-center justify-center text-center px-4 py-8 sm:py-12 flex-1">
+            <div className="space-y-4 max-w-lg">
+              <p className="text-base sm:text-lg text-foreground leading-relaxed">
+                {getWelcomeMessage()}
               </p>
+              <div className="flex flex-wrap gap-2 justify-center pt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setInput("Show me some community stories")}
+                  className="text-xs"
+                >
+                  Browse Stories
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setInput("Help me find a prompt about neighbor gatherings")}
+                  className="text-xs"
+                >
+                  Find a Prompt
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setInput("What tools can help me organize a block party?")}
+                  className="text-xs"
+                >
+                  Explore Tools
+                </Button>
+              </div>
             </div>
           </div>
         ) : (

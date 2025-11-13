@@ -8,9 +8,8 @@ import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const navItems = [
-  { name: "Stories", path: "/" },
-  { name: "Prompt Pond", path: "/prompt-pond" },
-  { name: "Tools for Crafting", path: "/tools" },
+  { name: "Sidekick", path: "/" },
+  { name: "Library", path: "/library" },
 ];
 
 export const TopNav = () => {
@@ -19,9 +18,7 @@ export const TopNav = () => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const mobileNavItems = isMobile 
-    ? [...navItems, { name: "Sidekick", path: "/sidekick" }]
-    : navItems;
+  const mobileNavItems = navItems;
 
   return (
     <nav className="border-b border-border bg-background sticky top-0 z-50">

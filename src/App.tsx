@@ -3,13 +3,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import StoryBoard from "./pages/StoryBoard";
-import PromptPond from "./pages/PromptPond";
-import ToolsForCrafting from "./pages/ToolsForCrafting";
 import Auth from "./pages/Auth";
 import ChangePassword from "./pages/ChangePassword";
 import NotFound from "./pages/NotFound";
 import SidekickPage from "./pages/SidekickPage";
+import Library from "./pages/Library";
 import { TourProvider } from "./contexts/TourContext";
 import { SidekickProvider } from "./contexts/SidekickContext";
 import { Tour } from "./components/Tour";
@@ -26,10 +24,8 @@ const App = () => (
           <TourProvider>
             <Tour />
             <Routes>
-              <Route path="/" element={<StoryBoard />} />
-              <Route path="/prompt-pond" element={<PromptPond />} />
-              <Route path="/tools" element={<ToolsForCrafting />} />
-              <Route path="/sidekick" element={<SidekickPage />} />
+              <Route path="/" element={<SidekickPage />} />
+              <Route path="/library" element={<Library />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/change-password" element={<ChangePassword />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
