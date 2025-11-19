@@ -63,6 +63,48 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     });
   }, [messages]);
 
+  // Auto-send messages from context (e.g., from Library remix)
+  useEffect(() => {
+    const processContextMessages = async () => {
+      // Only process if we have messages, no loading, and the last message is from user
+      if (messages.length > 0 && !isLoading && messages[messages.length - 1].role === "user") {
+        // Check if this user message already has a response
+        const hasResponse = messages.length > 1 && 
+          messages.findIndex((m, idx) => 
+            m.role === "user" && 
+            m.content === messages[messages.length - 1].content &&
+            idx < messages.length - 1 &&
+            messages[idx + 1]?.role === "assistant"
+          ) !== -1;
+
+        if (!hasResponse) {
+          setIsLoading(true);
+          try {
+            const { data, error } = await supabase.functions.invoke("chat-remix", {
+              body: { messages }
+            });
+
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+
+            setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+          } catch (error) {
+            console.error("Chat error:", error);
+            toast({
+              title: "Error",
+              description: error instanceof Error ? error.message : "Failed to process message",
+              variant: "destructive",
+            });
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      }
+    };
+
+    processContextMessages();
+  }, [messages.length]);
+
   const getWelcomeMessage = () => {
     return "I can help you learn about relational tech and build your own tools. What are we crafting today?";
   };

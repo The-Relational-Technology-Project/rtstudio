@@ -45,7 +45,8 @@ export const LibraryCard = ({ item }: LibraryCardProps) => {
   };
 
   const handleDiscussInSidekick = () => {
-    const contextMessage = `Tell me more about this ${item.type}: "${item.title}"`;
+    const promptText = item.examplePrompt || item.title;
+    const contextMessage = `I'd like to remix this prompt: "${promptText}"`;
     setMessages([{ role: "user", content: contextMessage }]);
     navigate("/");
   };
