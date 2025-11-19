@@ -9,6 +9,11 @@ import { Copy, Send, Sparkles } from "lucide-react";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { LibraryItemPreview } from "@/components/LibraryItemPreview";
 
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
 interface SidekickProps {
   initialPrompt?: string;
   onClearInitialPrompt?: () => void;
@@ -32,6 +37,8 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   const [libraryItems, setLibraryItems] = useState<LibraryItemData[]>([]);
   const { toast } = useToast();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const lastProcessedIndexRef = useRef(-1);
+  const processedMessageIdsRef = useRef(new Set<number>());
 
   const scrollToLatestMessage = () => {
     if (messagesContainerRef.current && messages.length > 0) {
@@ -43,67 +50,72 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     }
   };
 
+  // Centralized API call function
+  const sendMessage = async (messagesToSend: Message[]) => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("chat-remix", {
+        body: { messages: messagesToSend }
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+    } catch (error) {
+      console.error("Chat error:", error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to process message",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Auto-scroll on new messages
   useEffect(() => {
     scrollToLatestMessage();
   }, [messages]);
 
+  // Handle initial prompt
   useEffect(() => {
     if (initialPrompt) {
-      handleRemixPrompt(initialPrompt);
+      setMessages([{ role: "user", content: initialPrompt }]);
       onClearInitialPrompt?.();
     }
-  }, [initialPrompt]);
+  }, [initialPrompt, onClearInitialPrompt]);
 
-  // Extract library items from assistant messages when messages change
+  // Extract library items from new assistant messages only
   useEffect(() => {
-    messages.forEach((message) => {
-      if (message.role === "assistant") {
+    messages.forEach((message, index) => {
+      if (message.role === "assistant" && !processedMessageIdsRef.current.has(index)) {
         extractLibraryItems(message.content);
+        processedMessageIdsRef.current.add(index);
       }
     });
   }, [messages]);
 
-  // Auto-send messages from context (e.g., from Library remix)
+  // Auto-send new user messages from context (e.g., from Library remix)
   useEffect(() => {
-    const processContextMessages = async () => {
-      // Only process if we have messages, no loading, and the last message is from user
-      if (messages.length > 0 && !isLoading && messages[messages.length - 1].role === "user") {
-        // Check if this user message already has a response
-        const hasResponse = messages.length > 1 && 
-          messages.findIndex((m, idx) => 
-            m.role === "user" && 
-            m.content === messages[messages.length - 1].content &&
-            idx < messages.length - 1 &&
-            messages[idx + 1]?.role === "assistant"
-          ) !== -1;
-
-        if (!hasResponse) {
-          setIsLoading(true);
-          try {
-            const { data, error } = await supabase.functions.invoke("chat-remix", {
-              body: { messages }
-            });
-
-            if (error) throw error;
-            if (data?.error) throw new Error(data.error);
-
-            setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
-          } catch (error) {
-            console.error("Chat error:", error);
-            toast({
-              title: "Error",
-              description: error instanceof Error ? error.message : "Failed to process message",
-              variant: "destructive",
-            });
-          } finally {
-            setIsLoading(false);
-          }
-        }
+    const processNewUserMessage = async () => {
+      const lastMessage = messages[messages.length - 1];
+      
+      // Only process if: new message exists, it's from user, we're not loading, and we haven't processed it yet
+      if (
+        messages.length > lastProcessedIndexRef.current + 1 &&
+        lastMessage?.role === "user" &&
+        !isLoading &&
+        (messages.length === 1 || messages[messages.length - 2]?.role !== "user")
+      ) {
+        lastProcessedIndexRef.current = messages.length - 1;
+        await sendMessage(messages);
       }
     };
 
-    processContextMessages();
-  }, [messages.length]);
+    processNewUserMessage();
+  }, [messages, isLoading]);
 
   const getWelcomeMessage = () => {
     return "I can help you learn about relational tech and build your own tools. What are we crafting today?";
@@ -139,118 +151,16 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     return content.replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**');
   };
 
-  const fetchLibraryItemDetails = async (id: string, type: string): Promise<LibraryItemData | null> => {
-    try {
-      if (type === "story") {
-        const { data, error } = await supabase
-          .from("stories")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (error || !data) return null;
-        
-        return {
-          id: data.id,
-          type: "story",
-          title: data.title || "Untitled Story",
-          summary: data.story_text.slice(0, 120) + "...",
-          author: data.attribution,
-        };
-      } else if (type === "prompt") {
-        const { data, error } = await supabase
-          .from("prompts")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (error || !data) return null;
-
-        return {
-          id: data.id,
-          type: "prompt",
-          title: data.title,
-          summary: data.description || "No description",
-          category: data.category,
-        };
-      } else {
-        const { data, error } = await supabase
-          .from("tools")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (error || !data) return null;
-
-        return {
-          id: data.id,
-          type: "tool",
-          title: data.name,
-          summary: data.description,
-        };
-      }
-    } catch (error) {
-      console.error("Error fetching library item:", error);
-      return null;
-    }
-  };
-
-  const handleRemixPrompt = async (promptText: string) => {
-    const userMessage = `Let's remix this prompt for my neighborhood!\n\n${promptText}`;
-    setMessages([{ role: "user", content: userMessage }]);
-    setIsLoading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("chat-remix", {
-        body: { messages: [{ role: "user", content: userMessage }] }
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
-    } catch (error) {
-      console.error("Chat error:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to process message",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
     const userMessage = input.trim();
     setInput("");
-
+    
     const newMessages = [...messages, { role: "user" as const, content: userMessage }];
     setMessages(newMessages);
-    setIsLoading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("chat-remix", {
-        body: { messages: newMessages }
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
-    } catch (error) {
-      console.error("Chat error:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send message",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    await sendMessage(newMessages);
   };
 
   const copyToClipboard = (text: string) => {
