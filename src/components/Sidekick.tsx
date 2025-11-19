@@ -24,16 +24,12 @@ interface LibraryItemData {
   category?: string;
 }
 
-interface ParsedContent {
-  type: "text" | "library-item";
-  content: string | LibraryItemData;
-}
-
 export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false }: SidekickProps) => {
   const location = useLocation();
   const { messages, setMessages } = useSidekick();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [libraryItems, setLibraryItems] = useState<LibraryItemData[]>([]);
   const { toast } = useToast();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -62,50 +58,34 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     return "Welcome! I can help you learn about relational tech and build your own tools. What are we building today?";
   };
 
-  const parseMessageContent = (content: string): ParsedContent[] => {
-    const parts: ParsedContent[] = [];
+  const extractLibraryItems = (content: string) => {
     const regex = /\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g;
-    let lastIndex = 0;
+    const newLibraryItems: LibraryItemData[] = [];
     let match;
 
     while ((match = regex.exec(content)) !== null) {
-      // Add text before the match
-      if (match.index > lastIndex) {
-        const textContent = content.slice(lastIndex, match.index).trim();
-        if (textContent) {
-          parts.push({ type: "text", content: textContent });
-        }
-      }
-
-      // Add library item
       const [, type, id, title] = match;
-      parts.push({
-        type: "library-item",
-        content: {
-          id,
-          type: type as "story" | "prompt" | "tool",
-          title,
-          summary: "", // Will be fetched if needed
-        },
+      newLibraryItems.push({
+        id,
+        type: type as "story" | "prompt" | "tool",
+        title,
+        summary: "",
       });
-
-      lastIndex = match.index + match[0].length;
     }
 
-    // Add remaining text
-    if (lastIndex < content.length) {
-      const textContent = content.slice(lastIndex).trim();
-      if (textContent) {
-        parts.push({ type: "text", content: textContent });
-      }
+    // Update library items state (add new items at the top)
+    if (newLibraryItems.length > 0) {
+      setLibraryItems(prev => {
+        const existingIds = prev.map(item => item.id);
+        const uniqueNewItems = newLibraryItems.filter(item => !existingIds.includes(item.id));
+        return [...uniqueNewItems, ...prev];
+      });
     }
+  };
 
-    // If no library items were found, return the original content as text
-    if (parts.length === 0) {
-      parts.push({ type: "text", content });
-    }
-
-    return parts;
+  const formatMessageContent = (content: string): string => {
+    // Replace [LIBRARY_ITEM:type:id:title] with just the title in the text
+    return content.replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**');
   };
 
   const fetchLibraryItemDetails = async (id: string, type: string): Promise<LibraryItemData | null> => {
@@ -231,10 +211,9 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   };
 
   return (
-    <div id="sidekick-chat" className={`w-full ${fullPage ? 'max-w-4xl' : 'max-w-5xl'} mx-auto ${!fullPage && 'mb-8'} scroll-mt-20`}>
-      <Card className={`flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background ${fullPage ? 'min-h-[600px]' : 'max-h-[600px]'}`}>
-        <div className="p-4 sm:p-6 flex flex-col overflow-hidden h-full">
-        <div className="flex items-center gap-2 mb-4 shrink-0">
+    <div id="sidekick-chat" className={`w-full ${fullPage ? 'max-w-4xl' : 'max-w-5xl'} mx-auto ${!fullPage && 'mb-8'} scroll-mt-20 flex flex-col gap-4`}>
+      <Card className={`flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background ${fullPage ? 'h-[600px]' : 'h-[600px]'}`}>
+        <div className="flex items-center gap-2 p-4 sm:p-6 pb-0 shrink-0">
           <Sparkles className="w-5 h-5 text-primary" />
           <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
         </div>
@@ -274,45 +253,55 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
             </div>
           </div>
         ) : (
-          <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto pr-2 mb-4">
+          <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto px-4 sm:px-6 py-4">
             {messages.map((message, idx) => {
-              const parsedContent = message.role === "assistant"
-                ? parseMessageContent(message.content)
-                : [{ type: "text" as const, content: message.content }];
+              // Extract library items from assistant messages
+              if (message.role === "assistant") {
+                extractLibraryItems(message.content);
+              }
+
+              // Format the message content
+              const displayContent = message.role === "assistant" 
+                ? formatMessageContent(message.content)
+                : message.content;
+
+              // Split by markdown bold (**text**) for rendering
+              const parts = displayContent.split(/(\*\*[^*]+\*\*)/g);
 
               return (
                 <div key={idx} data-message-index={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%] ${message.role === "user" ? "" : "space-y-2"}`}>
-                    {parsedContent.map((part, partIndex) => {
-                      if (part.type === "text") {
-                        return (
-                          <div
-                            key={partIndex}
-                            className={`p-3 rounded-xl ${
-                              message.role === "user"
-                                ? "bg-primary/10 border border-primary/20 text-foreground"
-                                : "bg-secondary/50 border border-border"
-                            }`}
-                          >
-                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{part.content as string}</p>
-                            {message.role === "assistant" && partIndex === parsedContent.length - 1 && (
-                              <Button
-                                onClick={() => copyToClipboard(message.content)}
-                                variant="ghost"
-                                size="sm"
-                                className="mt-2 h-7 text-xs"
-                              >
-                                <Copy className="w-3 h-3 mr-1" />
-                                Copy
-                              </Button>
-                            )}
-                          </div>
-                        );
-                      } else {
-                        const itemData = part.content as LibraryItemData;
-                        return <LibraryItemPreview key={partIndex} {...itemData} />;
-                      }
-                    })}
+                  <div className={`max-w-[85%]`}>
+                    <div
+                      className={`p-3 rounded-xl ${
+                        message.role === "user"
+                          ? "bg-primary/10 border border-primary/20 text-foreground"
+                          : "bg-secondary/50 border border-border"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
+                        {parts.map((part, partIndex) => {
+                          if (part.startsWith('**') && part.endsWith('**')) {
+                            return (
+                              <span key={partIndex} className="font-semibold text-primary">
+                                {part.slice(2, -2)}
+                              </span>
+                            );
+                          }
+                          return <span key={partIndex}>{part}</span>;
+                        })}
+                      </p>
+                      {message.role === "assistant" && (
+                        <Button
+                          onClick={() => copyToClipboard(message.content)}
+                          variant="ghost"
+                          size="sm"
+                          className="mt-2 h-7 text-xs"
+                        >
+                          <Copy className="w-3 h-3 mr-1" />
+                          Copy
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
@@ -327,7 +316,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
           </div>
         )}
 
-        <form onSubmit={handleSend} className="flex gap-2 shrink-0">
+        <form onSubmit={handleSend} className="flex gap-2 shrink-0 p-4 sm:p-6 pt-0 border-t border-border/50">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -344,8 +333,18 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
             <Send className="w-4 h-4" />
           </Button>
         </form>
-      </div>
       </Card>
+
+      {libraryItems.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground px-2">Referenced Library Items</h3>
+          <div className="space-y-2">
+            {libraryItems.map((item) => (
+              <LibraryItemPreview key={item.id} {...item} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
