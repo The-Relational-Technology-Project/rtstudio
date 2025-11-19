@@ -54,6 +54,15 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     }
   }, [initialPrompt]);
 
+  // Extract library items from assistant messages when messages change
+  useEffect(() => {
+    messages.forEach((message) => {
+      if (message.role === "assistant") {
+        extractLibraryItems(message.content);
+      }
+    });
+  }, [messages]);
+
   const getWelcomeMessage = () => {
     return "I can help you learn about relational tech and build your own tools. What are we crafting today?";
   };
@@ -255,11 +264,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
         ) : (
           <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto px-4 sm:px-6 py-4">
             {messages.map((message, idx) => {
-              // Extract library items from assistant messages
-              if (message.role === "assistant") {
-                extractLibraryItems(message.content);
-              }
-
               // Format the message content
               const displayContent = message.role === "assistant" 
                 ? formatMessageContent(message.content)
