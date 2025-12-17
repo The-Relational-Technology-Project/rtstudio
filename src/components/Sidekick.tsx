@@ -208,7 +208,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
               <p className="text-base sm:text-lg text-foreground leading-relaxed">
                 {getWelcomeMessage()}
               </p>
-              <div className="flex flex-wrap gap-2 justify-center pt-4">
+              <div className="flex flex-wrap gap-2 justify-center pt-4" data-tour="quick-actions">
                 <Button 
                   variant="outline" 
                   size="sm"
@@ -304,7 +304,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
           </div>
         )}
 
-        <form onSubmit={handleSend} className="flex gap-2 shrink-0 p-4 sm:p-6 pt-0 border-t border-border/50">
+        <form onSubmit={handleSend} className="flex gap-2 shrink-0 p-4 sm:p-6 pt-0 border-t border-border/50" data-tour="chat-input">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
