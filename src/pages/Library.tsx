@@ -171,7 +171,7 @@ const Library = () => {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row gap-4 mb-8" data-tour="library-filters">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -215,16 +215,17 @@ const Library = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-tour="library-grid">
             {filteredItems.length === 0 ? (
               <div className="col-span-full text-center py-12 text-muted-foreground">
                 No items found. Try adjusting your search or filters.
               </div>
             ) : (
-              filteredItems.map((item) => (
+              filteredItems.map((item, index) => (
                 <div
                   key={item.id}
                   id={`library-item-${item.id}`}
+                  data-tour={index === 0 ? "library-card" : undefined}
                   className={`transition-all duration-300 ${
                     highlightedItemId === item.id ? "ring-2 ring-primary rounded-lg" : ""
                   }`}
