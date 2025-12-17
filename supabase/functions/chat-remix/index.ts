@@ -7,6 +7,63 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Tool definitions for contribution actions
+const contributionTools = [
+  {
+    type: "function",
+    function: {
+      name: "submit_story",
+      description: "Submit a new story to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the story.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "A clear, inviting title for the story" },
+          story_text: { type: "string", description: "A short summary (1-2 sentences) that captures the essence" },
+          full_story_text: { type: "string", description: "The complete story with rich context and details" },
+          attribution: { type: "string", description: "Who is sharing this and where (e.g., 'Maria from Sunset Park, Brooklyn')" }
+        },
+        required: ["title", "story_text", "full_story_text", "attribution"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "submit_prompt",
+      description: "Submit a new prompt template to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the prompt.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "A clear, descriptive title for the prompt" },
+          category: { type: "string", description: "Category like 'Gathering', 'Communication', 'Resource Sharing', 'Mutual Aid', etc." },
+          description: { type: "string", description: "Brief description of what this prompt helps create" },
+          example_prompt: { type: "string", description: "The full prompt text that can be used in AI builders" }
+        },
+        required: ["title", "category", "description", "example_prompt"],
+        additionalProperties: false
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "submit_tool",
+      description: "Submit a new tool recommendation to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the tool.",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "The name of the tool" },
+          description: { type: "string", description: "How this tool helps with relational tech, including context from the contributor" },
+          url: { type: "string", description: "URL to the tool or resource" }
+        },
+        required: ["name", "description", "url"],
+        additionalProperties: false
+      }
+    }
+  }
+];
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -39,10 +96,10 @@ serve(async (req) => {
     
     const keywords = latestUserMessage
       .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, ' ') // Remove special chars but keep hyphens
+      .replace(/[^a-z0-9\s-]/g, ' ')
       .split(/\s+/)
       .filter((word: string) => word.length > 2 && !stopWords.has(word))
-      .slice(0, 5); // Limit to first 5 meaningful keywords
+      .slice(0, 5);
 
     console.log('Extracted keywords:', keywords);
 
@@ -52,7 +109,6 @@ serve(async (req) => {
     let relevantTools: any[] = [];
     
     if (keywords.length > 0) {
-      // Build search conditions for each keyword
       const promptSearchConditions = keywords.map((keyword: string) => {
         const sanitized = keyword.replace(/[%_]/g, '');
         return `title.ilike.%${sanitized}%,category.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
@@ -68,14 +124,12 @@ serve(async (req) => {
         return `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
       }).join(',');
 
-      // Fetch all content types in parallel
       const [promptsResult, storiesResult, toolsResult] = await Promise.all([
         supabase.from('prompts').select('title, category, description, example_prompt').or(promptSearchConditions).limit(10),
         supabase.from('stories').select('title, story_text, attribution, full_story_text').or(storySearchConditions).limit(10),
         supabase.from('tools').select('name, description, url').or(toolSearchConditions).limit(10)
       ]);
 
-      // Process prompts
       if (promptsResult.data) {
         relevantPrompts = promptsResult.data.map((prompt: any) => {
           let score = 0;
@@ -93,7 +147,6 @@ serve(async (req) => {
         }).sort((a: any, b: any) => b.score - a.score).slice(0, 3);
       }
 
-      // Process stories
       if (storiesResult.data) {
         relevantStories = storiesResult.data.map((story: any) => {
           let score = 0;
@@ -109,7 +162,6 @@ serve(async (req) => {
         }).sort((a: any, b: any) => b.score - a.score).slice(0, 3);
       }
 
-      // Process tools
       if (toolsResult.data) {
         relevantTools = toolsResult.data.map((tool: any) => {
           let score = 0;
@@ -132,7 +184,7 @@ serve(async (req) => {
       });
     }
 
-    // Fetch IDs for the relevant items to include in library item markers
+    // Fetch IDs for the relevant items
     const promptIds = relevantPrompts.length > 0 
       ? (await supabase.from('prompts').select('id, title').in('title', relevantPrompts.map(p => p.title))).data || []
       : [];
@@ -145,7 +197,7 @@ serve(async (req) => {
       ? (await supabase.from('tools').select('id, name').in('name', relevantTools.map(t => t.name))).data || []
       : [];
 
-    // Build library context with IDs for markers
+    // Build library context
     let libraryContext = '';
     
     if (relevantPrompts.length > 0) {
@@ -169,7 +221,7 @@ serve(async (req) => {
       }).join('\n')}`;
     }
 
-    const systemPrompt = `You are Sidekick, an AI assistant for the Relational Technology Studio. You help people explore stories, prompts, and tools from the library, and guide them in creating relational tech for their neighborhoods.
+    const systemPrompt = `You are Sidekick, an AI assistant for the Relational Technology Studio. You help people explore stories, prompts, and tools from the library, guide them in creating relational tech for their neighborhoods, AND act as a commons librarian who helps people contribute their own gifts to the shared library.
 
 CRITICAL: Do not use markdown formatting in your responses. Write in plain text only - no asterisks, no hashtags, no special formatting. Use simple line breaks and natural language.
 
@@ -201,9 +253,39 @@ YOUR CAPABILITIES:
    - Deliver a clear, complete prompt that can be copy-pasted directly into Lovable or Dyad
    - Suggest combinations with other relational tech tools if relevant (but don't be pushy)
 
-3. HELP WITH CONTRIBUTIONS: Support users in sharing their own stories, prompts, or tools
-   - Ask clarifying questions to help them articulate their ideas
-   - Draft contribution text for them to review and submit
+3. RECEIVE CONTRIBUTIONS (Commons Librarian Role):
+   This is a special gift. When someone wants to share a story, prompt, or tool recommendation, you become a gentle librarian who helps them craft and contribute their gift to the commons.
+   
+   RECOGNIZING CONTRIBUTION INTENT - Look for phrases like:
+   - "We did something cool in our neighborhood..."
+   - "I made a tool that..."
+   - "Here's something that worked for us..."
+   - "I want to share a story about..."
+   - "Can I add a prompt about..."
+   - "I found a great tool for..."
+   - Or any time someone shares an experience, idea, or resource that could help others
+   
+   THE CONTRIBUTION FLOW:
+   a) LISTEN & APPRECIATE: Thank them for wanting to share. Ask clarifying questions to understand:
+      - Who is sharing this? (Name and neighborhood/place)
+      - What's the context? What made this work?
+      - What would help someone else try this?
+   
+   b) LIGHTLY EDIT & FORMAT: Shape their words into a clear, inviting contribution while keeping their voice. Don't over-polish - authenticity matters more than perfection.
+   
+   c) PRESENT FOR CONSENT: Show them exactly how their gift would appear in the library. Be specific:
+      "Here's how your story would appear in the commons:
+      
+      Title: [Your title]
+      From: [Attribution]
+      
+      [The formatted content]
+      
+      Would you like me to add this to the shared library? Others will be able to read it and be inspired by what worked in your neighborhood."
+   
+   d) WAIT FOR EXPLICIT CONSENT: Only after they say yes, confirm, agree, or give clear permission should you call the submission function. Never submit without consent.
+   
+   e) CELEBRATE: After submission, thank them warmly. Their gift will help others.
 
 YOUR STYLE:
 - Be warm, conversational, and genuinely curious about their neighborhood
@@ -212,6 +294,7 @@ YOUR STYLE:
 - When delivering a final prompt, make it clear, actionable, and ready to use
 - Celebrate the small-scale, hyperlocal nature of what they're building
 - Remember: these are village-scale tools built by and for neighbors
+- When receiving contributions, honor their voice and context
 
 IMPORTANT: When referencing specific library items from the context above, use this format in your response:
 [LIBRARY_ITEM:type:id:title]
@@ -229,8 +312,17 @@ IMPORTANT FOR PROMPT REMIXING:
 - Always acknowledge the specific context they share about their neighborhood
 - Gently remind them that the tool will likely change and that's okay
 
+IMPORTANT FOR CONTRIBUTIONS:
+- Each contribution should read as an invitation from a real person in a real place
+- Attribution matters: always include who is sharing and where they're from
+- Context matters: what made this work? what's unique about their situation?
+- Keep their voice: light editing, not rewriting
+- NEVER call submission functions without explicit user consent
+- If they seem hesitant, reassure them that their contribution can inspire others even if it's imperfect
+
 Begin by understanding what they're looking for - whether that's exploring the library, remixing a prompt, or contributing something new.${libraryContext}`;
 
+    // Make the AI call with tools enabled
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -243,6 +335,8 @@ Begin by understanding what they're looking for - whether that's exploring the l
           { role: 'system', content: systemPrompt },
           ...messages
         ],
+        tools: contributionTools,
+        tool_choice: 'auto'
       }),
     });
 
@@ -266,7 +360,79 @@ Begin by understanding what they're looking for - whether that's exploring the l
     }
 
     const data = await response.json();
-    const assistantMessage = data.choices[0].message.content;
+    const choice = data.choices[0];
+    
+    // Check if the AI wants to call a tool
+    if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
+      const toolCall = choice.message.tool_calls[0];
+      const functionName = toolCall.function.name;
+      const args = JSON.parse(toolCall.function.arguments);
+      
+      console.log('Tool call requested:', functionName, args);
+      
+      let insertResult: any = null;
+      let contributionType = 'item';
+      let contributionTitle = 'Untitled';
+      
+      // Execute the appropriate database insert
+      if (functionName === 'submit_story') {
+        contributionType = 'story';
+        contributionTitle = args.title;
+        insertResult = await supabase.from('stories').insert({
+          title: args.title,
+          story_text: args.story_text,
+          full_story_text: args.full_story_text,
+          attribution: args.attribution
+        }).select('id').single();
+      } else if (functionName === 'submit_prompt') {
+        contributionType = 'prompt';
+        contributionTitle = args.title;
+        insertResult = await supabase.from('prompts').insert({
+          title: args.title,
+          category: args.category,
+          description: args.description,
+          example_prompt: args.example_prompt
+        }).select('id').single();
+      } else if (functionName === 'submit_tool') {
+        contributionType = 'tool';
+        contributionTitle = args.name;
+        insertResult = await supabase.from('tools').insert({
+          name: args.name,
+          description: args.description,
+          url: args.url
+        }).select('id').single();
+      }
+      
+      if (insertResult?.error) {
+        console.error('Database insert error:', insertResult.error);
+        return new Response(
+          JSON.stringify({ 
+            response: `I tried to add your ${contributionType} to the library, but ran into a technical issue. Would you like to try again?`,
+            error: insertResult.error.message 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const newId = insertResult?.data?.id;
+      console.log('Contribution saved:', contributionType, newId);
+      
+      // Return success response with contribution info
+      return new Response(
+        JSON.stringify({ 
+          response: `Your ${contributionType} has been added to the commons! Thank you for this gift. "${contributionTitle}" is now part of our shared library, ready to inspire neighbors in other places. You can find it in the Library whenever you'd like to revisit it.`,
+          contribution: {
+            type: contributionType,
+            id: newId,
+            title: contributionTitle
+          }
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Regular response (no tool call)
+    const assistantMessage = choice.message.content;
 
     return new Response(
       JSON.stringify({ response: assistantMessage }),

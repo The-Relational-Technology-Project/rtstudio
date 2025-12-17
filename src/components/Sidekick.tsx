@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { Card } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Send, Sparkles } from "lucide-react";
+import { Copy, Send, Sparkles, Gift } from "lucide-react";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { LibraryItemPreview } from "@/components/LibraryItemPreview";
 
@@ -29,12 +29,20 @@ interface LibraryItemData {
   category?: string;
 }
 
+interface ContributionData {
+  type: "story" | "prompt" | "tool";
+  id: string;
+  title: string;
+}
+
 export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false }: SidekickProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { messages, setMessages } = useSidekick();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [libraryItems, setLibraryItems] = useState<LibraryItemData[]>([]);
+  const [recentContribution, setRecentContribution] = useState<ContributionData | null>(null);
   const { toast } = useToast();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastProcessedIndexRef = useRef(-1);
@@ -62,6 +70,15 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
       if (data?.error) throw new Error(data.error);
 
       setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
+      
+      // Check if a contribution was made
+      if (data?.contribution) {
+        setRecentContribution(data.contribution);
+        toast({
+          title: "Gift Added to the Commons!",
+          description: `Your ${data.contribution.type} "${data.contribution.title}" is now in the library.`,
+        });
+      }
     } catch (error) {
       console.error("Chat error:", error);
       toast({
@@ -171,6 +188,12 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     });
   };
 
+  const viewInLibrary = () => {
+    if (recentContribution) {
+      navigate(`/library?item=${recentContribution.id}`);
+    }
+  };
+
   return (
     <div id="sidekick-chat" className={`w-full ${fullPage ? 'max-w-4xl' : 'max-w-5xl'} mx-auto ${!fullPage && 'mb-8'} scroll-mt-20 flex flex-col gap-4`}>
       <Card className={`flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background ${fullPage ? 'h-[500px]' : 'h-[500px]'}`}>
@@ -209,6 +232,15 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                   className="text-xs"
                 >
                   Explore Tools
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setInput("I want to share something that worked in my neighborhood")}
+                  className="text-xs"
+                >
+                  <Gift className="w-3 h-3 mr-1" />
+                  Contribute
                 </Button>
               </div>
             </div>
@@ -290,6 +322,24 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
           </Button>
         </form>
       </Card>
+
+      {/* Recent contribution banner */}
+      {recentContribution && (
+        <Card className="p-4 bg-primary/5 border-primary/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Gift className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Your gift was added to the commons!</p>
+                <p className="text-xs text-muted-foreground">"{recentContribution.title}" is now in the library</p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={viewInLibrary}>
+              View in Library
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {libraryItems.length > 0 && (
         <div className="space-y-3">
