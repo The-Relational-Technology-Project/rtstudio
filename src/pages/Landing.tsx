@@ -34,7 +34,7 @@ const Landing = () => {
 
           {/* Feature Cards */}
           <div className="grid md:grid-cols-3 gap-6 mb-16">
-            <FeatureCard icon={<Sparkles className="h-6 w-6" />} title="Sidekick" description="Your AI companion for exploring ideas and turning dreams into action" delay="0.1s" />
+            <FeatureCard icon={<Sparkles className="h-6 w-6" />} title="Sidekick" description="Chat to explore ideas and move into action locally" delay="0.1s" />
             <FeatureCard icon={<BookOpen className="h-6 w-6" />} title="Library" description="Stories, prompts, and tools shared by neighbors building together" delay="0.2s" />
             <FeatureCard icon={<Users className="h-6 w-6" />} title="Community" description="Join fellow builders crafting relational technology for their neighborhoods" delay="0.3s" />
           </div>
