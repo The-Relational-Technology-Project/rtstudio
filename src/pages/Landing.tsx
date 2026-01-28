@@ -63,9 +63,7 @@ const Landing = () => {
             What is Relational Tech?
           </h2>
           <p className="text-muted-foreground leading-relaxed mb-6">
-            Technology that puts relationships first. Instead of apps that isolate us behind screens, 
-            we're building tools that help neighbors meet, share, organize, and care for each other. 
-            The Studio is where we learn to craft these tools together.
+            Technology that helps us reconnect and care for each other. Small software built by people for a place. Tools we can reuse and remix across our neighborhoods.
           </p>
           <p className="text-sm text-muted-foreground/80">
             Part of the{" "}
