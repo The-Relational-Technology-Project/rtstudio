@@ -2,8 +2,16 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTour } from "@/contexts/TourContext";
-import { HelpCircle, Menu, X } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { HelpCircle, Menu, X, User, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -15,10 +23,19 @@ const navItems = [
 export const TopNav = () => {
   const location = useLocation();
   const { startTour } = useTour();
+  const { profile, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
 
-  const mobileNavItems = navItems;
+  const mobileNavItems = [
+    ...navItems,
+    { name: "Profile", path: "/profile" },
+  ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsOpen(false);
+  };
 
   return (
     <nav className="border-b border-border bg-background sticky top-0 z-50">
@@ -54,6 +71,35 @@ export const TopNav = () => {
             >
               <HelpCircle className="h-5 w-5" />
             </Button>
+
+            {/* Profile dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5 text-sm">
+                  <p className="font-medium">{profile?.display_name || "Builder"}</p>
+                  {profile?.neighborhood && (
+                    <p className="text-xs text-muted-foreground">{profile.neighborhood}</p>
+                  )}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/profile" className="cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile Navigation */}
@@ -79,7 +125,22 @@ export const TopNav = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-64">
-                <nav className="flex flex-col gap-4 mt-8">
+                {/* Profile section at top */}
+                <div className="border-b border-border pb-4 mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{profile?.display_name || "Builder"}</p>
+                      {profile?.neighborhood && (
+                        <p className="text-xs text-muted-foreground">{profile.neighborhood}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <nav className="flex flex-col gap-4">
                   {mobileNavItems.map((item) => (
                     <Link
                       key={item.name}
@@ -96,6 +157,17 @@ export const TopNav = () => {
                     </Link>
                   ))}
                 </nav>
+
+                <div className="absolute bottom-8 left-6 right-6">
+                  <Button
+                    variant="outline"
+                    className="w-full text-destructive border-destructive/50 hover:bg-destructive/10"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </Button>
+                </div>
               </SheetContent>
             </Sheet>
           </div>

@@ -8,9 +8,12 @@ import ChangePassword from "./pages/ChangePassword";
 import NotFound from "./pages/NotFound";
 import SidekickPage from "./pages/SidekickPage";
 import Library from "./pages/Library";
+import Profile from "./pages/Profile";
 import { TourProvider } from "./contexts/TourContext";
 import { SidekickProvider } from "./contexts/SidekickContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { Tour } from "./components/Tour";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -20,19 +23,43 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <SidekickProvider>
-          <TourProvider>
-            <Tour />
-            <Routes>
-              <Route path="/" element={<SidekickPage />} />
-              <Route path="/library" element={<Library />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/change-password" element={<ChangePassword />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TourProvider>
-        </SidekickProvider>
+        <AuthProvider>
+          <SidekickProvider>
+            <TourProvider>
+              <Tour />
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <SidekickPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/library"
+                  element={
+                    <ProtectedRoute>
+                      <Library />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/change-password" element={<ChangePassword />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </TourProvider>
+          </SidekickProvider>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

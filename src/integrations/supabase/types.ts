@@ -35,6 +35,36 @@ export type Database = {
         }
         Relationships: []
       }
+      commitments: {
+        Row: {
+          commitment_text: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          source_chat_context: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          commitment_text: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          source_chat_context?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          commitment_text?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          source_chat_context?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           created_at: string
@@ -91,6 +121,48 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          ai_coding_experience: string | null
+          created_at: string | null
+          display_name: string | null
+          dreams: string | null
+          email: string | null
+          id: string
+          neighborhood: string | null
+          neighborhood_description: string | null
+          profile_completed: boolean | null
+          tech_familiarity: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_coding_experience?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          dreams?: string | null
+          email?: string | null
+          id: string
+          neighborhood?: string | null
+          neighborhood_description?: string | null
+          profile_completed?: boolean | null
+          tech_familiarity?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_coding_experience?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          dreams?: string | null
+          email?: string | null
+          id?: string
+          neighborhood?: string | null
+          neighborhood_description?: string | null
+          profile_completed?: boolean | null
+          tech_familiarity?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       prompts: {
         Row: {
           category: string
@@ -115,6 +187,33 @@ export type Database = {
           example_prompt?: string
           id?: string
           title?: string
+        }
+        Relationships: []
+      }
+      serviceberries: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          reason: string
+          reference_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          reason: string
+          reference_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          reason?: string
+          reference_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -269,12 +368,50 @@ export type Database = {
         }
         Relationships: []
       }
+      vision_board_pins: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          id: string
+          image_url: string
+          position_x: number | null
+          position_y: number | null
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          image_url: string
+          position_x?: number | null
+          position_y?: number | null
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          position_x?: number | null
+          position_y?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      award_serviceberries: {
+        Args: {
+          p_amount: number
+          p_reason: string
+          p_reference_id?: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
