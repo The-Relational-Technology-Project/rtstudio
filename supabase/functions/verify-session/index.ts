@@ -22,7 +22,14 @@ Deno.serve(async (req) => {
     }
 
     // Verify the JWT token
-    const jwtSecret = Deno.env.get('JWT_SECRET') || 'default-secret-change-in-production';
+    const jwtSecret = Deno.env.get('JWT_SECRET');
+    if (!jwtSecret) {
+      console.error('JWT_SECRET is not configured');
+      return new Response(
+        JSON.stringify({ valid: false, error: 'Authentication service misconfigured' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     const encoder = new TextEncoder();
     const keyBuf = encoder.encode(jwtSecret);
     const key = await crypto.subtle.importKey(

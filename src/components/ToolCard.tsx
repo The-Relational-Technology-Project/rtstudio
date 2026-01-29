@@ -7,6 +7,7 @@ import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { ExternalLink, Pencil, Users } from "lucide-react";
 
 interface ToolCardProps {
@@ -27,6 +28,7 @@ export const ToolCard = ({ id, name, description, url }: ToolCardProps) => {
   const [playGroupEmail, setPlayGroupEmail] = useState("");
   const [isSubmittingPlayGroup, setIsSubmittingPlayGroup] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const loadNotes = async () => {
     const { data } = await supabase
@@ -77,11 +79,22 @@ export const ToolCard = ({ id, name, description, url }: ToolCardProps) => {
     setIsSubmittingPlayGroup(true);
 
     try {
+      // Require authentication for play group signup
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to join a play group.",
+          variant: "destructive",
+        });
+        setIsSubmittingPlayGroup(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("play_group_signups")
         .insert({
           tool_name: name,
-          user_id: crypto.randomUUID(), // Temporary until auth is implemented
+          user_id: user.id,
         });
 
       if (error) throw error;
