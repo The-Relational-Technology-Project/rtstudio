@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -115,7 +116,7 @@ export const LibraryCard = ({ item }: LibraryCardProps) => {
                 <div className="bg-secondary/50 border border-border p-4 rounded-lg">
                   <div 
                     className="text-sm leading-relaxed prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{ __html: item.fullContent }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(item.fullContent) }}
                   />
                 </div>
                 {item.imageUrls && item.imageUrls.length > 0 && (

@@ -92,17 +92,36 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userId } = await req.json();
+    const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
 
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
-    // Initialize Supabase client
+    // Initialize Supabase client with service role for database operations
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+
+    // Get authenticated user from JWT token - don't trust client-provided userId
+    let userId: string | null = null;
+    const authHeader = req.headers.get('Authorization');
+    
+    if (authHeader?.startsWith('Bearer ')) {
+      // Create a client with the user's JWT to verify identity
+      const userSupabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+        global: { headers: { Authorization: authHeader } }
+      });
+      
+      const { data: { user }, error: authError } = await userSupabase.auth.getUser();
+      
+      if (!authError && user?.id) {
+        userId = user.id;
+        console.log('Verified user ID from JWT:', userId);
+      }
+    }
 
     // Fetch user profile if authenticated
     let profileContext = '';
@@ -141,7 +160,7 @@ BUILDER CONTEXT (personalize your responses to this person):
 
 Use their name naturally in conversation. Reference their neighborhood when relevant. Adjust technical explanations based on their comfort level. Connect suggestions to their stated dreams when possible.
 `;
-        console.log('Profile context loaded for user:', userId);
+        console.log('Profile context loaded for verified user:', userId);
       }
     }
 

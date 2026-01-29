@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
@@ -140,7 +141,7 @@ export const StoryCard = ({ id, title, story, attribution, fullStory }: StoryCar
               </Button>
             </div>
             {fullStory && (
-              <div className="prose prose-sm max-w-none mb-4 text-sm leading-relaxed [&_img]:max-w-sm [&_img]:mx-auto [&_img]:my-4" dangerouslySetInnerHTML={{ __html: fullStory }} />
+              <div className="prose prose-sm max-w-none mb-4 text-sm leading-relaxed [&_img]:max-w-sm [&_img]:mx-auto [&_img]:my-4" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fullStory) }} />
             )}
             <div className="flex flex-col xl:flex-row gap-2 mb-4">
               <Button 
