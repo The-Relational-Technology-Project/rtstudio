@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sparkles, BookOpen, Users, ArrowRight } from "lucide-react";
 
@@ -82,16 +83,7 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border">
-        <p className="flex items-center justify-center gap-2 flex-wrap">
-          <span>Made with care for neighbors everywhere</span>
-          <span className="hidden sm:inline">·</span>
-          <Link to="/privacy" className="text-primary hover:underline">
-            Privacy & Terms
-          </Link>
-        </p>
-      </footer>
+      <Footer />
     </div>;
 };
 interface FeatureCardProps {

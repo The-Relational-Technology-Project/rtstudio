@@ -1,16 +1,14 @@
-import { useState } from "react";
 import { TopNav } from "@/components/TopNav";
+import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileOnboarding } from "@/components/ProfileOnboarding";
 import { VisionBoard } from "@/components/VisionBoard";
 import { CommitmentsList } from "@/components/CommitmentsList";
 import { ServiceberriesCounter } from "@/components/ServiceberriesCounter";
-import { Button } from "@/components/ui/button";
-import { User, MapPin, Sparkles, Settings } from "lucide-react";
+import { User, MapPin, Sparkles } from "lucide-react";
 
 const Profile = () => {
-  const { profile, user } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
+  const { profile } = useAuth();
 
   // Show onboarding if profile is not completed
   if (profile && !profile.profile_completed) {
@@ -18,11 +16,11 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
         {/* Profile Header */}
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start mb-8">
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
               <User className="h-8 w-8 text-primary" />
@@ -42,10 +40,6 @@ const Profile = () => {
               )}
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
-            <Settings className="h-4 w-4 mr-2" />
-            Edit Profile
-          </Button>
         </div>
 
         {/* Dreams Section */}
@@ -90,6 +84,7 @@ const Profile = () => {
           <CommitmentsList />
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

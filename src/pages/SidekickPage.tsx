@@ -1,4 +1,5 @@
 import { TopNav } from "@/components/TopNav";
+import { Footer } from "@/components/Footer";
 import { Sidekick } from "@/components/Sidekick";
 
 const SidekickPage = () => {
@@ -10,6 +11,7 @@ const SidekickPage = () => {
           <Sidekick fullPage />
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

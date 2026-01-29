@@ -3,12 +3,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { 
   CheckCircle2, 
   Circle, 
   Trash2, 
-  Loader2,
   Sparkles,
   ChevronDown,
   ChevronUp
@@ -140,11 +140,7 @@ export const CommitmentsList = () => {
   const completedCommitments = commitments.filter(c => c.status === "completed");
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (

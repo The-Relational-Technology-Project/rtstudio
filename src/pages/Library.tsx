@@ -1,31 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { TopNav } from "@/components/TopNav";
+import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { LibraryCard } from "@/components/LibraryCard";
 import { ContributionDialog } from "@/components/ContributionDialog";
-import { Search, Plus } from "lucide-react";
-
-type ItemType = "story" | "prompt" | "tool";
-
-interface LibraryItem {
-  id: string;
-  type: ItemType;
-  title: string;
-  summary: string;
-  author?: string;
-  category?: string;
-  url?: string;
-  fullContent?: string;
-  examplePrompt?: string;
-  imageUrls?: string[];
-}
+import { Search } from "lucide-react";
+import type { LibraryItem, ItemType } from "@/types/library";
 
 const Library = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<LibraryItem[]>([]);
@@ -211,6 +196,7 @@ const Library = () => {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

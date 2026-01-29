@@ -7,21 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { ExternalLink, MessageSquare, Sparkles, BookOpen } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSidekick } from "@/contexts/SidekickContext";
-
-type ItemType = "story" | "prompt" | "tool";
-
-interface LibraryItem {
-  id: string;
-  type: ItemType;
-  title: string;
-  summary: string;
-  author?: string;
-  category?: string;
-  url?: string;
-  fullContent?: string;
-  examplePrompt?: string;
-  imageUrls?: string[];
-}
+import type { LibraryItem, ItemType } from "@/types/library";
 
 interface LibraryCardProps {
   item: LibraryItem;

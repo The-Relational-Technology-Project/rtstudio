@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Cherry, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -144,11 +145,7 @@ const ServiceberriesContent = ({
   showTotal = true 
 }: ServiceberriesContentProps) => {
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
