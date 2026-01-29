@@ -107,11 +107,12 @@ serve(async (req) => {
 
     // Get authenticated user from JWT token - don't trust client-provided userId
     let userId: string | null = null;
+    let userSupabase: ReturnType<typeof createClient> | null = null;
     const authHeader = req.headers.get('Authorization');
     
     if (authHeader?.startsWith('Bearer ')) {
-      // Create a client with the user's JWT to verify identity
-      const userSupabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+      // Create a client with the user's JWT to verify identity and for user-context operations
+      userSupabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
         global: { headers: { Authorization: authHeader } }
       });
       
@@ -592,13 +593,22 @@ Begin by understanding what they're looking for - whether that's exploring the l
           );
         }
         
-        // Award serviceberries for making a commitment
-        await supabase.rpc('award_serviceberries', {
-          p_user_id: userId,
-          p_amount: 5,
-          p_reason: 'commitment_made',
-          p_reference_id: commitmentResult.data.id
-        });
+        // Award serviceberries for making a commitment (use user's auth context for RPC)
+        if (userSupabase) {
+          const { error: serviceberryError } = await userSupabase.rpc('award_serviceberries', {
+            p_user_id: userId,
+            p_amount: 5,
+            p_reason: 'commitment_made',
+            p_reference_id: commitmentResult.data.id
+          });
+          
+          if (serviceberryError) {
+            console.error('Serviceberries award error:', serviceberryError);
+            // Don't fail the whole operation, just log the error
+          } else {
+            console.log('Serviceberries awarded for commitment:', commitmentResult.data.id);
+          }
+        }
         
         console.log('Commitment saved:', commitmentResult.data.id);
         
