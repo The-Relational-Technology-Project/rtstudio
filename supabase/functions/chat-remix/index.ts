@@ -123,6 +123,61 @@ serve(async (req) => {
       }
     }
 
+    // Rate limiting: 500 messages per day per user
+    const DAILY_MESSAGE_LIMIT = 500;
+    
+    if (userId) {
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+      
+      // Check current usage
+      const { data: usageData, error: usageError } = await supabase
+        .from('chat_usage')
+        .select('message_count')
+        .eq('user_id', userId)
+        .eq('window_start', todayStart.toISOString())
+        .maybeSingle();
+      
+      if (usageError) {
+        console.error('Error checking rate limit:', usageError);
+      }
+      
+      const currentCount = usageData?.message_count || 0;
+      
+      if (currentCount >= DAILY_MESSAGE_LIMIT) {
+        console.log(`Rate limit exceeded for user ${userId}: ${currentCount}/${DAILY_MESSAGE_LIMIT}`);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Daily message limit reached. Please try again tomorrow.',
+            limit: DAILY_MESSAGE_LIMIT,
+            current: currentCount
+          }),
+          { 
+            status: 429, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      // Increment usage counter (upsert)
+      const { error: upsertError } = await supabase
+        .from('chat_usage')
+        .upsert(
+          { 
+            user_id: userId, 
+            window_start: todayStart.toISOString(),
+            message_count: currentCount + 1 
+          },
+          { onConflict: 'user_id,window_start' }
+        );
+      
+      if (upsertError) {
+        console.error('Error updating rate limit counter:', upsertError);
+      } else {
+        console.log(`Usage updated for user ${userId}: ${currentCount + 1}/${DAILY_MESSAGE_LIMIT}`);
+      }
+    }
+
     // Fetch user profile if authenticated
     let profileContext = '';
     if (userId) {

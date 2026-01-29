@@ -35,6 +35,30 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_usage: {
+        Row: {
+          created_at: string
+          id: string
+          message_count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_count?: number
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       commitments: {
         Row: {
           commitment_text: string
