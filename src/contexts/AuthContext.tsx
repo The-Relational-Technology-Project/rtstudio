@@ -83,37 +83,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Set up auth state change listener
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (event, currentSession) => {
-          if (!mounted) return;
-          
-          console.log("Auth state changed:", event, currentSession?.user?.email);
-          
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+        if (!mounted) return;
 
-          if (currentSession?.user) {
-            // Fetch profile after auth state is set
-            const profileData = await fetchProfile(currentSession.user.id);
-            if (mounted) {
-              setProfile(profileData);
-              setLoading(false);
-            }
-          } else {
-            setProfile(null);
-            setLoading(false);
-          }
+        console.log("Auth state changed:", event, currentSession?.user?.email);
 
-          // Clean up URL hash after successful auth
-          if (event === 'SIGNED_IN' && window.location.hash) {
-            // Remove the hash without triggering a navigation
-            window.history.replaceState(null, '', window.location.pathname + window.location.search);
-          }
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        // IMPORTANT: Never block the UI on profile fetch (RLS/network hiccups can cause infinite spinners)
+        setLoading(false);
+
+        if (currentSession?.user) {
+          fetchProfile(currentSession.user.id)
+            .then((profileData) => {
+              if (mounted) setProfile(profileData);
+            })
+            .catch((err) => console.error("Error fetching profile (background):", err));
+        } else {
+          setProfile(null);
         }
-      );
+
+        // Clean up URL hash after successful auth
+        if (event === "SIGNED_IN" && window.location.hash) {
+          // Remove the hash without triggering a navigation
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search
+          );
+        }
+      });
 
       // Get initial session
-      const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+      const {
+        data: { session: initialSession },
+        error,
+      } = await supabase.auth.getSession();
       
       if (error) {
         console.error("Error getting session:", error);
@@ -121,18 +128,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (!mounted) return;
 
-      // If there's an auth callback, the onAuthStateChange will handle it
-      // Otherwise, set loading to false if no session
-      if (!hasAuthCallback && !initialSession) {
+      // If there's an auth callback, the onAuthStateChange will handle it.
+      // Otherwise, hydrate from storage and avoid blocking on profile.
+      if (!hasAuthCallback) {
+        setSession(initialSession ?? null);
+        setUser(initialSession?.user ?? null);
         setLoading(false);
-      } else if (initialSession && !hasAuthCallback) {
-        // Session exists from storage, update state
-        setSession(initialSession);
-        setUser(initialSession.user);
-        const profileData = await fetchProfile(initialSession.user.id);
-        if (mounted) {
-          setProfile(profileData);
-          setLoading(false);
+
+        if (initialSession?.user) {
+          fetchProfile(initialSession.user.id)
+            .then((profileData) => {
+              if (mounted) setProfile(profileData);
+            })
+            .catch((err) => console.error("Error fetching profile (background):", err));
+        } else {
+          setProfile(null);
         }
       }
 
