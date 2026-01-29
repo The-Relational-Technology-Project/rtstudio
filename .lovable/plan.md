@@ -1,196 +1,73 @@
 
-# Refactoring & Code Cleanup Plan
+# Plan: Create HACKATHON.md
 
-This plan addresses all high-priority items identified in the codebase review: fixing non-functional code, consolidating duplicate types, standardizing loading patterns, and adding consistent footers.
+## Overview
+Create a comprehensive hackathon brief document (`HACKATHON.md`) in the repository root that provides teams with everything they need to evaluate and enhance agency-building in the Relational Tech Studio's Sidekick experience.
 
----
+## File to Create
 
-## Summary of Changes
+**`HACKATHON.md`** - A detailed markdown file containing:
 
-1. **Fix unused Profile edit mode** - Remove the non-functional `isEditing` state and "Edit Profile" button
-2. **Create shared `types/library.ts`** - Consolidate the `LibraryItem` interface used in 3 files
-3. **Add consistent footer to authenticated pages** - Add Privacy & Terms footer to Sidekick, Library, and Profile pages
-4. **Create reusable `LoadingSpinner` component** - Standardize the loading pattern used in 7+ files
+### Document Structure
 
----
+1. **Challenge Overview** - Frames the hackathon around human agency
+2. **What is Agency?** - Defines agency in the neighborhood context
+3. **Quick Start** - How to access and explore the app
+4. **Technical Architecture** - Stack overview with specific file references
+5. **Key Files Reference** - Annotated list of files with line numbers
+6. **Database Schema** - All tables with their purposes
+7. **Current Agency Features** - What already exists
+8. **Configuration Levers** - Where to make changes
+9. **Exploration Areas** - Suggested investigation paths
+10. **Evaluation Framework** - Humane tech principles to apply
+11. **Suggested Experiments** - Hands-on testing ideas
+12. **Deliverables** - What teams should produce
+13. **Technical Notes** - How to modify key components
+14. **Resources** - External links
 
-## Detailed Implementation
+### Key Technical Details to Include
 
-### 1. Fix Unused Profile Edit Mode
+| Component | File | Key Lines | Purpose |
+|-----------|------|-----------|---------|
+| AI System Prompt | `supabase/functions/chat-remix/index.ts` | 361-465 | Sidekick's personality, capabilities, and guidance |
+| Tool Definitions | `supabase/functions/chat-remix/index.ts` | 11-86 | Structured actions (submit_story, record_commitment, etc.) |
+| Profile Personalization | `supabase/functions/chat-remix/index.ts` | 181-220 | How user context influences responses |
+| Library RAG | `supabase/functions/chat-remix/index.ts` | 222-359 | Content search and retrieval |
+| Rate Limiting | `supabase/functions/chat-remix/index.ts` | 126-179 | 500 messages/day limit |
+| Tool Execution | `supabase/functions/chat-remix/index.ts` | 507-622 | How contributions are saved |
+| Chat UI | `src/components/Sidekick.tsx` | Full file (362 lines) | Chat interface and state |
+| Quick Actions | `src/components/Sidekick.tsx` | 217-251 | Suggested starting prompts |
+| Onboarding | `src/components/ProfileOnboarding.tsx` | Full file (372 lines) | Profile context gathering |
+| Commitments | `src/components/CommitmentsList.tsx` | Full file (263 lines) | Tracking real-world actions |
+| Auth Context | `src/contexts/AuthContext.tsx` | 1-197 | User and profile state |
+| Sidekick Context | `src/contexts/SidekickContext.tsx` | Full file | Message history management |
 
-The Profile page has an `isEditing` state and "Edit Profile" button that do nothing. Since profile editing requires significant additional UI work, we'll remove this non-functional code to prevent user confusion.
+### Database Tables to Document
 
-**File: `src/pages/Profile.tsx`**
-- Remove the `isEditing` state and `setIsEditing` function
-- Remove the "Edit Profile" button from the header
-- Remove the `Settings` icon import
+| Table | Purpose |
+|-------|---------|
+| `profiles` | User info (name, neighborhood, dreams, tech level) |
+| `commitments` | User commitments with status tracking |
+| `stories` | Community stories (title, text, attribution) |
+| `prompts` | Prompt templates (title, category, example_prompt) |
+| `tools` | Tool recommendations (name, description, url) |
+| `serviceberries` | Gamification rewards |
+| `chat_usage` | Rate limiting (500/day per user) |
+| `vision_board_pins` | User dream images |
 
----
-
-### 2. Create Shared Types File
-
-The `LibraryItem` interface is duplicated in three files:
-- `src/pages/Library.tsx` (lines 12-25)
-- `src/components/LibraryCard.tsx` (lines 11-24)
-- `src/components/Sidekick.tsx` (uses a similar but different `LibraryItemData` interface)
-
-**New file: `src/types/library.ts`**
-```typescript
-export type ItemType = "story" | "prompt" | "tool";
-
-export interface LibraryItem {
-  id: string;
-  type: ItemType;
-  title: string;
-  summary: string;
-  author?: string;
-  category?: string;
-  url?: string;
-  fullContent?: string;
-  examplePrompt?: string;
-  imageUrls?: string[];
-}
-```
-
-**Files to update:**
-- `src/pages/Library.tsx` - Import from shared types, remove local definition
-- `src/components/LibraryCard.tsx` - Import from shared types, remove local definition
-- `src/components/LibraryItemPreview.tsx` - Import `ItemType` from shared types
-
----
-
-### 3. Create Reusable LoadingSpinner Component
-
-Found 7+ files with duplicate loading patterns using `Loader2` with `animate-spin`. We'll create a standardized component.
-
-**New file: `src/components/ui/loading-spinner.tsx`**
-```typescript
-import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-interface LoadingSpinnerProps {
-  size?: "sm" | "md" | "lg";
-  className?: string;
-  text?: string;
-  fullPage?: boolean;
-}
-
-export const LoadingSpinner = ({ 
-  size = "md", 
-  className,
-  text,
-  fullPage = false 
-}: LoadingSpinnerProps) => {
-  const sizeClasses = {
-    sm: "h-4 w-4",
-    md: "h-6 w-6",
-    lg: "h-8 w-8"
-  };
-
-  const spinner = (
-    <Loader2 className={cn(
-      "animate-spin text-muted-foreground",
-      sizeClasses[size],
-      className
-    )} />
-  );
-
-  if (fullPage) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          {spinner}
-          {text && <p className="text-muted-foreground">{text}</p>}
-        </div>
-      </div>
-    );
-  }
-
-  if (text) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="flex flex-col items-center gap-2">
-          {spinner}
-          <p className="text-sm text-muted-foreground">{text}</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-center p-8">
-      {spinner}
-    </div>
-  );
-};
-```
-
-**Files to update with the new component:**
-- `src/components/VisionBoard.tsx` - Replace loading state (line 333-338)
-- `src/components/CommitmentsList.tsx` - Replace loading state (line 142-148)
-- `src/components/ServiceberriesCounter.tsx` - Replace loading state (line 147-152)
-- `src/components/ProtectedRoute.tsx` - Replace loading state with `fullPage` variant
-
----
-
-### 4. Add Consistent Footer to Authenticated Pages
-
-Create a reusable footer component and add it to all authenticated pages.
-
-**New file: `src/components/Footer.tsx`**
-```typescript
-import { Link } from "react-router-dom";
-
-export const Footer = () => {
-  return (
-    <footer className="py-6 text-center text-sm text-muted-foreground border-t border-border mt-auto">
-      <p className="flex items-center justify-center gap-2 flex-wrap">
-        <span>Made with care for neighbors everywhere</span>
-        <span className="hidden sm:inline">·</span>
-        <Link to="/privacy" className="text-primary hover:underline">
-          Privacy & Terms
-        </Link>
-      </p>
-    </footer>
-  );
-};
-```
-
-**Files to update:**
-- `src/pages/Landing.tsx` - Use the new `Footer` component
-- `src/pages/SidekickPage.tsx` - Add Footer component
-- `src/pages/Library.tsx` - Add Footer component
-- `src/pages/Profile.tsx` - Add Footer component
-
----
-
-## Files Created
-| File | Purpose |
-|------|---------|
-| `src/types/library.ts` | Shared LibraryItem types |
-| `src/components/ui/loading-spinner.tsx` | Reusable loading component |
-| `src/components/Footer.tsx` | Reusable footer component |
-
-## Files Modified
-| File | Changes |
-|------|---------|
-| `src/pages/Profile.tsx` | Remove unused isEditing code, add Footer |
-| `src/pages/Library.tsx` | Use shared types, add Footer |
-| `src/components/LibraryCard.tsx` | Use shared types |
-| `src/components/LibraryItemPreview.tsx` | Use shared ItemType |
-| `src/pages/SidekickPage.tsx` | Add Footer |
-| `src/pages/Landing.tsx` | Use Footer component |
-| `src/components/VisionBoard.tsx` | Use LoadingSpinner |
-| `src/components/CommitmentsList.tsx` | Use LoadingSpinner |
-| `src/components/ServiceberriesCounter.tsx` | Use LoadingSpinner |
-| `src/components/ProtectedRoute.tsx` | Use LoadingSpinner |
-
----
+### Agency Questions to Include
+- Does the system prompt encourage offline action?
+- Are responses conversation-enders or conversation-extenders?
+- How often does Sidekick suggest specific next steps with real people?
+- Does commitment tracking lead to follow-through?
+- Is there a clear "done" state?
 
 ## Benefits
+- Teams have all technical context in one place
+- Clear line references for efficient exploration
+- Framing around humane tech principles
+- Actionable areas for improvement
+- Defined deliverables
 
-- **Reduced code duplication** - Type definitions and UI patterns in single locations
-- **Better maintainability** - Changes to loading or footer only need to happen once
-- **Cleaner Profile page** - No confusing non-functional button
-- **Consistent user experience** - Same footer on all authenticated pages
-- **Type safety** - Single source of truth for library item types
+## File Size
+Approximately 400-500 lines of well-organized markdown
