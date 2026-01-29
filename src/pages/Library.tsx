@@ -35,34 +35,8 @@ const Library = () => {
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    const verifyAccess = async () => {
-      const sessionToken = localStorage.getItem("studio_session");
-      if (!sessionToken) {
-        navigate("/auth");
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase.functions.invoke('verify-session', {
-          body: { token: sessionToken }
-        });
-
-        if (error || !data?.valid) {
-          localStorage.removeItem("studio_session");
-          navigate("/auth");
-          return;
-        }
-
-        await fetchLibraryItems();
-      } catch (error) {
-        console.error('Session verification error:', error);
-        localStorage.removeItem("studio_session");
-        navigate("/auth");
-      }
-    };
-
-    verifyAccess();
-  }, [navigate]);
+    fetchLibraryItems();
+  }, []);
 
   // Handle deep linking from URL parameters
   useEffect(() => {
