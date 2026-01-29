@@ -49,9 +49,6 @@ const Landing = () => {
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <p className="mt-4 text-sm text-muted-foreground">
-              Sign in with just your email — no password needed
-            </p>
           </div>
         </div>
       </div>
