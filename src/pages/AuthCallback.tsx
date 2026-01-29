@@ -12,80 +12,111 @@ const AuthCallback = () => {
   const [status, setStatus] = useState("Signing you in...");
 
   useEffect(() => {
+    let isMounted = true;
+
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    const withTimeout = async <T,>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> => {
+      const timeout = new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
+      );
+      return Promise.race([Promise.resolve(promise) as Promise<T>, timeout]);
+    };
+
+    const routeUser = async (userId: string) => {
+      if (!isMounted) return;
+      setStatus("Setting up your space...");
+
+      // Check if user has added anything to their profile (fast, and never block sign-in indefinitely)
+      try {
+        type ProfileCheck = {
+          display_name: string | null;
+          neighborhood: string | null;
+          neighborhood_description: string | null;
+          dreams: string | null;
+        };
+
+        const query = supabase
+          .from("profiles")
+          .select("display_name, neighborhood, neighborhood_description, dreams")
+          .eq("id", userId)
+          .maybeSingle();
+
+        const result = (await withTimeout(
+          query as unknown as PromiseLike<{ data: ProfileCheck | null; error: any }>,
+          6000,
+          "Profile lookup"
+        )) as { data: ProfileCheck | null; error: any };
+
+        if (result.error) {
+          console.error("Profile check error:", result.error);
+          navigate("/sidekick", { replace: true });
+          return;
+        }
+
+        const profile = result.data;
+        const hasProfileContent = !!profile &&
+          (Boolean(profile.display_name) ||
+            Boolean(profile.neighborhood) ||
+            Boolean(profile.neighborhood_description) ||
+            Boolean(profile.dreams));
+
+        navigate(hasProfileContent ? "/sidekick" : "/profile", { replace: true });
+      } catch (e) {
+        console.error("Profile lookup failed:", e);
+        // If anything goes wrong, do not trap the user on a spinner.
+        navigate("/sidekick", { replace: true });
+      }
+    };
+
     const handleAuthCallback = async () => {
       try {
-        // Wait for auth state to be processed from URL hash
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // In implicit magic-link flow, tokens arrive in the URL hash.
+        // supabase-js parses them asynchronously; poll briefly so we don't hang forever.
+        const start = Date.now();
+        let session = (await supabase.auth.getSession()).data.session;
+        let tries = 0;
+
+        while (!session && Date.now() - start < 8000) {
+          tries += 1;
+          await wait(350);
+          session = (await supabase.auth.getSession()).data.session;
+          if (tries === 6 && isMounted) setStatus("Almost there...");
+        }
         
-        if (sessionError) {
-          console.error("Session error:", sessionError);
-          navigate("/auth", { replace: true });
+        if (session?.user) {
+          await routeUser(session.user.id);
           return;
         }
 
-        if (!session?.user) {
-          // No session yet, wait for auth state change
-          const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, newSession) => {
-              if (event === 'SIGNED_IN' && newSession?.user) {
-                subscription.unsubscribe();
-                await routeUser(newSession.user.id);
-              }
-            }
-          );
-          
-          // Set a timeout in case auth doesn't complete
-          setTimeout(() => {
+        // Fallback: listen briefly for SIGNED_IN
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+          if (event === "SIGNED_IN" && newSession?.user) {
             subscription.unsubscribe();
-            navigate("/auth", { replace: true });
-          }, 10000);
-          return;
-        }
+            await routeUser(newSession.user.id);
+          }
+        });
 
-        await routeUser(session.user.id);
+        // Hard timeout: never keep the user stuck here
+        setTimeout(() => {
+          try {
+            subscription.unsubscribe();
+          } catch {
+            // ignore
+          }
+          if (isMounted) navigate("/auth", { replace: true });
+        }, 12000);
       } catch (error) {
         console.error("Auth callback error:", error);
         navigate("/auth", { replace: true });
       }
     };
 
-    const routeUser = async (userId: string) => {
-      setStatus("Setting up your space...");
-      
-      // Check if user has added anything to their profile
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("display_name, neighborhood, neighborhood_description, dreams")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Profile check error:", profileError);
-        // Default to sidekick if we can't check profile
-        navigate("/sidekick", { replace: true });
-        return;
-      }
-
-      // Check if profile has any content
-      const hasProfileContent = profile && (
-        profile.display_name || 
-        profile.neighborhood || 
-        profile.neighborhood_description || 
-        profile.dreams
-      );
-
-      if (!hasProfileContent) {
-        // Empty profile - send to profile page to get started
-        console.log("Empty profile, routing to profile setup");
-        navigate("/profile", { replace: true });
-      } else {
-        // Has profile content - send to Sidekick
-        console.log("Profile has content, routing to sidekick");
-        navigate("/sidekick", { replace: true });
-      }
-    };
-
     handleAuthCallback();
+
+    return () => {
+      isMounted = false;
+    };
   }, [navigate]);
 
   return (
