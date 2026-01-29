@@ -52,10 +52,10 @@ const AuthCallback = () => {
     const routeUser = async (userId: string) => {
       setStatus("Setting up your space...");
       
-      // Check if user has completed their profile
+      // Check if user has added anything to their profile
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
-        .select("profile_completed, display_name")
+        .select("display_name, neighborhood, neighborhood_description, dreams")
         .eq("id", userId)
         .maybeSingle();
 
@@ -66,13 +66,21 @@ const AuthCallback = () => {
         return;
       }
 
-      // New users or incomplete profiles go to Profile page
-      if (!profile || !profile.profile_completed) {
-        console.log("New/incomplete user, routing to profile");
+      // Check if profile has any content
+      const hasProfileContent = profile && (
+        profile.display_name || 
+        profile.neighborhood || 
+        profile.neighborhood_description || 
+        profile.dreams
+      );
+
+      if (!hasProfileContent) {
+        // Empty profile - send to profile page to get started
+        console.log("Empty profile, routing to profile setup");
         navigate("/profile", { replace: true });
       } else {
-        // Returning users with complete profiles go to Sidekick
-        console.log("Returning user, routing to sidekick");
+        // Has profile content - send to Sidekick
+        console.log("Profile has content, routing to sidekick");
         navigate("/sidekick", { replace: true });
       }
     };

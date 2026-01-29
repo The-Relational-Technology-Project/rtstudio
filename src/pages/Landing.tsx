@@ -8,14 +8,22 @@ const Landing = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
 
-  // Redirect authenticated users based on profile status
+  // Redirect authenticated users based on profile content
   useEffect(() => {
     if (user) {
-      // New users or incomplete profiles go to Profile page
-      if (!profile || !profile.profile_completed) {
+      // Check if profile has any content
+      const hasProfileContent = profile && (
+        profile.display_name || 
+        profile.neighborhood || 
+        profile.neighborhood_description || 
+        profile.dreams
+      );
+
+      if (!hasProfileContent) {
+        // Empty profile - send to profile page
         navigate("/profile", { replace: true });
       } else {
-        // Returning users with complete profiles go to Sidekick
+        // Has content - send to Sidekick
         navigate("/sidekick", { replace: true });
       }
     }
