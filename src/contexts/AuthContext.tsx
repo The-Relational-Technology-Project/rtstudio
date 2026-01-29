@@ -68,36 +68,83 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Set up auth state change listener BEFORE getting session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+    let mounted = true;
 
-        if (currentSession?.user) {
-          // Use setTimeout to avoid potential race conditions with Supabase
-          setTimeout(async () => {
+    const initializeAuth = async () => {
+      // Check if there's a hash fragment with auth tokens (magic link callback)
+      const hasAuthCallback = window.location.hash.includes('access_token') || 
+                              window.location.hash.includes('refresh_token') ||
+                              window.location.hash.includes('error');
+
+      if (hasAuthCallback) {
+        console.log("Auth callback detected, processing...");
+        // Supabase will automatically parse the hash and set up the session
+        // We need to wait for this to complete
+      }
+
+      // Set up auth state change listener
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (event, currentSession) => {
+          if (!mounted) return;
+          
+          console.log("Auth state changed:", event, currentSession?.user?.email);
+          
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+
+          if (currentSession?.user) {
+            // Fetch profile after auth state is set
             const profileData = await fetchProfile(currentSession.user.id);
-            setProfile(profileData);
+            if (mounted) {
+              setProfile(profileData);
+              setLoading(false);
+            }
+          } else {
+            setProfile(null);
             setLoading(false);
-          }, 0);
-        } else {
-          setProfile(null);
+          }
+
+          // Clean up URL hash after successful auth
+          if (event === 'SIGNED_IN' && window.location.hash) {
+            // Remove the hash without triggering a navigation
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
+        }
+      );
+
+      // Get initial session
+      const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Error getting session:", error);
+      }
+
+      if (!mounted) return;
+
+      // If there's an auth callback, the onAuthStateChange will handle it
+      // Otherwise, set loading to false if no session
+      if (!hasAuthCallback && !initialSession) {
+        setLoading(false);
+      } else if (initialSession && !hasAuthCallback) {
+        // Session exists from storage, update state
+        setSession(initialSession);
+        setUser(initialSession.user);
+        const profileData = await fetchProfile(initialSession.user.id);
+        if (mounted) {
+          setProfile(profileData);
           setLoading(false);
         }
       }
-    );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      if (!initialSession) {
-        setLoading(false);
-      }
-      // Auth state change will handle the rest
-    });
+      return () => {
+        subscription.unsubscribe();
+      };
+    };
+
+    initializeAuth();
 
     return () => {
-      subscription.unsubscribe();
+      mounted = false;
     };
   }, []);
 
