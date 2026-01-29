@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ExternalLink, BookOpen, Lightbulb, Wrench } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-type ItemType = "story" | "prompt" | "tool";
+import type { ItemType } from "@/types/library";
 
 interface LibraryItemPreviewProps {
   id: string;

@@ -12,14 +12,14 @@ import {
   DialogTitle,
   DialogFooter 
 } from "@/components/ui/dialog";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { 
   ImagePlus, 
   Trash2, 
   Download, 
   Loader2, 
-  Pencil,
-  X
+  Pencil
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -331,11 +331,7 @@ export const VisionBoard = () => {
   }, [pins, user]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
