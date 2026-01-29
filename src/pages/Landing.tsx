@@ -3,20 +3,23 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sparkles, BookOpen, Users, ArrowRight } from "lucide-react";
+
 const Landing = () => {
   const navigate = useNavigate();
-  const {
-    user
-  } = useAuth();
+  const { user, profile } = useAuth();
 
-  // Redirect authenticated users to Sidekick
+  // Redirect authenticated users based on profile status
   useEffect(() => {
     if (user) {
-      navigate("/sidekick", {
-        replace: true
-      });
+      // New users or incomplete profiles go to Profile page
+      if (!profile || !profile.profile_completed) {
+        navigate("/profile", { replace: true });
+      } else {
+        // Returning users with complete profiles go to Sidekick
+        navigate("/sidekick", { replace: true });
+      }
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
   return <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden">

@@ -33,10 +33,11 @@ const Auth = () => {
 
     try {
       // Use Supabase's native magic link - single email for both sign-up and sign-in
+      // Redirect to /auth/callback which will check profile status and route accordingly
       const { error } = await supabase.auth.signInWithOtp({
         email: email.toLowerCase().trim(),
         options: {
-          emailRedirectTo: `${window.location.origin}/sidekick`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           shouldCreateUser: true, // Automatically creates account if doesn't exist
         },
       });
