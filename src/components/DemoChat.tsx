@@ -77,13 +77,10 @@ const DemoChat = () => {
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-6 py-4 border-b border-border bg-card/50">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />
           <h2 className="text-lg font-fraunces font-bold text-foreground">Try Sidekick</h2>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Your AI partner for building tech that brings neighbors together.
-        </p>
       </div>
 
       {/* Messages Area */}
@@ -92,7 +89,7 @@ const DemoChat = () => {
           {messages.length === 0 ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Ask about relational tech, explore stories from other neighborhoods, or get help remixing a prompt for your community.
+                Ask about relational tech, explore stories from neighborhoods, and get help remixing tools for your community.
               </p>
               
               {/* Quick Actions */}

@@ -42,10 +42,10 @@ const Landing = () => {
           {/* Header */}
           <div className="text-center mb-10 animate-fade-in">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-fraunces text-foreground mb-6 leading-tight">
-              Relational Tech Studio
+              You can build what you need
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Your space to craft technology that serves your people and place.
+              Craft relational tech for your people and place
             </p>
           </div>
 
