@@ -1,73 +1,184 @@
 
-# Plan: Create HACKATHON.md
+
+# Plan: Demo Chat Experience on Landing Page
 
 ## Overview
-Create a comprehensive hackathon brief document (`HACKATHON.md`) in the repository root that provides teams with everything they need to evaluate and enhance agency-building in the Relational Tech Studio's Sidekick experience.
+Add a minimalist demo chat to the landing page that gives visitors a taste of Sidekick's capabilities before signing up. The demo has sensible restrictions to prevent abuse and encourage account creation.
 
-## File to Create
+## Architecture
 
-**`HACKATHON.md`** - A detailed markdown file containing:
+### Component Structure
+```text
+Landing.tsx
+  ├── Hero (title + subtitle) - KEEP
+  ├── DemoChat (new component)
+  │     ├── Local state (not SidekickContext)
+  │     ├── 10 message limit tracking
+  │     ├── Simplified UI (no library item links)
+  │     └── Upgrade prompt when limit reached
+  ├── Feature Cards - MOVE below chat
+  ├── "Enter Your Studio" CTA - UPDATE text
+  └── Footer - KEEP
+```
 
-### Document Structure
+## Files to Create/Modify
 
-1. **Challenge Overview** - Frames the hackathon around human agency
-2. **What is Agency?** - Defines agency in the neighborhood context
-3. **Quick Start** - How to access and explore the app
-4. **Technical Architecture** - Stack overview with specific file references
-5. **Key Files Reference** - Annotated list of files with line numbers
-6. **Database Schema** - All tables with their purposes
-7. **Current Agency Features** - What already exists
-8. **Configuration Levers** - Where to make changes
-9. **Exploration Areas** - Suggested investigation paths
-10. **Evaluation Framework** - Humane tech principles to apply
-11. **Suggested Experiments** - Hands-on testing ideas
-12. **Deliverables** - What teams should produce
-13. **Technical Notes** - How to modify key components
-14. **Resources** - External links
+### 1. New Component: `src/components/DemoChat.tsx`
+A standalone demo chat component that:
+- Uses local state (NOT the shared SidekickContext)
+- Tracks message count in session (localStorage or state)
+- Passes `demoMode: true` flag to edge function
+- Does NOT display library item preview cards
+- Shows upgrade prompt after 10 messages
 
-### Key Technical Details to Include
+**Key features:**
+- Minimalist welcome: "Try chatting with Sidekick — your AI partner for building tech that brings neighbors together."
+- Simple input placeholder: "What would you like to explore?"
+- No "Contribute" quick action (can't contribute without login)
+- After 10 messages: Overlay with account creation CTA
 
-| Component | File | Key Lines | Purpose |
-|-----------|------|-----------|---------|
-| AI System Prompt | `supabase/functions/chat-remix/index.ts` | 361-465 | Sidekick's personality, capabilities, and guidance |
-| Tool Definitions | `supabase/functions/chat-remix/index.ts` | 11-86 | Structured actions (submit_story, record_commitment, etc.) |
-| Profile Personalization | `supabase/functions/chat-remix/index.ts` | 181-220 | How user context influences responses |
-| Library RAG | `supabase/functions/chat-remix/index.ts` | 222-359 | Content search and retrieval |
-| Rate Limiting | `supabase/functions/chat-remix/index.ts` | 126-179 | 500 messages/day limit |
-| Tool Execution | `supabase/functions/chat-remix/index.ts` | 507-622 | How contributions are saved |
-| Chat UI | `src/components/Sidekick.tsx` | Full file (362 lines) | Chat interface and state |
-| Quick Actions | `src/components/Sidekick.tsx` | 217-251 | Suggested starting prompts |
-| Onboarding | `src/components/ProfileOnboarding.tsx` | Full file (372 lines) | Profile context gathering |
-| Commitments | `src/components/CommitmentsList.tsx` | Full file (263 lines) | Tracking real-world actions |
-| Auth Context | `src/contexts/AuthContext.tsx` | 1-197 | User and profile state |
-| Sidekick Context | `src/contexts/SidekickContext.tsx` | Full file | Message history management |
+### 2. Modify: `supabase/functions/chat-remix/index.ts`
+Add demo mode handling:
 
-### Database Tables to Document
+**Changes at request parsing (around line 95):**
+- Accept new `demoMode` boolean parameter
+- When `demoMode: true`:
+  - Use GUEST/DEMO system prompt variation
+  - **Do NOT include contribution tools** (prevents submit_story, submit_prompt, submit_tool, record_commitment)
+  - Apply separate demo rate limit (10 messages per session tracked client-side, plus IP-based backup limit)
 
-| Table | Purpose |
-|-------|---------|
-| `profiles` | User info (name, neighborhood, dreams, tech level) |
-| `commitments` | User commitments with status tracking |
-| `stories` | Community stories (title, text, attribution) |
-| `prompts` | Prompt templates (title, category, example_prompt) |
-| `tools` | Tool recommendations (name, description, url) |
-| `serviceberries` | Gamification rewards |
-| `chat_usage` | Rate limiting (500/day per user) |
-| `vision_board_pins` | User dream images |
+**Demo-specific system prompt additions:**
+- "DEMO MODE - This is a preview session. The user is exploring what Sidekick can do."
+- "Do NOT offer to save commitments or add contributions - they need to sign up first."
+- "Keep responses helpful and inviting. After a few exchanges, naturally mention that signing up unlocks the full experience."
 
-### Agency Questions to Include
-- Does the system prompt encourage offline action?
-- Are responses conversation-enders or conversation-extenders?
-- How often does Sidekick suggest specific next steps with real people?
-- Does commitment tracking lead to follow-through?
-- Is there a clear "done" state?
+**Security considerations:**
+- No tools array passed to AI when in demo mode = no database writes possible
+- Library content is still searchable (read-only)
+- No user ID to associate with anything
 
-## Benefits
-- Teams have all technical context in one place
-- Clear line references for efficient exploration
-- Framing around humane tech principles
-- Actionable areas for improvement
-- Defined deliverables
+### 3. Modify: `src/pages/Landing.tsx`
+Restructure the page layout:
 
-## File Size
-Approximately 400-500 lines of well-organized markdown
+**New layout order:**
+1. Hero section (title + subtitle) - unchanged
+2. **NEW: DemoChat component** with intro text
+3. Feature cards section - moved below chat
+4. "Enter Your Studio" button - updated text
+5. "What is Relational Tech?" section - unchanged
+6. Footer - unchanged
+
+**CTA button change:**
+- "Enter the Studio" → "Enter Your Studio"
+- Same link to /auth
+
+### 4. Modify: `src/contexts/SidekickContext.tsx`
+No changes needed - DemoChat will use local state to keep demo separate from authenticated sessions.
+
+## Demo Chat UX Flow
+
+```text
+┌─────────────────────────────────────────────────────┐
+│  Relational Tech Studio                              │
+│  Your space to craft technology...                   │
+├─────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────┐    │
+│  │  💬 Try Sidekick                             │    │
+│  │                                              │    │
+│  │  "Try chatting with Sidekick — your AI      │    │
+│  │   partner for building tech that brings     │    │
+│  │   neighbors together."                      │    │
+│  │                                              │    │
+│  │  [Remix Something] [Discover Stories]       │    │
+│  │                     [Explore Tools]         │    │
+│  │                                              │    │
+│  │  ┌────────────────────────────────┐ [Send]  │    │
+│  │  │ What would you like to explore?│         │    │
+│  │  └────────────────────────────────┘         │    │
+│  └─────────────────────────────────────────────┘    │
+├─────────────────────────────────────────────────────┤
+│  [Sidekick]  [Library]  [Peer Network]  ← cards     │
+├─────────────────────────────────────────────────────┤
+│           [Enter Your Studio →]                     │
+└─────────────────────────────────────────────────────┘
+```
+
+**After 10 messages:**
+```text
+┌─────────────────────────────────────────────────────┐
+│  ┌─────────────────────────────────────────────┐    │
+│  │                                              │    │
+│  │      ✨ You've explored 10 messages!        │    │
+│  │                                              │    │
+│  │   Sign up to unlock the full Studio:        │    │
+│  │   • Save and track your commitments         │    │
+│  │   • Contribute your stories to the library  │    │
+│  │   • Connect with other neighborhood builders│    │
+│  │                                              │    │
+│  │        [Enter Your Studio →]                │    │
+│  │                                              │    │
+│  └─────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘
+```
+
+## Technical Details
+
+### Edge Function Changes (`chat-remix/index.ts`)
+
+**Line ~95 - Parse demoMode:**
+```typescript
+const { messages, demoMode } = await req.json();
+```
+
+**Line ~243-250 - Demo profile context:**
+```typescript
+if (demoMode) {
+  profileContext = `
+
+DEMO MODE - This visitor is trying out Sidekick before signing up.
+You can help them explore the library and understand relational tech.
+Do NOT offer to save commitments or contributions - they need to create an account first.
+Keep responses inviting. After a few exchanges, you can mention that signing up unlocks features like saving commitments and contributing to the library.
+`;
+}
+```
+
+**Line ~504-512 - Skip tools in demo mode:**
+```typescript
+body: JSON.stringify({
+  model: 'google/gemini-3-pro-preview',
+  messages: [...],
+  ...(demoMode ? {} : { tools: contributionTools, tool_choice: 'auto' })
+})
+```
+
+### DemoChat Component Props
+```typescript
+interface DemoChatProps {
+  onLimitReached?: () => void;  // Callback when 10 messages hit
+}
+```
+
+### Message Limit Implementation
+- Store `demoMessageCount` in React state
+- Increment on each user message sent
+- When count reaches 10, show overlay
+- "Start Fresh" button clears messages and resets count
+
+## Security Checklist
+
+| Risk | Mitigation |
+|------|------------|
+| Library contributions | Tools not passed to AI in demo mode |
+| Commitment tracking | record_commitment tool not available |
+| Prompt injection | System prompt explicitly marks demo mode |
+| Rate limiting abuse | 10 message client limit + no user tracking overhead |
+| Data persistence | Nothing saved - demo chat is ephemeral |
+
+## Implementation Sequence
+
+1. **Create DemoChat component** - Local state, simplified UI, message limit
+2. **Update chat-remix edge function** - Add demoMode parameter handling
+3. **Update Landing.tsx** - Integrate DemoChat, rearrange layout, update CTA text
+4. **Deploy and test** - Verify tools are disabled, limit works, conversion flow is smooth
+
