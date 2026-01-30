@@ -92,7 +92,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, demoMode } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -124,10 +124,10 @@ serve(async (req) => {
       }
     }
 
-    // Rate limiting: 500 messages per day per user
+    // Rate limiting: 500 messages per day per user (skip for demo mode - handled client-side)
     const DAILY_MESSAGE_LIMIT = 500;
     
-    if (userId) {
+    if (userId && !demoMode) {
       const todayStart = new Date();
       todayStart.setUTCHours(0, 0, 0, 0);
       
@@ -240,8 +240,19 @@ AUTHENTICATED USER - This user IS signed in. You CAN save commitments and contri
 `;
         console.log('User authenticated but no profile data:', userId);
       }
+    } else if (demoMode) {
+      // Demo mode - visitor trying out Sidekick before signing up
+      profileContext = `
+
+DEMO MODE - This visitor is trying out Sidekick before signing up.
+You can help them explore the library and understand relational tech.
+Do NOT offer to save commitments or add contributions - they need to create an account first.
+Keep responses helpful and inviting. After a few exchanges, you can naturally mention that signing up unlocks the full Studio experience with features like saving commitments and contributing to the library.
+Do NOT mention library item links or IDs - the demo interface doesn't display them.
+`;
+      console.log('Demo mode - guest exploring');
     } else {
-      // User is NOT authenticated
+      // User is NOT authenticated (regular guest)
       profileContext = `
 
 GUEST USER - This user is NOT signed in. You cannot save commitments to their profile. If they want to track commitments, politely let them know they need to sign in first (there's a profile icon in the top navigation).
@@ -507,8 +518,8 @@ Begin by understanding what they're looking for - whether that's exploring the l
           { role: 'system', content: systemPrompt },
           ...messages
         ],
-        tools: contributionTools,
-        tool_choice: 'auto'
+        // Only include tools when NOT in demo mode - prevents database writes from demo
+        ...(demoMode ? {} : { tools: contributionTools, tool_choice: 'auto' })
       }),
     });
 
