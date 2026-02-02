@@ -658,20 +658,32 @@ Begin by understanding what they're looking for - whether that's exploring the l
       const newId = insertResult?.data?.id;
       console.log('Contribution saved:', contributionType, newId);
       
-      // Award serviceberries for library contribution (15 berries per memory spec)
+      // Award serviceberries for library contribution (15 berries per spec)
+      // NOTE: award_serviceberries validates reason against an allowlist.
+      const contributionReasonMap: Record<string, string> = {
+        story: 'story_shared',
+        prompt: 'prompt_shared',
+        tool: 'tool_shared',
+      };
+
       if (userId && userSupabase && newId) {
-        const { error: serviceberryError } = await userSupabase.rpc('award_serviceberries', {
-          p_user_id: userId,
-          p_amount: 15,
-          p_reason: `contribution_${contributionType}`,
-          p_reference_id: newId
-        });
+        const reason = contributionReasonMap[contributionType] ?? null;
+        if (reason) {
+          const { error: serviceberryError } = await userSupabase.rpc('award_serviceberries', {
+            p_user_id: userId,
+            p_amount: 15,
+            p_reason: reason,
+            p_reference_id: newId
+          });
         
-        if (serviceberryError) {
-          console.error('Serviceberries award error for contribution:', serviceberryError);
-          // Don't fail the whole operation, just log the error
+          if (serviceberryError) {
+            console.error('Serviceberries award error for contribution:', serviceberryError);
+            // Don't fail the whole operation, just log the error
+          } else {
+            console.log('Serviceberries awarded for contribution:', contributionType, newId);
+          }
         } else {
-          console.log('Serviceberries awarded for contribution:', contributionType, newId);
+          console.warn('No serviceberries reason mapping for contributionType:', contributionType);
         }
       }
       
