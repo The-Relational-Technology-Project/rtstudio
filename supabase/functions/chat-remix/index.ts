@@ -61,28 +61,6 @@ const contributionTools = [
         additionalProperties: false
       }
     }
-  },
-  {
-    type: "function",
-    function: {
-      name: "record_commitment",
-      description: "Record a commitment the user has made during conversation. Only call this AFTER the user confirms they want to track this commitment.",
-      parameters: {
-        type: "object",
-        properties: {
-          commitment_text: { 
-            type: "string", 
-            description: "The commitment in the user's own words" 
-          },
-          context: { 
-            type: "string", 
-            description: "Brief context from the conversation about why this commitment matters" 
-          }
-        },
-        required: ["commitment_text"],
-        additionalProperties: false
-      }
-    }
   }
 ];
 
@@ -215,7 +193,7 @@ serve(async (req) => {
 
         profileContext = `
 
-AUTHENTICATED USER - This user IS signed in. You CAN save commitments and contributions to their profile.
+AUTHENTICATED USER - This user IS signed in.
 
 BUILDER CONTEXT (personalize your responses to this person):
 - Full name: ${profile.full_name || 'Not provided'}
@@ -228,15 +206,12 @@ BUILDER CONTEXT (personalize your responses to this person):
 CRITICAL: This user is ${namesList}. When recommending people to connect with or stories/contributions to explore, DO NOT recommend they contact themselves or their own contributions. If you find library items attributed to them, acknowledge they created it rather than suggesting they "reach out to" themselves.
 
 Use their preferred name naturally in conversation. Reference their neighborhood when relevant. Adjust technical explanations based on their comfort level. Connect suggestions to their stated dreams when possible.
-
-When they confirm a commitment, immediately use the record_commitment tool - they are authenticated and it will work.
 `;
         console.log('Profile context loaded for verified user:', userId, 'Names:', namesList);
-      } else {
         // User is authenticated but profile fetch failed or no profile yet
         profileContext = `
 
-AUTHENTICATED USER - This user IS signed in. You CAN save commitments and contributions to their profile.
+AUTHENTICATED USER - This user IS signed in.
 `;
         console.log('User authenticated but no profile data:', userId);
       }
@@ -498,10 +473,12 @@ IMPORTANT FOR CONTRIBUTIONS:
 - NEVER call submission functions without explicit user consent
 - If they seem hesitant, reassure them that their contribution can inspire others even if it's imperfect
 
-COMMITMENT TRACKING:
-When you notice the user making a commitment during conversation (e.g., "I'm going to try this at our next meeting", "I'll reach out to my neighbor about this", "I want to organize a gathering"), gently acknowledge it and ask:
-"That sounds like a commitment! Would you like me to track this for you? I can add it to your profile so you can revisit it later."
-Only call the record_commitment tool AFTER they confirm they want to track it.
+COMMITMENTS:
+When users express intentions, plans, or commitments during conversation (like "I'm going to talk to my neighbor" or "I want to host a block party"):
+- Encourage them warmly and acknowledge the commitment
+- Help them phrase it clearly if needed
+- Let them know: "You can add this to your Commitments list on your Profile page to track it - and you'll earn a serviceberry when you complete it!"
+- Do NOT try to save commitments for them - they manage their own commitments manually on their Profile page
 
 Begin by understanding what they're looking for - whether that's exploring the library, remixing a prompt, or contributing something new.${profileContext}${libraryContext}`;
 
@@ -584,64 +561,6 @@ Begin by understanding what they're looking for - whether that's exploring the l
           description: args.description,
           url: args.url
         }).select('id').single();
-      } else if (functionName === 'record_commitment') {
-        // Handle commitment recording
-        if (!userId) {
-          return new Response(
-            JSON.stringify({ 
-              response: "I'd love to track this commitment for you, but you'll need to be signed in first. Once you're logged in, I can save commitments to your profile.",
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        const commitmentResult = await supabase.from('commitments').insert({
-          user_id: userId,
-          commitment_text: args.commitment_text,
-          source_chat_context: args.context || null,
-          status: 'active'
-        }).select('id').single();
-        
-        if (commitmentResult.error) {
-          console.error('Commitment insert error:', commitmentResult.error);
-          return new Response(
-            JSON.stringify({ 
-              response: "I tried to save your commitment, but ran into a technical issue. Would you like to try again?",
-              error: commitmentResult.error.message 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        // Award serviceberries for making a commitment (use user's auth context for RPC)
-        if (userSupabase) {
-          const { error: serviceberryError } = await userSupabase.rpc('award_serviceberries', {
-            p_user_id: userId,
-            p_amount: 5,
-            p_reason: 'commitment_made',
-            p_reference_id: commitmentResult.data.id
-          });
-          
-          if (serviceberryError) {
-            console.error('Serviceberries award error:', serviceberryError);
-            // Don't fail the whole operation, just log the error
-          } else {
-            console.log('Serviceberries awarded for commitment:', commitmentResult.data.id);
-          }
-        }
-        
-        console.log('Commitment saved:', commitmentResult.data.id);
-        
-        return new Response(
-          JSON.stringify({ 
-            response: `I've added "${args.commitment_text}" to your commitments! You can view and track all your commitments on your Profile page. I'll be here when you're ready to share how it went.`,
-            commitment: {
-              id: commitmentResult.data.id,
-              text: args.commitment_text
-            }
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
       }
       
       if (insertResult?.error) {
