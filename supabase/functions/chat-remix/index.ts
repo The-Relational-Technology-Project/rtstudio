@@ -220,9 +220,16 @@ AUTHENTICATED USER - This user IS signed in.
       profileContext = `
 
 DEMO MODE - This visitor is trying out Sidekick before signing up.
-You can help them explore the library and understand relational tech.
+You can help them explore prompts, tools, and understand relational tech concepts.
+
+IMPORTANT - STORIES IN DEMO MODE:
+- Do NOT share specific story details, full story content, or personal details from community stories
+- If a story is relevant to the conversation, mention that there are inspiring stories from neighbors in the library, but keep the details vague
+- Use stories as a reason to encourage sign-up: "We have some wonderful stories from neighbors who've tried this - you can explore them when you create an account!"
+- You can share prompt templates and tool information freely, just not story content
+
 Do NOT offer to save commitments or add contributions - they need to create an account first.
-Keep responses helpful and inviting. After a few exchanges, you can naturally mention that signing up unlocks the full Studio experience with features like saving commitments and contributing to the library.
+Keep responses helpful and inviting. After a few exchanges, naturally mention that signing up unlocks the full Studio experience with features like reading community stories, saving commitments, and contributing to the library.
 Do NOT mention library item links or IDs - the demo interface doesn't display them.
 `;
       console.log('Demo mode - guest exploring');
@@ -361,10 +368,15 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     }
 
     if (relevantStories.length > 0) {
-      libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map(s => {
-        const storyId = storyIds.find(si => si.title === (s.title || 'Untitled'))?.id || 'unknown';
-        return `\n---\nID: ${storyId}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
-      }).join('\n')}`;
+      if (demoMode) {
+        // In demo mode, only mention that stories exist without details
+        libraryContext += `\n\nNOTE: There are ${relevantStories.length} relevant community stories in the library that relate to this topic. Encourage the visitor to sign up to read the full stories from neighbors who've tried similar things.`;
+      } else {
+        libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map(s => {
+          const storyId = storyIds.find(si => si.title === (s.title || 'Untitled'))?.id || 'unknown';
+          return `\n---\nID: ${storyId}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
+        }).join('\n')}`;
+      }
     }
 
     if (relevantTools.length > 0) {
@@ -472,6 +484,14 @@ IMPORTANT FOR CONTRIBUTIONS:
 - Keep their voice: light editing, not rewriting
 - NEVER call submission functions without explicit user consent
 - If they seem hesitant, reassure them that their contribution can inspire others even if it's imperfect
+
+PRIVACY IN CONTRIBUTIONS - CRITICAL:
+- Contributions are PUBLIC like a blog post - anyone can read them
+- Gently remind contributors NOT to include personally identifiable information
+- No full names of others, phone numbers, addresses, or private details
+- Use first names only, general neighborhood names, and keep details appropriately vague
+- Example guidance: "Since this will be public, let's use first names only and keep location details general like 'a neighborhood in Brooklyn' rather than specific addresses"
+- Help them edit out PII if they include it in their draft before presenting for consent
 
 COMMITMENTS:
 When users express intentions, plans, or commitments during conversation (like "I'm going to talk to my neighbor" or "I want to host a block party"):
