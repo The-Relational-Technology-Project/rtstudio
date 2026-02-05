@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
 /**
  * Auth callback page - handles redirect after magic link click.
  * Routes new users to Profile, returning users to Sidekick.
@@ -21,6 +23,18 @@ const AuthCallback = () => {
         setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms)
       );
       return Promise.race([Promise.resolve(promise) as Promise<T>, timeout]);
+    };
+
+    const notifyNewSignup = async (email: string, name?: string) => {
+      try {
+        await fetch(`${SUPABASE_URL}/functions/v1/notify-signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, name }),
+        });
+      } catch (e) {
+        console.error("Failed to send signup notification:", e);
+      }
     };
 
     const routeUser = async (userId: string) => {
@@ -60,6 +74,15 @@ const AuthCallback = () => {
             Boolean(profile.neighborhood) ||
             Boolean(profile.neighborhood_description) ||
             Boolean(profile.dreams));
+
+        // If this is a new user (no profile content), send signup notification
+        if (!hasProfileContent) {
+          // Get the user's email from the session
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.email) {
+            notifyNewSignup(session.user.email, profile?.display_name || undefined);
+          }
+        }
 
         navigate(hasProfileContent ? "/sidekick" : "/profile", { replace: true });
       } catch (e) {
