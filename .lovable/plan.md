@@ -1,95 +1,52 @@
 
-# Manual Commitments Box
 
-## Overview
-Add a simple "Commitments" to-do list box for logged-in users where they can manually add text items and check them off. When a commitment is completed, the user earns a serviceberry.
+# Upload 20 New Stories to the Library
 
-## User Experience
-1. A compact commitments box (shown for logged-in users only)
-2. Simple text input field with a submit button to add new items
-3. Each item shows as a checkbox-style row
-4. Clicking the circle/checkbox marks it complete and awards 10 serviceberries
-5. Option to delete items
-6. Completed items show with strikethrough styling
+## Performance Assessment
 
-## Location
-The commitments box will be enhanced directly in the existing `CommitmentsList` component, which already appears on the Profile page. We will add a manual entry input at the top.
+The Library currently has **23 stories** and will grow to **43** after this upload. Here's why performance will remain strong:
 
----
+- **Data volume is modest**: 43 stories (plus prompts and tools) is well under the 1,000-row default query limit. No pagination needed.
+- **Fetching is efficient**: Stories, prompts, and tools are fetched in parallel via `Promise.all`, so the three queries run simultaneously.
+- **Rendering is lightweight**: The grid uses `line-clamp` on card summaries (120 chars), so long `full_story_text` content is only loaded into the DOM when a user clicks "View" to open the detail dialog.
+- **No changes needed** to the Library page code for this volume.
 
-## Technical Implementation
+## Data Upload Plan
 
-### 1. Modify CommitmentsList Component
-**File:** `src/components/CommitmentsList.tsx`
+Insert all 20 stories as individual rows into the `stories` table with:
+- **title**: Story title
+- **story_text**: A ~120-character summary for the card view
+- **attribution**: Source/reference noted in the document
+- **full_story_text**: The complete story text formatted in HTML paragraphs
 
-Add the following functionality:
+### Stories to Insert
 
-**New state and input handling:**
-- Add `newCommitmentText` state for the input field
-- Add `isAdding` state to show loading during submission
+| # | Title | Attribution |
+|---|-------|-------------|
+| 1 | Nate Tubbs and The Island, Chicago | Parish Collective / parishcollective.org |
+| 2 | Savannah Kruger and The Neighborhood Accelerator, Boulder | Supernuclear Substack / supernuclear.substack.com |
+| 3 | The Yes House, Granite Falls, Minnesota | theyeshouse.org / Department of Public Transformation |
+| 4 | Jesse Evers and Highside Workshop, Brooklyn | jesseevers.com / CoAuthored |
+| 5 | The Bushwick Collective, Brooklyn | Referenced in Jesse Evers' guide / multiple sources |
+| 6 | Bradley Street Bicycle Co-op, New Haven | Referenced in Jesse Evers' guide / bsbc.co |
+| 7 | Grow Food Northampton, Massachusetts | Referenced in Jesse Evers' guide / growfoodnorthampton.org |
+| 8 | vTaiwan and Digital Democracy | Radical xChange paper / CivicHall article on vTaiwan |
+| 9 | Trade School, New York to Everywhere | tradeschool.coop |
+| 10 | East Bay Permanent Real Estate Cooperative, Oakland | ebprec.org / Sustainable Economies Law Center |
+| 11 | Boston Ujima Project | JRF paper / ujimaboston.com |
+| 12 | Cool Block | coolblock.org / Empowerment Institute |
+| 13 | Camerados and Public Living Rooms | camerados.org / Atlas of the Future |
+| 14 | Repair Cafe | repaircafe.org / multiple sources |
+| 15 | Porchfest, Ithaca to Everywhere | porchfest.org |
+| 16 | City Repair and Intersection Painting, Portland | cityrepair.org / communitecture.net |
+| 17 | Flatpack Democracy, Frome, England | Multiple sources / Peter Macfadyen |
+| 18 | NeighborCircles, Lawrence, Massachusetts | Lawrence CommunityWorks / lawrencecommunityworks.org |
+| 19 | Edmonton's Community League System | Edmonton Federation of Community Leagues / ABCD Institute |
+| 20 | Living Room Conversations | livingroomconversations.org / Joan Blades |
 
-**New "Add Commitment" input section:**
-- Simple text input with placeholder "Add a commitment..."
-- Submit button (or Enter key to submit)
-- Input clears after successful add
+## Technical Details
 
-**Insert logic:**
-- Insert into `commitments` table with:
-  - `user_id`: current user's ID
-  - `commitment_text`: the entered text
-  - `status`: "active"
-  - `source_chat_context`: null (manual entry has no chat context)
-- Do NOT award serviceberries on creation (only on completion, per existing logic)
+- Each story will be inserted via SQL `INSERT INTO public.stories (title, story_text, attribution, full_story_text)` with HTML-formatted full text using `<p>` tags for paragraphs
+- The `story_text` field will contain a concise summary (first ~120 characters of the narrative) for card display
+- No code changes are required -- the existing Library page will automatically display all new stories
 
-**Updated empty state:**
-- Change the empty state message from "When you make commitments during chat sessions..." to something that encourages manual entry
-
-### 2. UI Layout Changes
-The updated component structure:
-
-```text
-+---------------------------------------+
-|  Commitments                          |
-+---------------------------------------+
-| [  Add a commitment...          ] [+] |
-+---------------------------------------+
-| Active (2)                            |
-|  o  Call neighbor about garden        |
-|  o  Research block party permits      |
-+---------------------------------------+
-| Completed (1)                         |
-|  [check] Post flyer at coffee shop    |
-+---------------------------------------+
-```
-
-### 3. Database Interaction
-Using the existing `commitments` table - no schema changes needed:
-- `commitment_text` (required): The to-do item text
-- `user_id` (required): Owner of the commitment  
-- `status`: "active" or "completed"
-- `source_chat_context`: null for manual entries
-- `completed_at`: timestamp when completed
-
-### 4. Serviceberry Awards
-The existing completion logic already awards 10 serviceberries via:
-```typescript
-await supabase.rpc("award_serviceberries", {
-  p_user_id: user.id,
-  p_amount: 10,
-  p_reason: "commitment_completed",
-  p_reference_id: commitment.id
-});
-```
-
-No changes needed here - manual completions will work the same way.
-
----
-
-## Summary of Changes
-
-| File | Change |
-|------|--------|
-| `src/components/CommitmentsList.tsx` | Add input field for manual commitment entry, update empty state text |
-
-## No Database Changes Required
-The existing `commitments` table already supports this use case - `source_chat_context` is nullable, so manual entries simply leave it null.
