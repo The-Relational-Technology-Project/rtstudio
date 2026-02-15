@@ -1,52 +1,67 @@
 
+# Fix Duplicate Contributions, Serviceberries, and Profile Context
 
-# Upload 20 New Stories to the Library
+## Issues Found
 
-## Performance Assessment
+### 1. Duplicate Prompt Entry
+Two copies of "Neighborhood Deep Time Scanner" exist in the database. The AI model re-triggered the `submit_prompt` tool on a follow-up question because:
+- The conversation history sent to the LLM doesn't include the tool call result -- only the hardcoded success message
+- The LLM has no memory that it already submitted the prompt, so it calls the tool again
+- There is no server-side deduplication check
 
-The Library currently has **23 stories** and will grow to **43** after this upload. Here's why performance will remain strong:
+### 2. Serviceberries Not Awarded
+The edge function logs show "User not authenticated - guest mode" during both prompt submissions, even though you were signed in. The serviceberry-awarding code (line 608) correctly gates on `userId`, but since the user wasn't recognized, it was skipped entirely. Additionally, there is a profile context overwrite bug (see below) that may contribute to auth confusion.
 
-- **Data volume is modest**: 43 stories (plus prompts and tools) is well under the 1,000-row default query limit. No pagination needed.
-- **Fetching is efficient**: Stories, prompts, and tools are fetched in parallel via `Promise.all`, so the three queries run simultaneously.
-- **Rendering is lightweight**: The grid uses `line-clamp` on card summaries (120 chars), so long `full_story_text` content is only loaded into the DOM when a user clicks "View" to open the detail dialog.
-- **No changes needed** to the Library page code for this volume.
+### 3. Profile Context Overwrite Bug (lines 211-216)
+This is a copy-paste error in `chat-remix/index.ts`. The code at lines 194-209 builds a full personalized profile context (name, neighborhood, dreams, tech comfort). Then lines 211-216, which should be inside an `else` block, run unconditionally and overwrite all that context with just "AUTHENTICATED USER." This means **personalization has been broken for all authenticated users**.
 
-## Data Upload Plan
+## Fix Plan
 
-Insert all 20 stories as individual rows into the `stories` table with:
-- **title**: Story title
-- **story_text**: A ~120-character summary for the card view
-- **attribution**: Source/reference noted in the document
-- **full_story_text**: The complete story text formatted in HTML paragraphs
+### Step 1: Delete the duplicate prompt
+Remove the older duplicate entry (ID `8c4715c1-d5d0-4d26-a8bb-462b40b0ca12`) from the prompts table, keeping the newer one.
 
-### Stories to Insert
+### Step 2: Fix the profile context overwrite bug (lines 211-216)
+Move the fallback `profileContext` assignment into a proper `else` branch so it only triggers when the profile fetch fails, not unconditionally.
 
-| # | Title | Attribution |
-|---|-------|-------------|
-| 1 | Nate Tubbs and The Island, Chicago | Parish Collective / parishcollective.org |
-| 2 | Savannah Kruger and The Neighborhood Accelerator, Boulder | Supernuclear Substack / supernuclear.substack.com |
-| 3 | The Yes House, Granite Falls, Minnesota | theyeshouse.org / Department of Public Transformation |
-| 4 | Jesse Evers and Highside Workshop, Brooklyn | jesseevers.com / CoAuthored |
-| 5 | The Bushwick Collective, Brooklyn | Referenced in Jesse Evers' guide / multiple sources |
-| 6 | Bradley Street Bicycle Co-op, New Haven | Referenced in Jesse Evers' guide / bsbc.co |
-| 7 | Grow Food Northampton, Massachusetts | Referenced in Jesse Evers' guide / growfoodnorthampton.org |
-| 8 | vTaiwan and Digital Democracy | Radical xChange paper / CivicHall article on vTaiwan |
-| 9 | Trade School, New York to Everywhere | tradeschool.coop |
-| 10 | East Bay Permanent Real Estate Cooperative, Oakland | ebprec.org / Sustainable Economies Law Center |
-| 11 | Boston Ujima Project | JRF paper / ujimaboston.com |
-| 12 | Cool Block | coolblock.org / Empowerment Institute |
-| 13 | Camerados and Public Living Rooms | camerados.org / Atlas of the Future |
-| 14 | Repair Cafe | repaircafe.org / multiple sources |
-| 15 | Porchfest, Ithaca to Everywhere | porchfest.org |
-| 16 | City Repair and Intersection Painting, Portland | cityrepair.org / communitecture.net |
-| 17 | Flatpack Democracy, Frome, England | Multiple sources / Peter Macfadyen |
-| 18 | NeighborCircles, Lawrence, Massachusetts | Lawrence CommunityWorks / lawrencecommunityworks.org |
-| 19 | Edmonton's Community League System | Edmonton Federation of Community Leagues / ABCD Institute |
-| 20 | Living Room Conversations | livingroomconversations.org / Joan Blades |
+Before:
+```text
+if (profile && !profileError) {
+  // ... builds full profileContext (lines 194-209)
+}
+// BUG: This runs ALWAYS, overwriting the above
+profileContext = `AUTHENTICATED USER...`;
+```
 
-## Technical Details
+After:
+```text
+if (profile && !profileError) {
+  // ... builds full profileContext
+} else {
+  // Only when no profile data
+  profileContext = `AUTHENTICATED USER...`;
+}
+```
 
-- Each story will be inserted via SQL `INSERT INTO public.stories (title, story_text, attribution, full_story_text)` with HTML-formatted full text using `<p>` tags for paragraphs
-- The `story_text` field will contain a concise summary (first ~120 characters of the narrative) for card display
-- No code changes are required -- the existing Library page will automatically display all new stories
+### Step 3: Add deduplication guard for contributions
+Before inserting a contribution, check if an item with the same title already exists in the target table. If it does, skip the insert and return a message acknowledging the item already exists.
 
+This prevents the LLM's repeat tool calls from creating duplicates, regardless of why the LLM re-triggered the call.
+
+### Step 4: Inject tool-call history into conversation context
+After a successful contribution, append a system-level note to the conversation context so the LLM knows a submission already happened. This is done by checking the `contribution` field in the response and including prior tool results when building the next request's messages.
+
+In the Sidekick component (`Sidekick.tsx`), track contributions that have already been made in the session and append a context note to messages sent to the API:
+- "NOTE: A prompt titled 'X' was already submitted to the library in this conversation. Do not submit it again."
+
+### Step 5: Manually award missing serviceberries
+Use the `award_serviceberries` database function (via direct SQL as service role) to credit 15 serviceberries for the prompt contribution that was missed.
+
+## Technical Summary
+
+| File | Change |
+|------|--------|
+| `supabase/functions/chat-remix/index.ts` | Fix profile context overwrite (lines 211-216 into else block) |
+| `supabase/functions/chat-remix/index.ts` | Add title-based dedup check before insert (lines 558-584) |
+| `src/components/Sidekick.tsx` | Track submitted contributions and inject context note into messages |
+| Database | Delete duplicate prompt `8c4715c1-d5d0-4d26-a8bb-462b40b0ca12` |
+| Database | Award 15 serviceberries for the missed contribution |
