@@ -46,6 +46,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   const [loadingPhase, setLoadingPhase] = useState(0);
   const [libraryItems, setLibraryItems] = useState<LibraryItemData[]>([]);
   const [recentContribution, setRecentContribution] = useState<ContributionData | null>(null);
+  const [contributionHistory, setContributionHistory] = useState<ContributionData[]>([]);
 
   const loadingMessages = [
     "Thinking...",
@@ -71,12 +72,24 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   const sendMessage = async (messagesToSend: Message[]) => {
     setIsLoading(true);
     try {
-      // Get the current session to ensure we have a fresh token
       const { data: { session } } = await supabase.auth.getSession();
+      
+      // Inject contribution history as context notes to prevent re-submission
+      let enrichedMessages = [...messagesToSend];
+      if (contributionHistory.length > 0) {
+        const contextNote = contributionHistory.map(c => 
+          `NOTE: A ${c.type} titled "${c.title}" was already submitted to the library in this conversation. Do not submit it again.`
+        ).join('\n');
+        enrichedMessages = [
+          { role: "user" as const, content: contextNote },
+          { role: "assistant" as const, content: "Understood, I will not re-submit those items." },
+          ...messagesToSend
+        ];
+      }
       
       const { data, error } = await supabase.functions.invoke("chat-remix", {
         body: { 
-          messages: messagesToSend
+          messages: enrichedMessages
         },
         headers: session?.access_token ? {
           Authorization: `Bearer ${session.access_token}`
@@ -90,10 +103,12 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
       
       // Check if a contribution was made
       if (data?.contribution) {
-        setRecentContribution(data.contribution);
+        const contrib = data.contribution;
+        setRecentContribution(contrib);
+        setContributionHistory(prev => [...prev, contrib]);
         toast({
           title: "Gift Added to the Commons!",
-          description: `Your ${data.contribution.type} "${data.contribution.title}" is now in the library.`,
+          description: `Your ${contrib.type} "${contrib.title}" is now in the library.`,
         });
       }
     } catch (error) {
