@@ -208,6 +208,7 @@ CRITICAL: This user is ${namesList}. When recommending people to connect with or
 Use their preferred name naturally in conversation. Reference their neighborhood when relevant. Adjust technical explanations based on their comfort level. Connect suggestions to their stated dreams when possible.
 `;
         console.log('Profile context loaded for verified user:', userId, 'Names:', namesList);
+      } else {
         // User is authenticated but profile fetch failed or no profile yet
         profileContext = `
 
@@ -554,10 +555,19 @@ Begin by understanding what they're looking for - whether that's exploring the l
       let contributionType = 'item';
       let contributionTitle = 'Untitled';
       
-      // Execute the appropriate database insert
+      // Execute the appropriate database insert with deduplication check
       if (functionName === 'submit_story') {
         contributionType = 'story';
         contributionTitle = args.title;
+        // Check for duplicate
+        const { data: existingStory } = await supabase.from('stories').select('id').eq('title', args.title).maybeSingle();
+        if (existingStory) {
+          console.log('Duplicate story detected, skipping insert:', args.title);
+          return new Response(
+            JSON.stringify({ response: `"${args.title}" is already in the library! No need to add it again.` }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         insertResult = await supabase.from('stories').insert({
           title: args.title,
           story_text: args.story_text,
@@ -567,6 +577,15 @@ Begin by understanding what they're looking for - whether that's exploring the l
       } else if (functionName === 'submit_prompt') {
         contributionType = 'prompt';
         contributionTitle = args.title;
+        // Check for duplicate
+        const { data: existingPrompt } = await supabase.from('prompts').select('id').eq('title', args.title).maybeSingle();
+        if (existingPrompt) {
+          console.log('Duplicate prompt detected, skipping insert:', args.title);
+          return new Response(
+            JSON.stringify({ response: `"${args.title}" is already in the library! No need to add it again.` }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         insertResult = await supabase.from('prompts').insert({
           title: args.title,
           category: args.category,
@@ -576,6 +595,15 @@ Begin by understanding what they're looking for - whether that's exploring the l
       } else if (functionName === 'submit_tool') {
         contributionType = 'tool';
         contributionTitle = args.name;
+        // Check for duplicate
+        const { data: existingTool } = await supabase.from('tools').select('id').eq('name', args.name).maybeSingle();
+        if (existingTool) {
+          console.log('Duplicate tool detected, skipping insert:', args.name);
+          return new Response(
+            JSON.stringify({ response: `"${args.name}" is already in the library! No need to add it again.` }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
         insertResult = await supabase.from('tools').insert({
           name: args.name,
           description: args.description,
