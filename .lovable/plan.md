@@ -1,67 +1,93 @@
 
-# Fix Duplicate Contributions, Serviceberries, and Profile Context
+# Profile & Library Enhancements
 
-## Issues Found
+## What's Being Built
 
-### 1. Duplicate Prompt Entry
-Two copies of "Neighborhood Deep Time Scanner" exist in the database. The AI model re-triggered the `submit_prompt` tool on a follow-up question because:
-- The conversation history sent to the LLM doesn't include the tool call result -- only the hardcoded success message
-- The LLM has no memory that it already submitted the prompt, so it calls the tool again
-- There is no server-side deduplication check
+Two feature areas with supporting database changes:
 
-### 2. Serviceberries Not Awarded
-The edge function logs show "User not authenticated - guest mode" during both prompt submissions, even though you were signed in. The serviceberry-awarding code (line 608) correctly gates on `userId`, but since the user wasn't recognized, it was skipped entirely. Additionally, there is a profile context overwrite bug (see below) that may contribute to auth confusion.
+1. **Profile: Local Tech Ecosystem field + editable Dreams & Goals**
+2. **Library: "My Items" view, "Bookmarks" view, and bookmark toggle on cards**
 
-### 3. Profile Context Overwrite Bug (lines 211-216)
-This is a copy-paste error in `chat-remix/index.ts`. The code at lines 194-209 builds a full personalized profile context (name, neighborhood, dreams, tech comfort). Then lines 211-216, which should be inside an `else` block, run unconditionally and overwrite all that context with just "AUTHENTICATED USER." This means **personalization has been broken for all authenticated users**.
+---
 
-## Fix Plan
+## Database Changes Required
 
-### Step 1: Delete the duplicate prompt
-Remove the older duplicate entry (ID `8c4715c1-d5d0-4d26-a8bb-462b40b0ca12`) from the prompts table, keeping the newer one.
+### 1. Add `local_tech_ecosystem` to `profiles`
+A new nullable text column for the freeform ecosystem description. No existing data is affected.
 
-### Step 2: Fix the profile context overwrite bug (lines 211-216)
-Move the fallback `profileContext` assignment into a proper `else` branch so it only triggers when the profile fetch fails, not unconditionally.
+### 2. Add `user_id` to `prompts` and `tools`
+Currently neither table tracks who contributed an item, so "My Items" has no way to filter by owner. A nullable UUID column will be added to both. Existing rows remain untouched (null `user_id`). Contributions made going forward (via dialog or Sidekick) will capture the authenticated user's ID.
 
-Before:
-```text
-if (profile && !profileError) {
-  // ... builds full profileContext (lines 194-209)
-}
-// BUG: This runs ALWAYS, overwriting the above
-profileContext = `AUTHENTICATED USER...`;
+### 3. New `library_bookmarks` table
+A simple join table: `(id, user_id, item_id, item_type, created_at)`. RLS: users can only SELECT/INSERT/DELETE their own rows.
+
+---
+
+## Feature 1 — Profile: Ecosystem Field & Editable Fields
+
+### New "Local Tech Ecosystem" section in `Profile.tsx`
+- Displayed below "Dreams & Goals" as a new card section using a `Network` icon (matches the relational tech theme)
+- Shown whether or not it has content (with a prompt to fill it in if empty)
+- Inline edit mode: clicking an Edit pencil icon on either "Dreams & Goals" or "Ecosystem" reveals a Textarea and Save/Cancel buttons
+- Saves to the `profiles` table for the current user via `supabase.from('profiles').update(...)` 
+- Calls `refreshProfile()` after saving so the AuthContext is up to date
+
+### Sidekick context injection
+In `chat-remix/index.ts`, the `profileContext` block already injects profile fields. A new line will be added:
 ```
-
-After:
-```text
-if (profile && !profileError) {
-  // ... builds full profileContext
-} else {
-  // Only when no profile data
-  profileContext = `AUTHENTICATED USER...`;
-}
+- Local tech ecosystem: ${profile.local_tech_ecosystem || 'Not described yet'}
 ```
+This gives Sidekick awareness of the builder's local ecosystem when remixing or suggesting tools.
 
-### Step 3: Add deduplication guard for contributions
-Before inserting a contribution, check if an item with the same title already exists in the target table. If it does, skip the insert and return a message acknowledging the item already exists.
+### Onboarding
+No change — this field is intentionally skipped in onboarding per the request.
 
-This prevents the LLM's repeat tool calls from creating duplicates, regardless of why the LLM re-triggered the call.
+---
 
-### Step 4: Inject tool-call history into conversation context
-After a successful contribution, append a system-level note to the conversation context so the LLM knows a submission already happened. This is done by checking the `contribution` field in the response and including prior tool results when building the next request's messages.
+## Feature 2 — Library: My Items, Bookmarks, and Bookmark Button
 
-In the Sidekick component (`Sidekick.tsx`), track contributions that have already been made in the session and append a context note to messages sent to the API:
-- "NOTE: A prompt titled 'X' was already submitted to the library in this conversation. Do not submit it again."
+### Bookmark button on `LibraryCard`
+- A `Bookmark` icon button appears in the card footer (and in the detail dialog)
+- If the user is not signed in, clicking it shows a toast: "Sign in to bookmark items"
+- If signed in, it toggles: inserts a row into `library_bookmarks` or deletes the existing row
+- Filled/unfilled bookmark icon reflects current state
+- The card needs to know the current user and their bookmark state — this is passed down from Library as a `Set<string>` of bookmarked item IDs and a toggle callback, keeping fetching centralized
 
-### Step 5: Manually award missing serviceberries
-Use the `award_serviceberries` database function (via direct SQL as service role) to credit 15 serviceberries for the prompt contribution that was missed.
+### Library page view tabs
+The existing type filter row gets a new "view" concept alongside it. Three view tabs are added above the filter row:
+- **Browse** (default) — current behavior, all items
+- **My Items** — shows only items where `user_id` matches the current user. Requires auth; shows a "Sign in to see your contributions" message if not logged in
+- **Bookmarks** — shows only bookmarked items. Requires auth
 
-## Technical Summary
+"My Items" cards get two extra actions: **Edit** (opens an inline edit dialog) and **Delete** (with a confirmation step).
+
+### Edit dialog for owned items
+A new `EditLibraryItemDialog` component that reuses the existing form field patterns from `ContributionDialog`. It pre-fills with current values and saves via `supabase.from(table).update(...)`. Only visible on items the user owns.
+
+### Delete confirmation
+Uses the existing `AlertDialog` component (already in the project). On confirm, calls `supabase.from(table).delete().eq('id', item.id)` and refreshes the list.
+
+---
+
+## Files to Create / Modify
 
 | File | Change |
 |------|--------|
-| `supabase/functions/chat-remix/index.ts` | Fix profile context overwrite (lines 211-216 into else block) |
-| `supabase/functions/chat-remix/index.ts` | Add title-based dedup check before insert (lines 558-584) |
-| `src/components/Sidekick.tsx` | Track submitted contributions and inject context note into messages |
-| Database | Delete duplicate prompt `8c4715c1-d5d0-4d26-a8bb-462b40b0ca12` |
-| Database | Award 15 serviceberries for the missed contribution |
+| Database migration | Add `local_tech_ecosystem` to `profiles`; add `user_id` to `prompts` + `tools`; create `library_bookmarks` table with RLS |
+| `src/contexts/AuthContext.tsx` | Add `local_tech_ecosystem` to the `Profile` interface |
+| `src/pages/Profile.tsx` | Add editable Dreams & ecosystem sections with inline edit |
+| `supabase/functions/chat-remix/index.ts` | Add `local_tech_ecosystem` to system prompt context |
+| `src/types/library.ts` | Add `userId` to `LibraryItem` type |
+| `src/pages/Library.tsx` | Add view tabs (Browse/My Items/Bookmarks), fetch bookmarks, pass ownership/bookmark state to cards |
+| `src/components/LibraryCard.tsx` | Add bookmark button; accept `isBookmarked`, `onToggleBookmark`, `isOwned`, `onEdit`, `onDelete` props |
+| `src/components/ContributionDialog.tsx` | Capture and save `user_id` on insert for prompts and tools (stories already have the column) |
+| `src/components/EditLibraryItemDialog.tsx` | New component — edit form pre-filled with item data, saves updates |
+
+---
+
+## Data & Security Notes
+
+- `library_bookmarks` RLS ensures users can only see and manage their own bookmarks — no cross-user visibility
+- Ownership for "My Items" is enforced by filtering on `user_id = auth.uid()` client-side (data is public anyway per existing RLS), not by a new policy — this is appropriate since library content is intentionally public
+- Existing stories/prompts/tools with `null` user_id won't appear in anyone's "My Items" view, which is correct (they are curator-added content, not builder contributions)
+- The `local_tech_ecosystem` column follows the same profile RLS as all other profile fields: only the owner can read or write it
