@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Plus, Sparkles, Wrench, BookOpen, Upload, X } from "lucide-react";
 
 type ContributionType = "story" | "prompt" | "tool" | null;
@@ -21,6 +22,7 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
   const [contributionType, setContributionType] = useState<ContributionType>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Story fields
   const [storyTitle, setStoryTitle] = useState("");
@@ -121,7 +123,8 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
           description: promptDescription,
           example_prompt: promptExample,
           category: promptCategory,
-        });
+          ...(user ? { user_id: user.id } : {}),
+        } as any);
         if (error) throw error;
         toast({ title: "Prompt submitted!", description: "Your prompt has been added to the library." });
       } else if (contributionType === "tool") {
@@ -129,7 +132,8 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
           name: toolName,
           description: toolDescription,
           url: toolUrl,
-        });
+          ...(user ? { user_id: user.id } : {}),
+        } as any);
         if (error) throw error;
         toast({ title: "Tool suggested!", description: "Your tool has been added to the library." });
       }

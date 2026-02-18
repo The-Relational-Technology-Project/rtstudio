@@ -124,6 +124,30 @@ export type Database = {
           },
         ]
       }
+      library_bookmarks: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       magic_link_tokens: {
         Row: {
           created_at: string
@@ -181,6 +205,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          local_tech_ecosystem: string | null
           neighborhood: string | null
           neighborhood_description: string | null
           profile_completed: boolean | null
@@ -195,6 +220,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          local_tech_ecosystem?: string | null
           neighborhood?: string | null
           neighborhood_description?: string | null
           profile_completed?: boolean | null
@@ -209,6 +235,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          local_tech_ecosystem?: string | null
           neighborhood?: string | null
           neighborhood_description?: string | null
           profile_completed?: boolean | null
@@ -225,6 +252,7 @@ export type Database = {
           example_prompt: string
           id: string
           title: string
+          user_id: string | null
         }
         Insert: {
           category: string
@@ -233,6 +261,7 @@ export type Database = {
           example_prompt: string
           id?: string
           title: string
+          user_id?: string | null
         }
         Update: {
           category?: string
@@ -241,6 +270,7 @@ export type Database = {
           example_prompt?: string
           id?: string
           title?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -405,6 +435,7 @@ export type Database = {
           id: string
           name: string
           url: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -412,6 +443,7 @@ export type Database = {
           id?: string
           name: string
           url: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -419,6 +451,7 @@ export type Database = {
           id?: string
           name?: string
           url?: string
+          user_id?: string | null
         }
         Relationships: []
       }

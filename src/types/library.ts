@@ -11,4 +11,5 @@ export interface LibraryItem {
   fullContent?: string;
   examplePrompt?: string;
   imageUrls?: string[];
+  userId?: string | null;
 }

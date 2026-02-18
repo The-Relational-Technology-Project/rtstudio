@@ -12,6 +12,7 @@ export interface Profile {
   dreams: string | null;
   tech_familiarity: string | null;
   ai_coding_experience: string | null;
+  local_tech_ecosystem: string | null;
   profile_completed: boolean;
   created_at: string;
   updated_at: string;

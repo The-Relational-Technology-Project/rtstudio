@@ -4,17 +4,32 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { ExternalLink, MessageSquare, Sparkles, BookOpen } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+import { ExternalLink, MessageSquare, Sparkles, BookOpen, Bookmark, BookmarkCheck, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSidekick } from "@/contexts/SidekickContext";
+import { EditLibraryItemDialog } from "./EditLibraryItemDialog";
 import type { LibraryItem, ItemType } from "@/types/library";
 
 interface LibraryCardProps {
   item: LibraryItem;
+  isBookmarked?: boolean;
+  onToggleBookmark?: (item: LibraryItem) => void;
+  isOwned?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-export const LibraryCard = ({ item }: LibraryCardProps) => {
+export const LibraryCard = ({
+  item,
+  isBookmarked = false,
+  onToggleBookmark,
+  isOwned = false,
+  onEdit,
+  onDelete,
+}: LibraryCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const navigate = useNavigate();
   const { setMessages } = useSidekick();
 
@@ -46,6 +61,19 @@ export const LibraryCard = ({ item }: LibraryCardProps) => {
             <Badge variant="outline" className={getTypeColor(item.type)}>
               {item.type}
             </Badge>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              onClick={() => onToggleBookmark?.(item)}
+              title={isBookmarked ? "Remove bookmark" : "Bookmark"}
+            >
+              {isBookmarked ? (
+                <BookmarkCheck className="h-4 w-4 text-primary" />
+              ) : (
+                <Bookmark className="h-4 w-4 text-muted-foreground" />
+              )}
+            </Button>
           </div>
           <CardTitle className="text-xl font-fraunces line-clamp-2">{item.title}</CardTitle>
           {item.author && (
@@ -64,11 +92,7 @@ export const LibraryCard = ({ item }: LibraryCardProps) => {
             View
           </Button>
           {item.type === "tool" && item.url && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => window.open(item.url, "_blank")}
-            >
+            <Button variant="ghost" size="sm" onClick={() => window.open(item.url, "_blank")}>
               <ExternalLink className="w-3 h-3 mr-1" />
               Visit
             </Button>
@@ -79,16 +103,61 @@ export const LibraryCard = ({ item }: LibraryCardProps) => {
               Remix
             </Button>
           )}
+          {isOwned && (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => setIsEditOpen(true)}>
+                <Pencil className="w-3 h-3 mr-1" />
+                Edit
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                    <Trash2 className="w-3 h-3 mr-1" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete this item?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently remove "{item.title}" from the library. This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={onDelete}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </CardFooter>
       </Card>
 
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-start gap-2 mb-2">
+            <div className="flex items-start justify-between gap-2 mb-2">
               <Badge variant="outline" className={getTypeColor(item.type)}>
                 {item.type}
               </Badge>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => onToggleBookmark?.(item)}
+              >
+                {isBookmarked ? (
+                  <BookmarkCheck className="h-4 w-4 text-primary" />
+                ) : (
+                  <Bookmark className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
             </div>
             <DialogTitle className="text-2xl font-fraunces">{item.title}</DialogTitle>
             {item.author && (
@@ -147,6 +216,18 @@ export const LibraryCard = ({ item }: LibraryCardProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {isOwned && (
+        <EditLibraryItemDialog
+          item={item}
+          open={isEditOpen}
+          onOpenChange={setIsEditOpen}
+          onSuccess={() => {
+            setIsEditOpen(false);
+            onEdit?.();
+          }}
+        />
+      )}
     </>
   );
 };
