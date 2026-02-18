@@ -164,7 +164,7 @@ serve(async (req) => {
       // User is authenticated - fetch their profile
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('full_name, display_name, neighborhood, neighborhood_description, dreams, tech_familiarity, ai_coding_experience')
+        .select('full_name, display_name, neighborhood, neighborhood_description, dreams, tech_familiarity, ai_coding_experience, local_tech_ecosystem')
         .eq('id', userId)
         .maybeSingle();
       
@@ -202,6 +202,7 @@ BUILDER CONTEXT (personalize your responses to this person):
 - Their dream: ${profile.dreams || 'Exploring possibilities'}
 - Tech comfort: ${techComfortLabel}
 - AI experience: ${aiExperienceLabel}
+- Local tech ecosystem: ${(profile as any).local_tech_ecosystem || 'Not described yet'}
 
 CRITICAL: This user is ${namesList}. When recommending people to connect with or stories/contributions to explore, DO NOT recommend they contact themselves or their own contributions. If you find library items attributed to them, acknowledge they created it rather than suggesting they "reach out to" themselves.
 
@@ -590,7 +591,8 @@ Begin by understanding what they're looking for - whether that's exploring the l
           title: args.title,
           category: args.category,
           description: args.description,
-          example_prompt: args.example_prompt
+          example_prompt: args.example_prompt,
+          ...(userId ? { user_id: userId } : {})
         }).select('id').single();
       } else if (functionName === 'submit_tool') {
         contributionType = 'tool';
@@ -607,7 +609,8 @@ Begin by understanding what they're looking for - whether that's exploring the l
         insertResult = await supabase.from('tools').insert({
           name: args.name,
           description: args.description,
-          url: args.url
+          url: args.url,
+          ...(userId ? { user_id: userId } : {})
         }).select('id').single();
       }
       
