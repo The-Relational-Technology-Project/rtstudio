@@ -58,6 +58,26 @@ export const ProfileOnboarding = () => {
 
       await refreshProfile();
 
+      // Notify admin of new signup with completed profile fields
+      try {
+        const profileFields: Record<string, string> = {};
+        if (fullName) profileFields.name = fullName;
+        if (displayName) profileFields.display_name = displayName;
+        if (neighborhood) profileFields.neighborhood = neighborhood;
+        if (neighborhoodDescription) profileFields.neighborhood_description = neighborhoodDescription;
+        if (dreams) profileFields.dreams = dreams;
+        if (techFamiliarity) profileFields.tech_familiarity = techFamiliarity;
+        if (aiCodingExperience) profileFields.ai_coding_experience = aiCodingExperience;
+
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: user.email, profileFields }),
+        });
+      } catch (e) {
+        console.error("Failed to send signup notification:", e);
+      }
+
       toast({
         title: "Profile complete! 🎉",
         description: "You earned 10 serviceberries for setting up your profile.",

@@ -75,15 +75,7 @@ const AuthCallback = () => {
             Boolean(profile.neighborhood_description) ||
             Boolean(profile.dreams));
 
-        // If this is a new user (no profile content), send signup notification
-        if (!hasProfileContent) {
-          // Get the user's email from the session
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session?.user?.email) {
-            notifyNewSignup(session.user.email, profile?.display_name || undefined);
-          }
-        }
-
+        // Signup notification is now sent after onboarding completes (in ProfileOnboarding)
         navigate(hasProfileContent ? "/sidekick" : "/profile", { replace: true });
       } catch (e) {
         console.error("Profile lookup failed:", e);
