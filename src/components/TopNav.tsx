@@ -2,7 +2,6 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { ServiceberriesCounter } from "@/components/ServiceberriesCounter";
 import { Menu, X, User, LogOut } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { 
@@ -17,6 +16,7 @@ import { useState } from "react";
 const navItems = [
   { name: "Sidekick", path: "/sidekick" },
   { name: "Library", path: "/library" },
+  { name: "Get Support", path: "/support" },
 ];
 
 export const TopNav = () => {
@@ -61,7 +61,7 @@ export const TopNav = () => {
               ))}
             </div>
             
-            <ServiceberriesCounter variant="nav" />
+            
 
             {/* Profile dropdown */}
             <DropdownMenu>
