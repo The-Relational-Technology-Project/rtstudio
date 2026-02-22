@@ -34,6 +34,12 @@ const getTypeConfig = (type: ItemType) => {
         label: "Tool",
         className: "bg-[#6C757D]/10 text-[#6C757D] border-[#6C757D]/20",
       };
+    case "tech_for_building":
+      return {
+        icon: Wrench,
+        label: "Tech for Building",
+        className: "bg-[#6C757D]/10 text-[#6C757D] border-[#6C757D]/20",
+      };
   }
 };
 

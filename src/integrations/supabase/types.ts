@@ -251,6 +251,7 @@ export type Database = {
           description: string | null
           example_prompt: string
           id: string
+          parent_tool_id: string | null
           title: string
           user_id: string | null
         }
@@ -260,6 +261,7 @@ export type Database = {
           description?: string | null
           example_prompt: string
           id?: string
+          parent_tool_id?: string | null
           title: string
           user_id?: string | null
         }
@@ -269,10 +271,19 @@ export type Database = {
           description?: string | null
           example_prompt?: string
           id?: string
+          parent_tool_id?: string | null
           title?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "prompts_parent_tool_id_fkey"
+            columns: ["parent_tool_id"]
+            isOneToOne: false
+            referencedRelation: "tools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       serviceberries: {
         Row: {
@@ -433,24 +444,36 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          image_url: string | null
           name: string
-          url: string
+          screenshot_urls: string[] | null
+          summary: string | null
+          tool_category: string
+          url: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string
           description: string
           id?: string
+          image_url?: string | null
           name: string
-          url: string
+          screenshot_urls?: string[] | null
+          summary?: string | null
+          tool_category?: string
+          url?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string
           description?: string
           id?: string
+          image_url?: string | null
           name?: string
-          url?: string
+          screenshot_urls?: string[] | null
+          summary?: string | null
+          tool_category?: string
+          url?: string | null
           user_id?: string | null
         }
         Relationships: []

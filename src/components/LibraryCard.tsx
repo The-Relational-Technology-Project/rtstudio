@@ -41,25 +41,33 @@ export const LibraryCard = ({
         return "bg-accent/10 text-accent border-accent/20";
       case "tool":
         return "bg-secondary text-secondary-foreground border-border";
+      case "tech_for_building":
+        return "bg-muted text-muted-foreground border-border";
       default:
         return "bg-muted text-muted-foreground";
     }
   };
 
   const handleDiscussInSidekick = () => {
-    const promptText = item.examplePrompt || item.title;
-    const contextMessage = `I'd like to remix this prompt: "${promptText}"`;
+    const contextMessage = item.type === "tool" 
+      ? `I'd like to remix the "${item.title}" tool for my neighborhood`
+      : `I'd like to discuss "${item.title}"`;
     setMessages([{ role: "user", content: contextMessage }]);
     navigate("/");
   };
 
   return (
     <>
-      <Card className="flex flex-col hover:shadow-lg transition-shadow">
+      <Card className="flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
+        {item.imageUrl && (
+          <div className="aspect-[16/10] overflow-hidden bg-muted">
+            <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover object-top" loading="lazy" />
+          </div>
+        )}
         <CardHeader>
           <div className="flex items-start justify-between gap-2 mb-2">
             <Badge variant="outline" className={getTypeColor(item.type)}>
-              {item.type}
+              {item.type === "tech_for_building" ? "Tech for Building" : item.type}
             </Badge>
             <Button
               variant="ghost"
@@ -91,13 +99,13 @@ export const LibraryCard = ({
             <BookOpen className="w-3 h-3 mr-1" />
             View
           </Button>
-          {item.type === "tool" && item.url && (
+          {(item.type === "tool" || item.type === "tech_for_building") && item.url && (
             <Button variant="ghost" size="sm" onClick={() => window.open(item.url, "_blank")}>
               <ExternalLink className="w-3 h-3 mr-1" />
               Visit
             </Button>
           )}
-          {item.type === "prompt" && (
+          {item.type === "tool" && (
             <Button variant="ghost" size="sm" onClick={handleDiscussInSidekick}>
               <Sparkles className="w-3 h-3 mr-1" />
               Remix
@@ -144,7 +152,7 @@ export const LibraryCard = ({
           <DialogHeader>
             <div className="flex items-start justify-between gap-2 mb-2">
               <Badge variant="outline" className={getTypeColor(item.type)}>
-                {item.type}
+                {item.type === "tech_for_building" ? "Tech for Building" : item.type}
               </Badge>
               <Button
                 variant="ghost"
@@ -195,8 +203,11 @@ export const LibraryCard = ({
               </div>
             )}
             
-            {item.type === "tool" && (
-              <div className="space-y-2">
+            {(item.type === "tool" || item.type === "tech_for_building") && (
+              <div className="space-y-4">
+                {item.imageUrl && (
+                  <img src={item.imageUrl} alt={item.title} className="w-full rounded-lg border border-border" />
+                )}
                 <p className="text-sm leading-relaxed">{item.summary}</p>
                 {item.url && (
                   <Button variant="outline" onClick={() => window.open(item.url, "_blank")}>
