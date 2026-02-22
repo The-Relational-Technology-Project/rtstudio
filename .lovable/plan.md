@@ -1,57 +1,47 @@
 
+# Three Changes: Nav Cleanup, Profile Reorder, and Get Support Page
 
-# Serviceberries as a Visual Berry Bunch
+## 1. Remove Serviceberries from Top Nav
 
-## Concept
+Remove the `ServiceberriesCounter` from the desktop nav in `TopNav.tsx` (line 64). Serviceberries will only appear on the Profile page. Remove the unused import as well.
 
-Replace the numeric points system with a visual, nature-inspired display. Each type of contribution earns a distinctly colored berry. Instead of seeing "45 points," you see a growing cluster of colored berries -- a visual record of the different ways you've given to and received from your community.
+## 2. Add "Get Support" to Main Nav
 
-## Berry Color Mapping
+**Nav update** (`TopNav.tsx`): Add "Get Support" to the `navItems` array with path `/support`.
 
-Each contribution type gets its own berry color:
+**New page** (`src/pages/Support.tsx`): A simple page with `TopNav` and `Footer` containing:
 
-| Contribution | Color | Meaning |
-|---|---|---|
-| Profile setup | Amber/gold | Planting your roots |
-| Commitment completed | Deep green | Following through |
-| Story shared | Warm rose/pink | Sharing your experience |
-| Prompt shared | Violet/purple | Offering imagination |
-| Tool shared | Sky blue | Building for others |
-| Commitment made | Soft sage | Setting intentions |
+- **Header**: "Get Support" with a short intro about resources for builders.
+- **Builder's Guide section**: A brief description of The Builder's Spiral -- a practice guide for building technology that deepens community. CTA button: "Download the Builder's Guide" linking to the PDF file (copied into `public/`).
+- **1:1 Jam Session section**: A brief description explaining that Josh, one of the stewards of the Relational Tech Project, is available for 1:1 conversations about your building journey. CTA button: "Book a Jam Session" linking to `https://cal.com/joshnesbit` (opens in new tab).
 
-## Visual Design
+**Route** (`App.tsx`): Add a protected route for `/support`.
 
-**Nav button (small):** Instead of a cherry icon + number, show a tiny cluster of 3-5 colored dots representing the most recent berry types earned. If you only have one type, it's a single-color cluster. If you have four types, four colors appear. Clicking opens the detail dialog.
+**PDF asset**: Copy the uploaded PDF to `public/Builders_Guide_RTP.pdf` so it can be downloaded directly.
 
-**Profile view (large):** A decorative bunch of berries arranged in a natural, organic cluster. Each berry is a small filled circle in its type's color. Berries cluster together by type, creating a visual "harvest" that grows as you contribute. Below the bunch, a simple legend shows what each color means.
+## 3. Reorder Profile Page Sections
 
-**Dialog / detail view:** Replace the numeric total banner with the berry bunch visual. The activity list replaces "+10" with a small colored berry dot next to each entry, reinforcing the color = type association. No numbers anywhere.
+Rearrange the sections in `Profile.tsx` to this order:
 
-**Empty state:** "Complete your profile to gather your first serviceberry!" with a single outline berry.
+1. Profile Header (unchanged)
+2. Commitments
+3. Dreams and Goals (editable)
+4. Local Tech Ecosystem (editable)
+5. Vision Board
+6. Serviceberries
+7. Tech Familiarity and AI Coding Experience (make both editable using the same `EditableSection` pattern, adapted for single-value selection)
 
-## Technical Changes
+For Tech Familiarity and AI Experience, these will become editable inline fields. Since they are short single-value fields (not freeform text), they will use a simple select/dropdown edit mode rather than a textarea -- allowing the user to pick from the same options used during onboarding.
 
-### 1. `src/components/ServiceberriesCounter.tsx` -- Full rewrite
+## Technical Details
 
-- Remove numeric `total` state; instead compute a `Map<reason, count>` from the history
-- Create a `BERRY_COLORS` config mapping each reason to a tailwind color class
-- Create a `BerryBunch` component that renders SVG circles arranged in a natural cluster pattern
-  - Takes the reason-to-count map as input
-  - Renders colored circles, grouped by type, with slight random-feeling offsets for an organic look
-  - Scales the number of visible berries (e.g., 1 berry per award, capped at ~5 per type for visual clarity)
-- Nav variant: render a compact `BerryBunch` (small, ~20px) as the trigger button
-- Profile variant: render a larger `BerryBunch` (~120px) with a color legend below
-- Dialog content: show the bunch at medium size, the legend, and the activity list with colored dots instead of "+N"
+### Files modified:
+- `src/components/TopNav.tsx` -- remove serviceberries, add "Get Support" nav item
+- `src/pages/Profile.tsx` -- reorder sections, make tech fields editable
+- `src/App.tsx` -- add `/support` route
 
-### 2. `src/components/CommitmentsList.tsx` -- Minor update
+### Files created:
+- `src/pages/Support.tsx` -- new Get Support page
 
-- Change the toast message from "You earned 10 serviceberries" to something like "You gathered a serviceberry for following through"
-
-### 3. `src/components/ProfileOnboarding.tsx` -- Minor update
-
-- Update any toast/success message to match the new language (no numbers)
-
-### 4. No database changes needed
-
-The existing `serviceberries` table with `reason` and `amount` fields works as-is. We simply shift the UI from summing amounts to counting and coloring by reason. The `amount` field becomes less important visually but stays for potential future use.
-
+### Files copied:
+- `user-uploads://Builders_Guide_RTP.pdf` to `public/Builders_Guide_RTP.pdf`
