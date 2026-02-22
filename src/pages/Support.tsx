@@ -17,9 +17,9 @@ const Support = () => {
         <section className="mb-10 p-6 rounded-lg bg-muted/50 border border-border">
           <h2 className="text-xl font-semibold font-fraunces mb-3">The Builder's Guide</h2>
           <p className="text-sm text-foreground mb-4">
-            The Builder's Spiral is a practice guide for building technology that deepens community.
-            Informed by real experiments across neighborhoods, it offers grounding questions, patterns,
-            and prompts to keep your work rooted in relationships.
+            The Builder's Guide includes practical ideas for how to go about building relational tech.
+            Informed by our experiences building in our neighborhoods, it describes a "spiral" of
+            widening and deepening circles.
           </p>
           <Button asChild>
             <a href="/Builders_Guide_RTP.pdf" download>
@@ -34,8 +34,8 @@ const Support = () => {
           <h2 className="text-xl font-semibold font-fraunces mb-3">1:1 Jam Session</h2>
           <p className="text-sm text-foreground mb-4">
             Josh, one of the stewards of the Relational Tech Project, is available for 1:1
-            conversations about your building journey — whether you're just getting started,
-            stuck on a design question, or want to think out loud about what's emerging.
+            conversations about building and remixing relational tech. These sessions range from
+            just getting started, to the details of design and implementation, to co-creation.
           </p>
           <Button asChild>
             <a href="https://cal.com/joshnesbit" target="_blank" rel="noopener noreferrer">
