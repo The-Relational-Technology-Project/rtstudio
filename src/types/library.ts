@@ -1,4 +1,12 @@
-export type ItemType = "story" | "prompt" | "tool";
+export type ItemType = "story" | "prompt" | "tool" | "tech_for_building";
+
+export interface ChildPrompt {
+  id: string;
+  title: string;
+  description?: string;
+  examplePrompt: string;
+  category: string;
+}
 
 export interface LibraryItem {
   id: string;
@@ -12,4 +20,8 @@ export interface LibraryItem {
   examplePrompt?: string;
   imageUrls?: string[];
   userId?: string | null;
+  imageUrl?: string;
+  screenshotUrls?: string[];
+  toolCategory?: string;
+  childPrompts?: ChildPrompt[];
 }

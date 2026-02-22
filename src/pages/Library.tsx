@@ -30,9 +30,8 @@ const Library = () => {
 
   const fetchLibraryItems = useCallback(async () => {
     try {
-      const [storiesData, promptsData, toolsData] = await Promise.all([
+      const [storiesData, toolsData] = await Promise.all([
         supabase.from("stories").select("*").order("created_at", { ascending: false }),
-        supabase.from("prompts").select("*").order("created_at", { ascending: false }),
         supabase.from("tools").select("*").order("created_at", { ascending: false }),
       ]);
 
@@ -47,22 +46,16 @@ const Library = () => {
           imageUrls: story.image_urls || [],
           userId: story.user_id,
         })),
-        ...(promptsData.data || []).map((prompt) => ({
-          id: prompt.id,
-          type: "prompt" as ItemType,
-          title: prompt.title,
-          summary: prompt.description || "No description",
-          category: prompt.category,
-          examplePrompt: prompt.example_prompt,
-          userId: (prompt as any).user_id,
-        })),
-        ...(toolsData.data || []).map((tool) => ({
+        // Prompts are no longer standalone cards — they appear as children within tool detail views
+        ...(toolsData.data || []).map((tool: any) => ({
           id: tool.id,
-          type: "tool" as ItemType,
+          type: (tool.tool_category === "tech_for_building" ? "tech_for_building" : "tool") as ItemType,
           title: tool.name,
-          summary: tool.description,
+          summary: tool.summary || tool.description,
           url: tool.url,
-          userId: (tool as any).user_id,
+          userId: tool.user_id,
+          imageUrl: tool.image_url,
+          toolCategory: tool.tool_category,
         })),
       ];
 
@@ -148,7 +141,7 @@ const Library = () => {
   };
 
   const handleDeleteItem = async (item: LibraryItem) => {
-    const tableMap: Record<ItemType, string> = { story: "stories", prompt: "prompts", tool: "tools" };
+  const tableMap: Record<string, string> = { story: "stories", prompt: "prompts", tool: "tools", tech_for_building: "tools" };
     const { error } = await supabase.from(tableMap[item.type] as any).delete().eq("id", item.id);
     if (error) {
       toast({ title: "Error deleting", description: error.message, variant: "destructive" });
@@ -174,7 +167,7 @@ const Library = () => {
             <div>
               <h1 className="text-4xl sm:text-5xl font-black font-fraunces mb-2">Library</h1>
               <p className="text-muted-foreground">
-                Browse stories, prompts, and tools from the community
+                Browse stories, tools, and tech from the community
               </p>
             </div>
             <ContributionDialog 
@@ -217,14 +210,14 @@ const Library = () => {
             </div>
             
             <div className="flex gap-2 flex-wrap">
-              {(["all", "story", "prompt", "tool"] as const).map((type) => (
+              {(["all", "story", "tool", "tech_for_building"] as const).map((type) => (
                 <Button
                   key={type}
                   variant={selectedType === type ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSelectedType(type)}
+                  onClick={() => setSelectedType(type as any)}
                 >
-                  {type === "all" ? "All" : type === "story" ? "Stories" : type === "prompt" ? "Prompts" : "Tools"}
+                  {type === "all" ? "All" : type === "story" ? "Stories" : type === "tool" ? "Tools" : "Tech for Building"}
                 </Button>
               ))}
             </div>

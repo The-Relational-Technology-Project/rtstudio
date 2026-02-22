@@ -1,46 +1,57 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, BookOpen, Users, ArrowRight } from "lucide-react";
-import DemoChat from "@/components/DemoChat";
+import { Sparkles, BookOpen, Users, ArrowRight, MessageSquare } from "lucide-react";
+import { ToolGalleryCard } from "@/components/ToolGalleryCard";
+import { supabase } from "@/integrations/supabase/client";
+
+interface GalleryTool {
+  id: string;
+  name: string;
+  summary: string;
+  image_url: string | null;
+}
 
 const Landing = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const [galleryTools, setGalleryTools] = useState<GalleryTool[]>([]);
 
-  // Redirect authenticated users based on profile content
   useEffect(() => {
     if (user) {
-      // Check if profile has any content
       const hasProfileContent = profile && (
-        profile.display_name || 
-        profile.neighborhood || 
-        profile.neighborhood_description || 
-        profile.dreams
+        profile.display_name || profile.neighborhood || profile.neighborhood_description || profile.dreams
       );
-
       if (!hasProfileContent) {
-        // Empty profile - send to profile page
         navigate("/profile", { replace: true });
       } else {
-        // Has content - send to Sidekick
         navigate("/sidekick", { replace: true });
       }
     }
   }, [user, profile, navigate]);
 
+  useEffect(() => {
+    const fetchGallery = async () => {
+      const { data } = await (supabase
+        .from("tools")
+        .select("id, name, summary, image_url") as any)
+        .eq("tool_category", "relational_tech")
+        .not("image_url", "is", null)
+        .order("created_at", { ascending: true });
+      if (data) setGalleryTools(data);
+    };
+    fetchGallery();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero Section */}
+      {/* Hero */}
       <div className="relative overflow-hidden">
-        {/* Subtle texture overlay */}
         <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.15),transparent_50%),radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.1),transparent_50%)]" />
-        
-        <div className="relative max-w-4xl mx-auto px-6 py-12 md:py-20">
-          {/* Header */}
-          <div className="text-center mb-10 animate-fade-in">
+        <div className="relative max-w-6xl mx-auto px-6 py-12 md:py-20">
+          <div className="text-center mb-12 animate-fade-in">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-fraunces text-foreground mb-6 leading-tight">
               You can build what you need
             </h1>
@@ -49,38 +60,33 @@ const Landing = () => {
             </p>
           </div>
 
-          {/* Demo Chat */}
-          <div className="mb-12 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            <DemoChat />
-          </div>
+          {/* Gallery Grid */}
+          {galleryTools.length > 0 && (
+            <div className="mb-12 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+              <h2 className="text-2xl font-fraunces font-bold text-foreground text-center mb-2">
+                Remixable Tools
+              </h2>
+              <p className="text-muted-foreground text-center mb-8 max-w-xl mx-auto">
+                Browse tools built by neighbors. Enter the Studio to remix any of them for your community.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {galleryTools.map((tool) => (
+                  <ToolGalleryCard
+                    key={tool.id}
+                    name={tool.name}
+                    summary={tool.summary || ""}
+                    imageUrl={tool.image_url}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* Feature Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <FeatureCard 
-              icon={<Sparkles className="h-6 w-6" />} 
-              title="Sidekick" 
-              description="Chat to explore ideas and move into action locally" 
-              delay="0.2s" 
-            />
-            <FeatureCard 
-              icon={<BookOpen className="h-6 w-6" />} 
-              title="Library" 
-              description="Stories, prompts, and tools shared by people building with neighbors" 
-              delay="0.3s" 
-            />
-            <FeatureCard 
-              icon={<Users className="h-6 w-6" />} 
-              title="Peer Network" 
-              description="Join fellow builders crafting relational technology for their neighborhoods" 
-              delay="0.4s" 
-            />
-          </div>
-
-          {/* CTA Section */}
-          <div className="text-center animate-fade-in" style={{ animationDelay: "0.5s" }}>
+          {/* CTA */}
+          <div className="text-center mb-4 animate-fade-in" style={{ animationDelay: "0.3s" }}>
             <Link to="/auth">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover-scale"
               >
                 Enter Your Studio
@@ -91,8 +97,94 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* Bottom Section - What is this? */}
+      {/* What's Inside */}
       <div className="bg-card/50 border-t border-border">
+        <div className="max-w-5xl mx-auto px-6 py-16">
+          <h2 className="text-3xl font-fraunces font-bold text-foreground text-center mb-12">
+            What's Inside the Studio
+          </h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Sidekick */}
+            <div className="space-y-4">
+              <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2">
+                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <MessageSquare className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground">
+                      I want to organize a block party for my street...
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 justify-end">
+                    <div className="bg-primary/10 rounded-lg px-3 py-2 text-xs text-foreground">
+                      Great idea! Let's start with a date and invite list. I can help you create a flyer too.
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-fraunces font-bold text-foreground mb-1 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" /> Sidekick
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Chat to explore ideas, remix tools, and move into action locally.
+                </p>
+              </div>
+            </div>
+
+            {/* Library */}
+            <div className="space-y-4">
+              <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  {["Stories", "Tools", "Prompts", "Tech"].map((label) => (
+                    <div key={label} className="bg-muted rounded-lg px-3 py-3 text-center">
+                      <div className="text-xs font-medium text-foreground">{label}</div>
+                      <div className="text-[10px] text-muted-foreground mt-0.5">from neighbors</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-fraunces font-bold text-foreground mb-1 flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" /> Library
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Stories, tools, and prompts shared by people building with neighbors.
+                </p>
+              </div>
+            </div>
+
+            {/* Peer Network */}
+            <div className="space-y-4">
+              <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
+                <div className="space-y-2">
+                  {["Oakland, CA", "Detroit, MI", "Brooklyn, NY"].map((place) => (
+                    <div key={place} className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-primary/20" />
+                      <div>
+                        <div className="text-xs font-medium text-foreground">{place}</div>
+                        <div className="text-[10px] text-muted-foreground">Building locally</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-fraunces font-bold text-foreground mb-1 flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" /> Peer Network
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Join fellow builders crafting relational technology for their neighborhoods.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* What is Relational Tech? */}
+      <div className="border-t border-border">
         <div className="max-w-3xl mx-auto px-6 py-16 text-center">
           <h2 className="text-2xl md:text-3xl font-fraunces font-bold text-foreground mb-4">
             What is Relational Tech?
@@ -102,12 +194,7 @@ const Landing = () => {
           </p>
           <p className="text-sm text-muted-foreground/80">
             Part of the{" "}
-            <a 
-              href="https://relationaltechproject.org" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-primary hover:underline"
-            >
+            <a href="https://relationaltechproject.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               Relational Tech Project
             </a>
           </p>
@@ -118,25 +205,5 @@ const Landing = () => {
     </div>
   );
 };
-
-interface FeatureCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  delay?: string;
-}
-
-const FeatureCard = ({ icon, title, description, delay = "0s" }: FeatureCardProps) => (
-  <div 
-    className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow duration-200 animate-fade-in" 
-    style={{ animationDelay: delay }}
-  >
-    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-4">
-      {icon}
-    </div>
-    <h3 className="text-lg font-fraunces font-bold text-foreground mb-2">{title}</h3>
-    <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
-  </div>
-);
 
 export default Landing;

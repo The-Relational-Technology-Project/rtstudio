@@ -54,7 +54,7 @@ export const EditLibraryItemDialog = ({ item, open, onOpenChange, onSuccess }: E
         example_prompt: examplePrompt,
       }).eq("id", item.id);
       error = res.error;
-    } else if (item.type === "tool") {
+    } else if (item.type === "tool" || item.type === "tech_for_building") {
       const res = await supabase.from("tools").update({
         name: title,
         description: toolDescription,
@@ -79,7 +79,7 @@ export const EditLibraryItemDialog = ({ item, open, onOpenChange, onSuccess }: E
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Pencil className="h-4 w-4" />
-            Edit {item.type === "tool" ? "Tool" : item.type === "prompt" ? "Prompt" : "Story"}
+            Edit {item.type === "tool" || item.type === "tech_for_building" ? "Tool" : item.type === "prompt" ? "Prompt" : "Story"}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSave} className="space-y-4">
@@ -118,7 +118,7 @@ export const EditLibraryItemDialog = ({ item, open, onOpenChange, onSuccess }: E
             </>
           )}
 
-          {item.type === "tool" && (
+          {(item.type === "tool" || item.type === "tech_for_building") && (
             <>
               <div className="space-y-2">
                 <Label htmlFor="edit-tool-desc">Description</Label>
