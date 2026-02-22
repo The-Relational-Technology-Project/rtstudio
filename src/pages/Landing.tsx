@@ -54,22 +54,19 @@ const Landing = () => {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.15),transparent_50%),radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.1),transparent_50%)]" />
         <div className="relative max-w-6xl mx-auto px-6 py-12 md:py-20">
-          <div className="text-center mb-12 animate-fade-in">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-fraunces text-foreground mb-6 leading-tight">
+          <div className="text-center mb-10 animate-fade-in">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-fraunces text-foreground leading-tight">
               You can build what you need
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Craft relational tech for your people and place
-            </p>
           </div>
 
           {/* Gallery Grid */}
           {galleryTools.length > 0 && (
             <div className="mb-12 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-              <h2 className="text-2xl font-fraunces font-bold text-foreground text-center mb-2">
+              <h2 className="text-xl font-fraunces font-bold text-foreground text-center mb-1">
                 Remixable Tools
               </h2>
-              <p className="text-muted-foreground text-center mb-8 max-w-xl mx-auto">
+              <p className="text-muted-foreground text-center mb-8 max-w-xl mx-auto text-sm">
                 Browse tools built by neighbors. Enter the Studio to remix any of them for your community.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
