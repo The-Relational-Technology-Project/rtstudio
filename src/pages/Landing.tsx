@@ -6,11 +6,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Sparkles, BookOpen, Users, ArrowRight, MessageSquare } from "lucide-react";
 import { ToolGalleryCard } from "@/components/ToolGalleryCard";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface GalleryTool {
   id: string;
   name: string;
   summary: string;
+  description: string;
   image_url: string | null;
 }
 
@@ -18,6 +20,7 @@ const Landing = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [galleryTools, setGalleryTools] = useState<GalleryTool[]>([]);
+  const [selectedTool, setSelectedTool] = useState<GalleryTool | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -36,7 +39,7 @@ const Landing = () => {
     const fetchGallery = async () => {
       const { data } = await (supabase
         .from("tools")
-        .select("id, name, summary, image_url") as any)
+        .select("id, name, summary, description, image_url") as any)
         .eq("tool_category", "relational_tech")
         .not("image_url", "is", null)
         .order("sort_order", { ascending: true });
@@ -76,6 +79,7 @@ const Landing = () => {
                     name={tool.name}
                     summary={tool.summary || ""}
                     imageUrl={tool.image_url}
+                    onClick={() => setSelectedTool(tool)}
                   />
                 ))}
                 {/* "More tools" teaser card */}
@@ -215,6 +219,40 @@ const Landing = () => {
       </div>
 
       <Footer />
+
+      {/* Tool detail dialog */}
+      <Dialog open={!!selectedTool} onOpenChange={(open) => !open && setSelectedTool(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedTool && (
+            <div className="space-y-6">
+              {selectedTool.image_url && (
+                <img
+                  src={selectedTool.image_url}
+                  alt={selectedTool.name}
+                  className="w-full rounded-xl border border-border"
+                />
+              )}
+              <div>
+                <h2 className="text-2xl font-fraunces font-bold text-foreground mb-2">
+                  {selectedTool.name}
+                </h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  {selectedTool.description}
+                </p>
+              </div>
+              <Link to="/auth" className="block">
+                <Button
+                  size="lg"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg py-6 rounded-xl"
+                >
+                  Remix This in Studio
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
