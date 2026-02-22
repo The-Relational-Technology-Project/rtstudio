@@ -1,93 +1,188 @@
 
-# Profile & Library Enhancements
+# Landing Page Gallery + Library Restructuring
 
-## What's Being Built
+## Overview
 
-Two feature areas with supporting database changes:
-
-1. **Profile: Local Tech Ecosystem field + editable Dreams & Goals**
-2. **Library: "My Items" view, "Bookmarks" view, and bookmark toggle on cards**
+Transform the landing page into a public gallery of remixable relational tech tools, and restructure the Library so that Prompts live underneath Tools as children. The current "Tools" list (Lovable, Replit, Supabase, etc.) becomes "Tech for Building."
 
 ---
 
-## Database Changes Required
+## Database Schema Changes
 
-### 1. Add `local_tech_ecosystem` to `profiles`
-A new nullable text column for the freeform ecosystem description. No existing data is affected.
+### 1. Expand the `tools` table
 
-### 2. Add `user_id` to `prompts` and `tools`
-Currently neither table tracks who contributed an item, so "My Items" has no way to filter by owner. A nullable UUID column will be added to both. Existing rows remain untouched (null `user_id`). Contributions made going forward (via dialog or Sidekick) will capture the authenticated user's ID.
+Add columns to support gallery display and tool categorization:
 
-### 3. New `library_bookmarks` table
-A simple join table: `(id, user_id, item_id, item_type, created_at)`. RLS: users can only SELECT/INSERT/DELETE their own rows.
+- `image_url` (text, nullable) -- hero screenshot for gallery cards
+- `screenshot_urls` (text[], nullable) -- additional screenshots for detail view
+- `tool_category` (text, default `'relational_tech'`) -- distinguishes gallery tools from tech-for-building tools
+- `summary` (text, nullable) -- short one-liner for gallery card display (separate from the longer `description`)
+
+### 2. Add `parent_tool_id` to `prompts` table
+
+- `parent_tool_id` (UUID, nullable, references `tools.id`) -- links a prompt as a child of a tool
+- Existing prompts remain valid with `null` parent until we link them
+
+### 3. Update existing tool entries
+
+Set `tool_category = 'tech_for_building'` on all 8 existing tools (Lovable, Replit, Supabase, GitHub, Twilio, Resend, Dyad, Firecrawl).
+
+### 4. Insert 10 gallery tool entries
+
+Each with `tool_category = 'relational_tech'`, a summary, description, and `image_url` pointing to the uploaded screenshot:
+
+| Tool Name | Screenshot | Matching Prompt to Link |
+|-----------|-----------|------------------------|
+| Neighborhood API | neighborhood_api.png | (none -- new) |
+| Neighbor Story Sharing | neighbor_story_sharing.png | "Neighbor Story Sharing" |
+| Our Neighborhood Today | (no screenshot uploaded) | "Neighborhood Today Calendar" |
+| Hyperlocal Neighbor Hub | hyperlocal_neighbor_hub.png | "Hyperlocal Neighbor Hubs" |
+| Community Apps Dashboard | community_apps_dashboard.png | (none -- new) |
+| Microgrant Management | microgrant_management.png | "Microgrants Tool" |
+| Neighborhood Association Hub | neighborhood_association_hub.png | "Neighborhood Association Hub" |
+| Local Supplies Sharing | community-supplies.png | "Community Supplies" |
+| Block Party Organizing | block_party_organizing.png | "Block Party Organizing" |
+| Text-by-Tag | text_by_tag.png | (none -- new) |
+
+### 5. Create tool parents for orphan prompts
+
+These existing prompts don't match a gallery tool. Each gets a new tool entry (no screenshot, with a generated summary) and is linked via `parent_tool_id`:
+
+- **Footer Component** -- "A clean, remixable footer component for neighborhood websites with origin story text, contact info, and remix invitation."
+- **Privacy & Terms Page** -- "A ready-to-use privacy and terms page template for community-built neighborhood websites."
+- **Neighborhood Connector Site** -- "A site for connecting neighbors through shared interests, gatherings, and local resources."
+- **Neighborhood Groups Directory** -- "A directory of neighborhood groups and organizations for resource sharing and community connection."
+- **Neighborhood Deep Time Scanner** -- "A reflective tool for exploring the deep history and future possibilities of your neighborhood."
+
+### 6. Link all prompts to their parent tools
+
+Update each prompt's `parent_tool_id` to point to the corresponding tool entry.
 
 ---
 
-## Feature 1 — Profile: Ecosystem Field & Editable Fields
+## Image Uploads
 
-### New "Local Tech Ecosystem" section in `Profile.tsx`
-- Displayed below "Dreams & Goals" as a new card section using a `Network` icon (matches the relational tech theme)
-- Shown whether or not it has content (with a prompt to fill it in if empty)
-- Inline edit mode: clicking an Edit pencil icon on either "Dreams & Goals" or "Ecosystem" reveals a Textarea and Save/Cancel buttons
-- Saves to the `profiles` table for the current user via `supabase.from('profiles').update(...)` 
-- Calls `refreshProfile()` after saving so the AuthContext is up to date
+Copy the 8 user-uploaded screenshots to `public/images/gallery/` for use on the landing page and in tool cards. "Our Neighborhood Today" does not have an uploaded screenshot -- it will display without one (or with a placeholder).
 
-### Sidekick context injection
-In `chat-remix/index.ts`, the `profileContext` block already injects profile fields. A new line will be added:
+---
+
+## Landing Page Redesign (`src/pages/Landing.tsx`)
+
+### New structure (top to bottom):
+
+1. **Hero** -- Keep "You can build what you need" headline and "Craft relational tech for your people and place" subtitle
+
+2. **Tool Gallery Grid** -- Replace the DemoChat with a responsive grid of tool cards. Each card shows:
+   - Hero screenshot (the uploaded image)
+   - Tool name
+   - One-line summary
+   - Clicking a card scrolls to or opens a lightweight detail view (or navigates to `/auth` with a "Remix this" prompt)
+
+3. **"Enter Your Studio" CTA** -- Primary button below the gallery
+
+4. **"What's Inside" Section** -- Three feature previews:
+   - **Sidekick** -- Show a static mockup of the chat UI with description
+   - **Library** -- Show a static mockup of the library grid with description
+   - **Peer Network** -- Description card (as before)
+
+5. **"What is Relational Tech?" Section** -- Keep as-is
+
+6. **Footer** -- Keep as-is
+
+### Gallery card component
+
+New component `ToolGalleryCard` that renders:
+- Screenshot image with rounded corners and subtle shadow
+- Tool name (bold, font-fraunces)
+- One-line summary
+- On click: navigate to `/auth` (to enter studio and remix)
+
+The gallery fetches tools from the database where `tool_category = 'relational_tech'` and `image_url IS NOT NULL` (so only gallery-ready tools appear on the landing page).
+
+---
+
+## Library Page Changes (`src/pages/Library.tsx`)
+
+### Type filter updates
+
+The current type filter buttons are: All, Stories, Prompts, Tools
+
+Change to: **All, Stories, Tools, Tech for Building**
+
+- **Tools** shows items from the `tools` table where `tool_category = 'relational_tech'`
+- **Tech for Building** shows items from the `tools` table where `tool_category = 'tech_for_building'`
+- **Prompts** filter is removed as a top-level filter -- prompts are now visible as children within tool detail views
+
+### Tool detail view in Library
+
+When viewing a relational tech tool in the Library detail dialog:
+- Show the tool's screenshot(s)
+- Show the summary and description
+- Show child prompts listed below with a "Remix" button on each
+- The "Discuss in Sidekick" button remains
+
+### Data fetching update
+
+Update `fetchLibraryItems` to:
+- Fetch tools with their `tool_category` field
+- Map `tool_category` into the display type ("tool" or "tech_for_building")
+- Fetch prompts but only show them as children within tool views, not as standalone cards in the grid
+
+---
+
+## Type Updates (`src/types/library.ts`)
+
+Update `ItemType` to include the new category:
+
+```text
+export type ItemType = "story" | "tool" | "tech_for_building";
 ```
-- Local tech ecosystem: ${profile.local_tech_ecosystem || 'Not described yet'}
-```
-This gives Sidekick awareness of the builder's local ecosystem when remixing or suggesting tools.
 
-### Onboarding
-No change — this field is intentionally skipped in onboarding per the request.
+Remove "prompt" as a standalone type. Add fields to `LibraryItem`:
 
----
-
-## Feature 2 — Library: My Items, Bookmarks, and Bookmark Button
-
-### Bookmark button on `LibraryCard`
-- A `Bookmark` icon button appears in the card footer (and in the detail dialog)
-- If the user is not signed in, clicking it shows a toast: "Sign in to bookmark items"
-- If signed in, it toggles: inserts a row into `library_bookmarks` or deletes the existing row
-- Filled/unfilled bookmark icon reflects current state
-- The card needs to know the current user and their bookmark state — this is passed down from Library as a `Set<string>` of bookmarked item IDs and a toggle callback, keeping fetching centralized
-
-### Library page view tabs
-The existing type filter row gets a new "view" concept alongside it. Three view tabs are added above the filter row:
-- **Browse** (default) — current behavior, all items
-- **My Items** — shows only items where `user_id` matches the current user. Requires auth; shows a "Sign in to see your contributions" message if not logged in
-- **Bookmarks** — shows only bookmarked items. Requires auth
-
-"My Items" cards get two extra actions: **Edit** (opens an inline edit dialog) and **Delete** (with a confirmation step).
-
-### Edit dialog for owned items
-A new `EditLibraryItemDialog` component that reuses the existing form field patterns from `ContributionDialog`. It pre-fills with current values and saves via `supabase.from(table).update(...)`. Only visible on items the user owns.
-
-### Delete confirmation
-Uses the existing `AlertDialog` component (already in the project). On confirm, calls `supabase.from(table).delete().eq('id', item.id)` and refreshes the list.
+- `imageUrl` (string, optional) -- hero image
+- `screenshotUrls` (string[], optional) -- additional screenshots
+- `toolCategory` (string, optional)
+- `childPrompts` (array, optional) -- for tool items, their associated prompts
 
 ---
 
-## Files to Create / Modify
+## LibraryCard Updates (`src/components/LibraryCard.tsx`)
 
-| File | Change |
+- Show hero image at top of card if `imageUrl` exists
+- For "tool" type items, show "Remix" button that navigates to Sidekick
+- Remove standalone "prompt" card rendering (prompts appear inside tool details)
+- "Tech for Building" cards keep the current external link behavior
+
+---
+
+## Sidekick Integration
+
+- The "Remix" action on a tool navigates to Sidekick with context like: "I'd like to remix the [Tool Name] tool for my neighborhood"
+- No changes needed to the edge function -- the existing remix flow works with tool names
+
+---
+
+## Files Summary
+
+| File | Action |
 |------|--------|
-| Database migration | Add `local_tech_ecosystem` to `profiles`; add `user_id` to `prompts` + `tools`; create `library_bookmarks` table with RLS |
-| `src/contexts/AuthContext.tsx` | Add `local_tech_ecosystem` to the `Profile` interface |
-| `src/pages/Profile.tsx` | Add editable Dreams & ecosystem sections with inline edit |
-| `supabase/functions/chat-remix/index.ts` | Add `local_tech_ecosystem` to system prompt context |
-| `src/types/library.ts` | Add `userId` to `LibraryItem` type |
-| `src/pages/Library.tsx` | Add view tabs (Browse/My Items/Bookmarks), fetch bookmarks, pass ownership/bookmark state to cards |
-| `src/components/LibraryCard.tsx` | Add bookmark button; accept `isBookmarked`, `onToggleBookmark`, `isOwned`, `onEdit`, `onDelete` props |
-| `src/components/ContributionDialog.tsx` | Capture and save `user_id` on insert for prompts and tools (stories already have the column) |
-| `src/components/EditLibraryItemDialog.tsx` | New component — edit form pre-filled with item data, saves updates |
+| Database migration | Add columns to `tools`, add `parent_tool_id` to `prompts`, seed 10+ tool entries, link prompts, recategorize existing tools |
+| `public/images/gallery/*.png` | Copy 8 uploaded screenshots |
+| `src/pages/Landing.tsx` | Full redesign: gallery grid, "What's Inside" section, remove DemoChat |
+| `src/components/ToolGalleryCard.tsx` | New component for landing page gallery cards |
+| `src/types/library.ts` | Update `ItemType`, add new fields |
+| `src/pages/Library.tsx` | Replace Prompts filter with Tools/Tech for Building, show prompts as children of tools |
+| `src/components/LibraryCard.tsx` | Add hero image display, tool detail with child prompts |
+| `src/components/ContributionDialog.tsx` | Update to reflect new tool-first contribution model |
 
 ---
 
-## Data & Security Notes
+## What's Preserved
 
-- `library_bookmarks` RLS ensures users can only see and manage their own bookmarks — no cross-user visibility
-- Ownership for "My Items" is enforced by filtering on `user_id = auth.uid()` client-side (data is public anyway per existing RLS), not by a new policy — this is appropriate since library content is intentionally public
-- Existing stories/prompts/tools with `null` user_id won't appear in anyone's "My Items" view, which is correct (they are curator-added content, not builder contributions)
-- The `local_tech_ecosystem` column follows the same profile RLS as all other profile fields: only the owner can read or write it
+- All existing data remains intact (no deletions, no column drops)
+- Stories unchanged
+- Existing tool entries reclassified but not removed
+- Existing prompts get a `parent_tool_id` but their data is untouched
+- Auth flow, Sidekick, profile, bookmarks all unchanged
+- DemoChat component kept in codebase (just removed from landing page)
