@@ -1,17 +1,14 @@
-import { useNavigate } from "react-router-dom";
-
 interface ToolGalleryCardProps {
   name: string;
   summary: string;
   imageUrl: string | null;
+  onClick?: () => void;
 }
 
-export const ToolGalleryCard = ({ name, summary, imageUrl }: ToolGalleryCardProps) => {
-  const navigate = useNavigate();
-
+export const ToolGalleryCard = ({ name, summary, imageUrl, onClick }: ToolGalleryCardProps) => {
   return (
     <button
-      onClick={() => navigate("/auth")}
+      onClick={onClick}
       className="group text-left bg-card rounded-2xl border border-border overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
     >
       {imageUrl ? (
