@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import SidekickPage from "./pages/SidekickPage";
 import Library from "./pages/Library";
 import Profile from "./pages/Profile";
+import Support from "./pages/Support";
 import { TourProvider } from "./contexts/TourContext";
 import { SidekickProvider } from "./contexts/SidekickContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -55,6 +56,14 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Profile />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/support"
+                  element={
+                    <ProtectedRoute>
+                      <Support />
                     </ProtectedRoute>
                   }
                 />

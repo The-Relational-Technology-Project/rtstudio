@@ -8,9 +8,10 @@ import { CommitmentsList } from "@/components/CommitmentsList";
 import { ServiceberriesCounter } from "@/components/ServiceberriesCounter";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { User, MapPin, Sparkles, Network, Pencil, Check, X } from "lucide-react";
+import { User, MapPin, Sparkles, Network, Pencil, Check, X, Cpu, Bot } from "lucide-react";
 
 const EditableSection = ({
   icon,
@@ -96,6 +97,107 @@ const EditableSection = ({
   );
 };
 
+const TECH_FAMILIARITY_OPTIONS = [
+  { value: "new", label: "New to tech" },
+  { value: "learning", label: "Learning" },
+  { value: "comfortable", label: "Comfortable" },
+  { value: "experienced", label: "Experienced" },
+];
+
+const AI_EXPERIENCE_OPTIONS = [
+  { value: "never", label: "Never tried" },
+  { value: "a_little", label: "A little" },
+  { value: "regular", label: "Regular use" },
+  { value: "daily", label: "Daily" },
+];
+
+const EditableSelectSection = ({
+  icon,
+  label,
+  value,
+  options,
+  fieldKey,
+  userId,
+  onSaved,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | null | undefined;
+  options: { value: string; label: string }[];
+  fieldKey: string;
+  userId: string;
+  onSaved: () => void;
+}) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value || "");
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const displayLabel = options.find((o) => o.value === value)?.label || "Not set";
+
+  const handleSave = async () => {
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ [fieldKey]: draft })
+      .eq("id", userId);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Error saving", description: error.message, variant: "destructive" });
+    } else {
+      onSaved();
+      setEditing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setDraft(value || "");
+    setEditing(false);
+  };
+
+  return (
+    <div className="p-4 rounded-lg border border-border">
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-sm text-muted-foreground flex items-center gap-2">
+          {icon}
+          {label}
+        </p>
+        {!editing && (
+          <Button variant="ghost" size="sm" onClick={() => { setDraft(value || ""); setEditing(true); }}>
+            <Pencil className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+      {editing ? (
+        <div className="space-y-2 mt-1">
+          <Select value={draft} onValueChange={setDraft}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {options.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              <Check className="h-3 w-3 mr-1" />
+              {saving ? "Saving…" : "Save"}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={handleCancel} disabled={saving}>
+              <X className="h-3 w-3 mr-1" />
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="font-medium capitalize">{displayLabel}</p>
+      )}
+    </div>
+  );
+};
+
 const Profile = () => {
   const { profile, refreshProfile } = useAuth();
 
@@ -130,7 +232,12 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Dreams & Goals — editable */}
+        {/* 1. Commitments */}
+        <div className="mb-8">
+          <CommitmentsList />
+        </div>
+
+        {/* 2. Dreams & Goals — editable */}
         {profile && (
           <EditableSection
             icon={<Sparkles className="h-4 w-4" />}
@@ -143,7 +250,7 @@ const Profile = () => {
           />
         )}
 
-        {/* Local Tech Ecosystem — editable */}
+        {/* 3. Local Tech Ecosystem — editable */}
         {profile && (
           <EditableSection
             icon={<Network className="h-4 w-4" />}
@@ -156,36 +263,39 @@ const Profile = () => {
           />
         )}
 
-        {/* Tech Comfort */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="p-4 rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground mb-1">Tech Familiarity</p>
-            <p className="font-medium capitalize">
-              {profile?.tech_familiarity?.replace("_", " ") || "Not set"}
-            </p>
-          </div>
-          <div className="p-4 rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground mb-1">AI Coding Experience</p>
-            <p className="font-medium capitalize">
-              {profile?.ai_coding_experience?.replace("_", " ") || "Not set"}
-            </p>
-          </div>
-        </div>
-
-        {/* Serviceberries */}
-        <div className="mb-8 p-6 rounded-lg border border-border">
-          <ServiceberriesCounter variant="profile" />
-        </div>
-
-        {/* Vision Board */}
+        {/* 4. Vision Board */}
         <div className="mb-8">
           <VisionBoard />
         </div>
 
-        {/* Commitments */}
-        <div className="mb-8">
-          <CommitmentsList />
+        {/* 5. Serviceberries */}
+        <div className="mb-8 p-6 rounded-lg border border-border">
+          <ServiceberriesCounter variant="profile" />
         </div>
+
+        {/* 6. Tech Familiarity & AI Experience — editable */}
+        {profile && (
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <EditableSelectSection
+              icon={<Cpu className="h-4 w-4" />}
+              label="Tech Familiarity"
+              value={profile.tech_familiarity}
+              options={TECH_FAMILIARITY_OPTIONS}
+              fieldKey="tech_familiarity"
+              userId={profile.id}
+              onSaved={refreshProfile}
+            />
+            <EditableSelectSection
+              icon={<Bot className="h-4 w-4" />}
+              label="AI Coding Experience"
+              value={profile.ai_coding_experience}
+              options={AI_EXPERIENCE_OPTIONS}
+              fieldKey="ai_coding_experience"
+              userId={profile.id}
+              onSaved={refreshProfile}
+            />
+          </div>
+        )}
       </div>
       <Footer />
     </div>
