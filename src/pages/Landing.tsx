@@ -66,8 +66,8 @@ const Landing = () => {
               <h2 className="text-xl font-fraunces font-bold text-foreground text-center mb-1">
                 Remixable Tools
               </h2>
-              <p className="text-muted-foreground text-center mb-8 max-w-xl mx-auto text-sm">
-                Browse tools built by neighbors. Enter the Studio to remix any of them for your community.
+              <p className="text-muted-foreground text-center mb-8 text-sm">
+                Browse tools built by neighbors. Enter the Studio to remix any of them with your community.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {galleryTools.map((tool) => (
