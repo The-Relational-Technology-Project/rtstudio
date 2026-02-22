@@ -78,6 +78,19 @@ const Landing = () => {
                     imageUrl={tool.image_url}
                   />
                 ))}
+                {/* "More tools" teaser card */}
+                <Link
+                  to="/auth"
+                  className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/60 hover:border-primary/40 transition-all duration-300 aspect-[16/10] min-h-[200px]"
+                >
+                  <div className="text-4xl mb-2">✨</div>
+                  <p className="font-fraunces font-bold text-foreground group-hover:text-primary transition-colors">
+                    And more inside…
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Enter the Studio to browse & remix all tools
+                  </p>
+                </Link>
               </div>
             </div>
           )}
