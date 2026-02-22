@@ -39,7 +39,7 @@ const Landing = () => {
         .select("id, name, summary, image_url") as any)
         .eq("tool_category", "relational_tech")
         .not("image_url", "is", null)
-        .order("created_at", { ascending: true });
+        .order("sort_order", { ascending: true });
       if (data) setGalleryTools(data);
     };
     fetchGallery();

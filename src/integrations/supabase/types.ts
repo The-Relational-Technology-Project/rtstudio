@@ -447,6 +447,7 @@ export type Database = {
           image_url: string | null
           name: string
           screenshot_urls: string[] | null
+          sort_order: number
           summary: string | null
           tool_category: string
           url: string | null
@@ -459,6 +460,7 @@ export type Database = {
           image_url?: string | null
           name: string
           screenshot_urls?: string[] | null
+          sort_order?: number
           summary?: string | null
           tool_category?: string
           url?: string | null
@@ -471,6 +473,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           screenshot_urls?: string[] | null
+          sort_order?: number
           summary?: string | null
           tool_category?: string
           url?: string | null
