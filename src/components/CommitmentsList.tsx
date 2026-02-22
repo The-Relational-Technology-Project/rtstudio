@@ -94,7 +94,7 @@ export const CommitmentsList = () => {
 
         toast({
           title: "🎉 Commitment completed!",
-          description: "You earned 10 serviceberries for following through.",
+          description: "You gathered a serviceberry for following through.",
         });
       }
 

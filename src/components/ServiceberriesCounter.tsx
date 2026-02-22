@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { Cherry, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface Serviceberry {
@@ -22,13 +22,136 @@ interface Serviceberry {
   created_at: string | null;
 }
 
-const REASON_LABELS: Record<string, string> = {
-  profile_setup: "Profile setup completed",
-  first_chat: "First chat with Sidekick",
-  commitment_made: "Made a commitment",
-  commitment_completed: "Completed a commitment",
-  library_contribution: "Contributed to the library",
+// Berry color config — each reason maps to an HSL fill and a label
+const BERRY_CONFIG: Record<string, { fill: string; label: string; meaning: string }> = {
+  profile_setup:        { fill: "hsl(38, 92%, 50%)",  label: "Profile setup",          meaning: "Planting your roots" },
+  first_chat:           { fill: "hsl(38, 92%, 50%)",  label: "First chat",             meaning: "Planting your roots" },
+  commitment_completed: { fill: "hsl(152, 60%, 36%)", label: "Commitment completed",   meaning: "Following through" },
+  commitment_made:      { fill: "hsl(140, 30%, 60%)", label: "Commitment made",         meaning: "Setting intentions" },
+  library_contribution: { fill: "hsl(199, 89%, 48%)", label: "Library contribution",    meaning: "Building for others" },
+  story_shared:         { fill: "hsl(350, 70%, 56%)", label: "Story shared",            meaning: "Sharing your experience" },
+  prompt_shared:        { fill: "hsl(270, 60%, 58%)", label: "Prompt shared",           meaning: "Offering imagination" },
 };
+
+const DEFAULT_BERRY = { fill: "hsl(220, 15%, 60%)", label: "Contribution", meaning: "Giving to the commons" };
+
+function getBerryConfig(reason: string) {
+  return BERRY_CONFIG[reason] || DEFAULT_BERRY;
+}
+
+// Deterministic pseudo-random offset from a seed string
+function seededOffset(seed: string, index: number, range: number): number {
+  let hash = 0;
+  const str = seed + index;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) | 0;
+  }
+  return ((hash % 1000) / 1000) * range - range / 2;
+}
+
+// --- BerryBunch: renders an organic SVG cluster of colored circles ---
+
+interface BerryBunchProps {
+  berryMap: Map<string, number>;
+  size?: number; // overall SVG size
+  maxPerType?: number;
+}
+
+const BerryBunch = ({ berryMap, size = 120, maxPerType = 5 }: BerryBunchProps) => {
+  const berries = useMemo(() => {
+    const items: { fill: string; cx: number; cy: number }[] = [];
+    const center = size / 2;
+    const radius = size * 0.32;
+    const berryR = size * 0.075;
+
+    const types = Array.from(berryMap.entries());
+    const totalTypes = types.length;
+    if (totalTypes === 0) return items;
+
+    // Distribute types in arcs around center
+    types.forEach(([reason, count], typeIdx) => {
+      const config = getBerryConfig(reason);
+      const capped = Math.min(count, maxPerType);
+      const angleBase = (typeIdx / totalTypes) * Math.PI * 2 - Math.PI / 2;
+
+      for (let i = 0; i < capped; i++) {
+        const dist = radius * (0.3 + (i / Math.max(capped, 1)) * 0.7);
+        const angleJitter = seededOffset(reason, i, 0.45);
+        const distJitter = seededOffset(reason + "d", i, berryR * 1.5);
+        const angle = angleBase + angleJitter;
+        const cx = center + Math.cos(angle) * (dist + distJitter);
+        const cy = center + Math.sin(angle) * (dist + distJitter);
+        items.push({ fill: config.fill, cx, cy });
+      }
+    });
+
+    return items;
+  }, [berryMap, size, maxPerType]);
+
+  const berryR = size * 0.075;
+
+  if (berries.length === 0) {
+    // Empty state: single outlined berry
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={berryR * 1.5}
+          fill="none"
+          stroke="hsl(220, 15%, 70%)"
+          strokeWidth={1.5}
+          strokeDasharray="3 2"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {berries.map((b, i) => (
+        <circle
+          key={i}
+          cx={b.cx}
+          cy={b.cy}
+          r={berryR}
+          fill={b.fill}
+          opacity={0.88}
+        />
+      ))}
+    </svg>
+  );
+};
+
+// --- Legend ---
+
+interface BerryLegendProps {
+  berryMap: Map<string, number>;
+}
+
+const BerryLegend = ({ berryMap }: BerryLegendProps) => {
+  const types = Array.from(berryMap.keys());
+  if (types.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1.5 justify-center">
+      {types.map((reason) => {
+        const config = getBerryConfig(reason);
+        return (
+          <div key={reason} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span
+              className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: config.fill }}
+            />
+            {config.meaning}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+// --- Main component ---
 
 interface ServiceberriesCounterProps {
   variant?: "nav" | "profile";
@@ -36,21 +159,29 @@ interface ServiceberriesCounterProps {
 
 export const ServiceberriesCounter = ({ variant = "nav" }: ServiceberriesCounterProps) => {
   const { user } = useAuth();
-  
-  const [total, setTotal] = useState(0);
+
   const [history, setHistory] = useState<Serviceberry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
 
+  const berryMap = useMemo(() => {
+    const m = new Map<string, number>();
+    history.forEach((b) => {
+      m.set(b.reason, (m.get(b.reason) || 0) + 1);
+    });
+    return m;
+  }, [history]);
+
   useEffect(() => {
-    if (user) {
-      fetchServiceberries();
-    }
+    if (user) fetchServiceberries();
   }, [user]);
+
+  useEffect(() => {
+    if (isOpen && user) fetchServiceberries();
+  }, [isOpen, user]);
 
   const fetchServiceberries = async () => {
     if (!user) return;
-    
     setIsLoading(true);
     const { data, error } = await supabase
       .from("serviceberries")
@@ -61,19 +192,10 @@ export const ServiceberriesCounter = ({ variant = "nav" }: ServiceberriesCounter
     if (error) {
       console.error("Error fetching serviceberries:", error);
     } else {
-      const berries = data || [];
-      setHistory(berries);
-      setTotal(berries.reduce((sum, b) => sum + b.amount, 0));
+      setHistory(data || []);
     }
     setIsLoading(false);
   };
-
-  // Refetch when dialog opens
-  useEffect(() => {
-    if (isOpen && user) {
-      fetchServiceberries();
-    }
-  }, [isOpen, user]);
 
   if (variant === "nav") {
     return (
@@ -82,119 +204,90 @@ export const ServiceberriesCounter = ({ variant = "nav" }: ServiceberriesCounter
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
+            className="gap-1 text-muted-foreground hover:text-foreground px-2"
           >
-            <Cherry className="h-4 w-4 text-rose-500" />
             {isLoading ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
-              <span className="font-medium">{total}</span>
+              <BerryBunch berryMap={berryMap} size={22} maxPerType={2} />
             )}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Cherry className="h-5 w-5 text-rose-500" />
-              Your Serviceberries
-            </DialogTitle>
+            <DialogTitle>Your Serviceberries</DialogTitle>
           </DialogHeader>
-          <ServiceberriesContent 
-            total={total} 
-            history={history} 
-            isLoading={isLoading} 
-          />
+          <ServiceberriesContent history={history} berryMap={berryMap} isLoading={isLoading} />
         </DialogContent>
       </Dialog>
     );
   }
 
-  // Profile variant - inline display
+  // Profile variant
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Cherry className="h-5 w-5 text-rose-500" />
-          Serviceberries
-        </h2>
-        <div className="text-2xl font-bold text-rose-500">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : total}
-        </div>
-      </div>
-      <ServiceberriesContent 
-        total={total} 
-        history={history} 
-        isLoading={isLoading}
-        showTotal={false}
-      />
+      <h2 className="text-lg font-bold">Serviceberries</h2>
+      <ServiceberriesContent history={history} berryMap={berryMap} isLoading={isLoading} />
     </div>
   );
 };
 
+// --- Content (shared between dialog and profile) ---
+
 interface ServiceberriesContentProps {
-  total: number;
   history: Serviceberry[];
+  berryMap: Map<string, number>;
   isLoading: boolean;
-  showTotal?: boolean;
 }
 
-const ServiceberriesContent = ({ 
-  total, 
-  history, 
-  isLoading,
-  showTotal = true 
-}: ServiceberriesContentProps) => {
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+const ServiceberriesContent = ({ history, berryMap, isLoading }: ServiceberriesContentProps) => {
+  if (isLoading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-4">
-      {showTotal && (
-        <div className="text-center p-4 bg-rose-50 dark:bg-rose-950/20 rounded-lg">
-          <div className="text-4xl font-bold text-rose-500">{total}</div>
-          <p className="text-sm text-muted-foreground mt-1">
-            Total serviceberries earned
-          </p>
-        </div>
-      )}
+    <div className="space-y-5">
+      {/* Berry bunch visual */}
+      <div className="flex flex-col items-center gap-3 py-2">
+        <BerryBunch berryMap={berryMap} size={120} maxPerType={5} />
+        <BerryLegend berryMap={berryMap} />
+      </div>
 
+      {/* Activity ledger */}
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-muted-foreground">
-          Recent Activity
-        </h3>
+        <h3 className="text-sm font-medium text-muted-foreground">Gift Ledger</h3>
         {history.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Complete your profile to earn your first serviceberries!
+            Complete your profile to gather your first serviceberry!
           </p>
         ) : (
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {history.slice(0, 10).map((berry) => (
-              <div
-                key={berry.id}
-                className="flex items-center justify-between p-2 bg-muted/50 rounded"
-              >
-                <div>
-                  <p className="text-sm">
-                    {REASON_LABELS[berry.reason] || berry.reason}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {berry.created_at &&
-                      formatDistanceToNow(new Date(berry.created_at), {
-                        addSuffix: true,
-                      })}
-                  </p>
+          <div className="space-y-1.5 max-h-64 overflow-y-auto">
+            {history.slice(0, 15).map((berry) => {
+              const config = getBerryConfig(berry.reason);
+              return (
+                <div
+                  key={berry.id}
+                  className="flex items-center gap-2.5 p-2 bg-muted/50 rounded"
+                >
+                  <span
+                    className="inline-block h-3 w-3 rounded-full shrink-0"
+                    style={{ backgroundColor: config.fill }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">{config.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {berry.created_at &&
+                        formatDistanceToNow(new Date(berry.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
                 </div>
-                <span className="font-medium text-rose-500">+{berry.amount}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
       <div className="pt-2 border-t border-border">
         <p className="text-xs text-muted-foreground text-center">
-          Serviceberries celebrate your contributions to the commons and your commitment to your neighborhood.
+          Each berry marks a gift to the commons — your contributions to neighbors and place.
         </p>
       </div>
     </div>
