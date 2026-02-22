@@ -80,7 +80,7 @@ export const ProfileOnboarding = () => {
 
       toast({
         title: "Profile complete! 🎉",
-        description: "You earned 10 serviceberries for setting up your profile.",
+        description: "You gathered your first serviceberry — welcome!",
       });
 
       navigate("/");
