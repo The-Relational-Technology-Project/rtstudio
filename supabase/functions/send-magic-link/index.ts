@@ -10,6 +10,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const RATE_LIMIT_WINDOW_MINUTES = 15;
+const MAX_ATTEMPTS = 3; // Stricter for email sending
+
 interface MagicLinkRequest {
   email: string;
   redirectUrl: string;
@@ -23,12 +26,16 @@ function generateToken(): string {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
     const { email, redirectUrl }: MagicLinkRequest = await req.json();
 
     // Validate email
@@ -39,11 +46,28 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Create Supabase client with service role for DB access
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // Rate limit by email (prevent spam to a single address)
+    const normalizedEmail = email.toLowerCase().trim();
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from('rate_limit_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('endpoint', 'send-magic-link')
+      .eq('identifier', normalizedEmail)
+      .gte('attempted_at', windowStart);
+
+    if ((count ?? 0) >= MAX_ATTEMPTS) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Record attempt
+    await supabaseAdmin.from('rate_limit_attempts').insert({
+      endpoint: 'send-magic-link',
+      identifier: normalizedEmail,
+    });
 
     // Generate secure token
     const token = generateToken();
@@ -53,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { error: insertError } = await supabaseAdmin
       .from("magic_link_tokens")
       .insert({
-        email: email.toLowerCase().trim(),
+        email: normalizedEmail,
         token,
         expires_at: expiresAt.toISOString(),
       });

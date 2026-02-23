@@ -8,12 +8,42 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const RATE_LIMIT_WINDOW_MINUTES = 15;
+const MAX_ATTEMPTS = 5;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Rate limit by IP
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+    const { count } = await supabase
+      .from('rate_limit_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('endpoint', 'update-password')
+      .eq('identifier', clientIp)
+      .gte('attempted_at', windowStart);
+
+    if ((count ?? 0) >= MAX_ATTEMPTS) {
+      return new Response(
+        JSON.stringify({ error: 'Too many attempts. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    await supabase.from('rate_limit_attempts').insert({
+      endpoint: 'update-password',
+      identifier: clientIp,
+    });
+
     const { currentPassword, newPassword } = await req.json();
 
     if (!currentPassword || !newPassword) {
@@ -29,10 +59,6 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     // Get current password hash
     const { data, error } = await supabase
