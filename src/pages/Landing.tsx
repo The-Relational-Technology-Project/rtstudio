@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, BookOpen, Users, ArrowRight, MessageSquare } from "lucide-react";
+import { Sparkles, BookOpen, Users, ArrowRight, MessageSquare, ExternalLink } from "lucide-react";
 import { ToolGalleryCard } from "@/components/ToolGalleryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -14,6 +14,7 @@ interface GalleryTool {
   summary: string;
   description: string;
   image_url: string | null;
+  url: string | null;
 }
 
 const Landing = () => {
@@ -39,7 +40,7 @@ const Landing = () => {
     const fetchGallery = async () => {
       const { data } = await (supabase
         .from("tools")
-        .select("id, name, summary, description, image_url") as any)
+        .select("id, name, summary, description, image_url, url") as any)
         .eq("tool_category", "relational_tech")
         .not("image_url", "is", null)
         .order("sort_order", { ascending: true });
@@ -236,6 +237,17 @@ const Landing = () => {
                 <p className="text-muted-foreground leading-relaxed">
                   {selectedTool.description}
                 </p>
+                {selectedTool.url && (
+                  <a
+                    href={selectedTool.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-3 text-sm font-medium text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    See a live example
+                  </a>
+                )}
               </div>
               <Link to="/auth" className="block">
                 <Button
