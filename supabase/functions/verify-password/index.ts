@@ -1,18 +1,51 @@
 import { create } from 'https://deno.land/x/djwt@v3.0.1/mod.ts';
 import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const RATE_LIMIT_WINDOW_MINUTES = 15;
+const MAX_ATTEMPTS = 5;
+
+async function checkRateLimit(supabase: any, endpoint: string, identifier: string): Promise<boolean> {
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+  const { count } = await supabase
+    .from('rate_limit_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('endpoint', endpoint)
+    .eq('identifier', identifier)
+    .gte('attempted_at', windowStart);
+  return (count ?? 0) >= MAX_ATTEMPTS;
+}
+
+async function recordAttempt(supabase: any, endpoint: string, identifier: string) {
+  await supabase.from('rate_limit_attempts').insert({ endpoint, identifier });
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Rate limit by IP
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const isLimited = await checkRateLimit(supabase, 'verify-password', clientIp);
+    if (isLimited) {
+      return new Response(
+        JSON.stringify({ error: 'Too many attempts. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { password } = await req.json();
 
     // Input validation
@@ -22,6 +55,9 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Record attempt before checking password
+    await recordAttempt(supabase, 'verify-password', clientIp);
 
     // Read password from secrets (prefer hash if available)
     const passwordHash = Deno.env.get('STUDIO_PASSWORD_HASH');
@@ -41,7 +77,6 @@ Deno.serve(async (req) => {
     } else if (passwordPlain) {
       isValid = password === passwordPlain;
     }
-
 
     if (!isValid) {
       return new Response(

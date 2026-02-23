@@ -7,17 +7,46 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const RATE_LIMIT_WINDOW_MINUTES = 15;
+const MAX_ATTEMPTS = 10;
+
 interface VerifyRequest {
   token: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Rate limit by IP
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60 * 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from('rate_limit_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('endpoint', 'verify-magic-link')
+      .eq('identifier', clientIp)
+      .gte('attempted_at', windowStart);
+
+    if ((count ?? 0) >= MAX_ATTEMPTS) {
+      return new Response(
+        JSON.stringify({ error: "Too many attempts. Please try again later." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    await supabaseAdmin.from('rate_limit_attempts').insert({
+      endpoint: 'verify-magic-link',
+      identifier: clientIp,
+    });
+
     const { token }: VerifyRequest = await req.json();
 
     if (!token) {
@@ -26,12 +55,6 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-
-    // Create Supabase admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     // Look up the token
     const { data: tokenRecord, error: lookupError } = await supabaseAdmin
@@ -42,7 +65,6 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (lookupError || !tokenRecord) {
-      console.error("Token lookup failed:", lookupError);
       return new Response(
         JSON.stringify({ error: "Invalid or expired token" }),
         { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
@@ -72,60 +94,25 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
     let userId: string;
-    let accessToken: string;
-    let refreshToken: string;
 
     if (existingUser) {
-      // User exists - generate a session for them
-      const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.admin.generateLink({
-        type: "magiclink",
-        email: email,
-      });
-
-      if (sessionError) {
-        console.error("Failed to generate session:", sessionError);
-        return new Response(
-          JSON.stringify({ error: "Failed to create session" }),
-          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
-
-      // Use signInWithOtp to complete the sign-in and get actual tokens
-      // The generateLink approach gives us a link, but we need tokens
-      // So we'll create a new approach: use admin to create a session directly
-
-      // Alternative: Use the OTP verification endpoint
-      const { data: signInData, error: signInError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        email_confirm: true,
-      });
-
-      // Actually, let's use a different approach - generate magic link and extract token
-      // The cleanest way is to sign in with a generated OTP
-      
       userId = existingUser.id;
       
-      // Generate a direct session using admin
-      // This creates a valid session for the user
-      const { data: linkData } = await supabaseAdmin.auth.admin.generateLink({
+      await supabaseAdmin.auth.admin.generateLink({
         type: 'magiclink',
         email: email,
       });
 
-      // Return the magic link properties that the client can use
-      // The client will need to complete the OTP verification
       return new Response(
         JSON.stringify({ 
           success: true, 
           email: email,
           userId: existingUser.id,
-          // We'll use a workaround: have the client do signInWithOtp
           requiresOtpVerification: true,
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     } else {
-      // Create new user with auto-confirm
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: email,
         email_confirm: true,

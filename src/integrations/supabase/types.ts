@@ -285,6 +285,27 @@ export type Database = {
           },
         ]
       }
+      rate_limit_attempts: {
+        Row: {
+          attempted_at: string
+          endpoint: string
+          id: string
+          identifier: string
+        }
+        Insert: {
+          attempted_at?: string
+          endpoint: string
+          id?: string
+          identifier: string
+        }
+        Update: {
+          attempted_at?: string
+          endpoint?: string
+          id?: string
+          identifier?: string
+        }
+        Relationships: []
+      }
       serviceberries: {
         Row: {
           amount: number
