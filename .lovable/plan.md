@@ -1,47 +1,28 @@
 
-# Three Changes: Nav Cleanup, Profile Reorder, and Get Support Page
+# Add "Use Your Own Words and Images" Guidance to Sidekick
 
-## 1. Remove Serviceberries from Top Nav
+## What This Changes
 
-Remove the `ServiceberriesCounter` from the desktop nav in `TopNav.tsx` (line 64). Serviceberries will only appear on the Profile page. Remove the unused import as well.
+When Sidekick delivers a remixed prompt to a builder, it will also recommend that they:
+1. Write their own copy (don't use AI-generated text)
+2. Use their own images (don't use AI-generated images)
 
-## 2. Add "Get Support" to Main Nav
-
-**Nav update** (`TopNav.tsx`): Add "Get Support" to the `navItems` array with path `/support`.
-
-**New page** (`src/pages/Support.tsx`): A simple page with `TopNav` and `Footer` containing:
-
-- **Header**: "Get Support" with a short intro about resources for builders.
-- **Builder's Guide section**: A brief description of The Builder's Spiral -- a practice guide for building technology that deepens community. CTA button: "Download the Builder's Guide" linking to the PDF file (copied into `public/`).
-- **1:1 Jam Session section**: A brief description explaining that Josh, one of the stewards of the Relational Tech Project, is available for 1:1 conversations about your building journey. CTA button: "Book a Jam Session" linking to `https://cal.com/joshnesbit` (opens in new tab).
-
-**Route** (`App.tsx`): Add a protected route for `/support`.
-
-**PDF asset**: Copy the uploaded PDF to `public/Builders_Guide_RTP.pdf` so it can be downloaded directly.
-
-## 3. Reorder Profile Page Sections
-
-Rearrange the sections in `Profile.tsx` to this order:
-
-1. Profile Header (unchanged)
-2. Commitments
-3. Dreams and Goals (editable)
-4. Local Tech Ecosystem (editable)
-5. Vision Board
-6. Serviceberries
-7. Tech Familiarity and AI Coding Experience (make both editable using the same `EditableSection` pattern, adapted for single-value selection)
-
-For Tech Familiarity and AI Experience, these will become editable inline fields. Since they are short single-value fields (not freeform text), they will use a simple select/dropdown edit mode rather than a textarea -- allowing the user to pick from the same options used during onboarding.
+This reinforces the relational tech principle of authenticity -- tools built by neighbors should sound and look like them.
 
 ## Technical Details
 
-### Files modified:
-- `src/components/TopNav.tsx` -- remove serviceberries, add "Get Support" nav item
-- `src/pages/Profile.tsx` -- reorder sections, make tech fields editable
-- `src/App.tsx` -- add `/support` route
+**File:** `supabase/functions/chat-remix/index.ts`
 
-### Files created:
-- `src/pages/Support.tsx` -- new Get Support page
+Update the "IMPORTANT FOR PROMPT REMIXING" section (around line 476) to add two new bullet points:
 
-### Files copied:
-- `user-uploads://Builders_Guide_RTP.pdf` to `public/Builders_Guide_RTP.pdf`
+```
+IMPORTANT FOR PROMPT REMIXING:
+- Don't rush to deliver the prompt - gather context first
+- The final prompt you deliver should be a complete prompt ready for an AI builder
+- Always acknowledge the specific context they share about their neighborhood
+- Gently remind them that the tool will likely change and that's okay
+- After delivering a remixed prompt, recommend that the builder write their own copy rather than using AI-generated text. Their voice and their neighbors' voices are what make the tool feel real.
+- Also recommend they use their own photos and images rather than AI-generated ones. Real images of their neighborhood and neighbors build trust and connection.
+```
+
+This is a system prompt change only -- no frontend or database changes needed. The edge function will redeploy automatically.
