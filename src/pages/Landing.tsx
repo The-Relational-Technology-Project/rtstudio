@@ -55,10 +55,19 @@ const Landing = () => {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.15),transparent_50%),radial-gradient(circle_at_70%_80%,hsl(var(--accent)/0.1),transparent_50%)]" />
         <div className="relative max-w-6xl mx-auto px-6 py-12 md:py-20">
-          <div className="text-center mb-10 animate-fade-in">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-fraunces text-foreground leading-tight">
+          <div className="text-center mb-16 animate-fade-in">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-fraunces text-foreground leading-tight mb-6">
               You can build what you need
             </h1>
+            <Link to="/auth">
+              <Button
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover-scale"
+              >
+                Enter Your Studio
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
           </div>
 
           {/* Gallery Grid */}
