@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowRight, ArrowLeft, Sparkles, MapPin, User, Cpu, Users, ExternalLink } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, Sparkles, MapPin, User, Cpu, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-type Step = "welcome" | "about" | "dreams" | "tech" | "join";
+type Step = "welcome" | "network" | "about" | "dreams" | "tech";
 
 export const ProfileOnboarding = () => {
   const { user, refreshProfile } = useAuth();
@@ -100,7 +100,7 @@ export const ProfileOnboarding = () => {
     }
   };
 
-  const steps: Step[] = ["welcome", "about", "dreams", "tech", "join"];
+  const steps: Step[] = ["welcome", "network", "about", "dreams", "tech"];
   const currentIndex = steps.indexOf(step);
 
   const goNext = () => {
@@ -149,6 +149,55 @@ export const ProfileOnboarding = () => {
               Get Started
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
+          </div>
+        )}
+
+        {/* Step: Network */}
+        {step === "network" && (
+          <div>
+            <div className="mb-6 flex justify-center">
+              <div className="rounded-full bg-primary/10 p-3">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-center mb-2 font-fraunces">
+              You're Not Building Alone
+            </h2>
+            <p className="text-muted-foreground text-center mb-6">
+              As part of the Studio, you're connected to a growing network of relational technologists.
+            </p>
+
+            <div className="bg-muted/50 rounded-lg p-4 mb-6 space-y-3 text-sm">
+              <ul className="space-y-3 text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>1:1 support and coaching calls with RTP stewards — bookable through Get Support</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Connections to other builders who opt in</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Calendar of events, huddles, and workshops — join when you can</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>A Signal chat with local relational technologists — join through Get Support</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={goBack} className="flex-1">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
+              <Button onClick={goNext} className="flex-1">
+                Next
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
           </div>
         )}
 
@@ -313,69 +362,9 @@ export const ProfileOnboarding = () => {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
-              <Button onClick={goNext} className="flex-1">
-                Next
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Step: Join RTP */}
-        {step === "join" && (
-          <div>
-            <div className="mb-6 flex justify-center">
-              <div className="rounded-full bg-primary/10 p-3">
-                <Users className="h-8 w-8 text-primary" />
-              </div>
-            </div>
-            <h2 className="text-xl font-bold text-center mb-2 font-fraunces">
-              Join the Relational Tech Network
-            </h2>
-            <p className="text-muted-foreground text-center mb-6">
-              The Relational Tech Project connects builders and dreamers who are creating technology for community care.
-            </p>
-            
-            <div className="bg-muted/50 rounded-lg p-4 mb-6 space-y-3 text-sm">
-              <p className="font-medium text-foreground">As part of the RTP network, you get:</p>
-              <ul className="space-y-2 text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Access to RTP stewards for support
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Connections within the RTP network
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Calendar of events & small groups
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  Other opportunities to engage
-                </li>
-              </ul>
-            </div>
-
-            <Button
-              variant="default"
-              className="w-full mb-3"
-              onClick={() => window.open("https://relationaltechproject.org/join", "_blank")}
-            >
-              Join the Relational Tech Project
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </Button>
-
-            <div className="flex gap-3 mt-4">
-              <Button variant="outline" onClick={goBack} className="flex-1">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
               <Button
                 onClick={handleComplete}
                 disabled={isSubmitting}
-                variant="ghost"
                 className="flex-1"
               >
                 {isSubmitting ? (
@@ -384,7 +373,10 @@ export const ProfileOnboarding = () => {
                     Saving...
                   </>
                 ) : (
-                  "Skip for now"
+                  <>
+                    Complete Profile
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
                 )}
               </Button>
             </div>
