@@ -1,28 +1,38 @@
 
-# Add "Use Your Own Words and Images" Guidance to Sidekick
 
-## What This Changes
+# Rethink Onboarding: Replace "Join" Step with Prosocial Network Explainer
 
-When Sidekick delivers a remixed prompt to a builder, it will also recommend that they:
-1. Write their own copy (don't use AI-generated text)
-2. Use their own images (don't use AI-generated images)
+## Overview
 
-This reinforces the relational tech principle of authenticity -- tools built by neighbors should sound and look like them.
+Replace the final "Join the Relational Tech Network" onboarding step with a welcoming explainer about what builders get as part of the Studio network. Move it earlier in the flow -- before "About You" -- so builders understand the offerings before filling out their profile.
 
-## Technical Details
+## New Step Order
 
-**File:** `supabase/functions/chat-remix/index.ts`
+1. **Welcome** (unchanged)
+2. **Network** (NEW - replaces "join") -- simple explainer of prosocial offerings
+3. **About You** (unchanged)
+4. **Dreams** (unchanged)
+5. **Tech Comfort** (unchanged, becomes final step with "Complete Profile" button)
 
-Update the "IMPORTANT FOR PROMPT REMIXING" section (around line 476) to add two new bullet points:
+## New "Network" Step Content
 
-```
-IMPORTANT FOR PROMPT REMIXING:
-- Don't rush to deliver the prompt - gather context first
-- The final prompt you deliver should be a complete prompt ready for an AI builder
-- Always acknowledge the specific context they share about their neighborhood
-- Gently remind them that the tool will likely change and that's okay
-- After delivering a remixed prompt, recommend that the builder write their own copy rather than using AI-generated text. Their voice and their neighbors' voices are what make the tool feel real.
-- Also recommend they use their own photos and images rather than AI-generated ones. Real images of their neighborhood and neighbors build trust and connection.
-```
+- **Icon:** Users icon (reuse existing)
+- **Heading:** "You're Not Building Alone"
+- **Subtitle:** "As part of the Studio, you're connected to a growing network of relational technologists."
+- **Offerings list (friendly bullets):**
+  - 1:1 support and coaching calls with RTP stewards (bookable through Get Support)
+  - Connections to other builders who opt in
+  - Calendar of events, huddles, and workshops -- join when you can
+  - A Signal chat with local relational technologists (join through Get Support)
+- **Single "Next" button** -- informational only, no external links, no skip
 
-This is a system prompt change only -- no frontend or database changes needed. The edge function will redeploy automatically.
+## Technical Changes
+
+**File:** `src/components/ProfileOnboarding.tsx`
+
+1. Change the `Step` type from `"welcome" | "about" | "dreams" | "tech" | "join"` to `"welcome" | "network" | "about" | "dreams" | "tech"`
+2. Update the `steps` array to `["welcome", "network", "about", "dreams", "tech"]`
+3. Add the new "network" step JSX (informational, no external links)
+4. Move the "Complete Profile" / submit logic to the "tech" step (last step), replacing "Next" with a "Complete Profile" button that calls `handleComplete`
+5. Remove the old "join" step and its external link to `relationaltechproject.org/join`
+
