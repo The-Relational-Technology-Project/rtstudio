@@ -1,38 +1,20 @@
 
+# Update Privacy Page and Add Transparency to Auth Page
 
-# Rethink Onboarding: Replace "Join" Step with Prosocial Network Explainer
+## Changes
 
-## Overview
+### 1. Privacy Page (`src/pages/Privacy.tsx`)
 
-Replace the final "Join the Relational Tech Network" onboarding step with a welcoming explainer about what builders get as part of the Studio network. Move it earlier in the flow -- before "About You" -- so builders understand the offerings before filling out their profile.
+Remove the "Sidekick Conversations" bullet that currently reads:
 
-## New Step Order
+> **Sidekick Conversations:** Your chat history with the Sidekick, so you can pick up where you left off and track your commitments.
 
-1. **Welcome** (unchanged)
-2. **Network** (NEW - replaces "join") -- simple explainer of prosocial offerings
-3. **About You** (unchanged)
-4. **Dreams** (unchanged)
-5. **Tech Comfort** (unchanged, becomes final step with "Complete Profile" button)
+Chat history is not persisted across sessions (it lives only in React state via `SidekickContext`), so this claim is inaccurate and should be removed.
 
-## New "Network" Step Content
+### 2. Auth Page (`src/pages/Auth.tsx`)
 
-- **Icon:** Users icon (reuse existing)
-- **Heading:** "You're Not Building Alone"
-- **Subtitle:** "As part of the Studio, you're connected to a growing network of relational technologists."
-- **Offerings list (friendly bullets):**
-  - 1:1 support and coaching calls with RTP stewards (bookable through Get Support)
-  - Connections to other builders who opt in
-  - Calendar of events, huddles, and workshops -- join when you can
-  - A Signal chat with local relational technologists (join through Get Support)
-- **Single "Next" button** -- informational only, no external links, no skip
+Add a transparency note below the existing helper text ("We'll send you a link..."). The new text:
 
-## Technical Changes
+> The Relational Tech Studio is offered for free by the Relational Tech Project, a nonprofit project of Raft Foundation. [View our Privacy & Terms](/privacy).
 
-**File:** `src/components/ProfileOnboarding.tsx`
-
-1. Change the `Step` type from `"welcome" | "about" | "dreams" | "tech" | "join"` to `"welcome" | "network" | "about" | "dreams" | "tech"`
-2. Update the `steps` array to `["welcome", "network", "about", "dreams", "tech"]`
-3. Add the new "network" step JSX (informational, no external links)
-4. Move the "Complete Profile" / submit logic to the "tech" step (last step), replacing "Next" with a "Complete Profile" button that calls `handleComplete`
-5. Remove the old "join" step and its external link to `relationaltechproject.org/join`
-
+This will be a small `text-muted-foreground` paragraph with a `Link` to `/privacy`, placed after the existing helper text at the bottom of the auth form.
