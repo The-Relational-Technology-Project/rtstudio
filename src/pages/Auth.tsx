@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Mail, CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -140,6 +141,12 @@ const Auth = () => {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           We'll send you a link — no password needed. Works for new and returning builders.
+        </p>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          The Relational Tech Studio is offered for free by the Relational Tech Project, a nonprofit project of Raft Foundation.{" "}
+          <Link to="/privacy" className="underline hover:text-foreground transition-colors">
+            View our Privacy &amp; Terms
+          </Link>.
         </p>
       </div>
     </div>

@@ -51,11 +51,6 @@ const Privacy = () => {
                 support your building journey.
               </li>
               <li>
-                <strong>Sidekick Conversations:</strong> Your chat history with
-                the Sidekick, so you can pick up where you left off and track
-                your commitments.
-              </li>
-              <li>
                 <strong>Library Contributions:</strong> Stories, prompts, and
                 tools you share, so others can learn and build alongside you.
               </li>
