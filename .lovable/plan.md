@@ -1,25 +1,20 @@
 
+# Update Privacy Page and Add Transparency to Auth Page
 
-# Add Neighborhood Walking Guide Story
+## Changes
 
-## Content
+### 1. Privacy Page (`src/pages/Privacy.tsx`)
 
-Based on the PDF and existing story style, I'll create a story entry with:
+Remove the "Sidekick Conversations" bullet that currently reads:
 
-**Title:** Outer Sunset Field Guide
+> **Sidekick Conversations:** Your chat history with the Sidekick, so you can pick up where you left off and track your commitments.
 
-**Attribution:** Josh Nesbit / outersunset.place
+Chat history is not persisted across sessions (it lives only in React state via `SidekickContext`), so this claim is inaccurate and should be removed.
 
-**Short summary (`story_text`):** A neighbor built a walking guide app for the Outer Sunset that connects local history, present-day life, and future visions — all within a few blocks of home.
+### 2. Auth Page (`src/pages/Auth.tsx`)
 
-**Full story (`full_story_text`):** ~3 paragraphs in `<p>` tags matching the length and tone of existing entries (Boston Ujima, Cool Block, Camerados), drawn from the PDF content. Covering: the origin from neighborhood meeting notes, the past/present/future navigation concept, and the relational outcomes of co-creating it with neighbors.
+Add a transparency note below the existing helper text ("We'll send you a link..."). The new text:
 
-**Image:** The uploaded Outer Sunset Field Guide screenshot, copied to `public/images/gallery/outer_sunset_field_guide.png` and referenced in `image_urls`.
+> The Relational Tech Studio is offered for free by the Relational Tech Project, a nonprofit project of Raft Foundation. [View our Privacy & Terms](/privacy).
 
-## Technical Steps
-
-1. **Copy image** to `public/images/gallery/outer_sunset_field_guide.png`
-2. **Database insert** via migration — a single INSERT into `stories` with title, story_text, full_story_text, attribution, and image_urls
-
-No code changes needed — just an asset copy and a database row.
-
+This will be a small `text-muted-foreground` paragraph with a `Link` to `/privacy`, placed after the existing helper text at the bottom of the auth form.
