@@ -61,6 +61,24 @@ const contributionTools = [
         additionalProperties: false
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "submit_gift_build_request",
+      description: "Submit a builder's idea for a free Gift Build session with the RTP team. TIMING IS KEY: Only offer this AFTER a remixed prompt has been created OR the builder has described a specific, buildable idea for their neighborhood. Do NOT offer early in the conversation. The builder should have a clear idea of what they want to build before this is offered.",
+      parameters: {
+        type: "object",
+        properties: {
+          idea_title: { type: "string", description: "A short title for the build idea" },
+          idea_summary: { type: "string", description: "A clear summary of what the builder wants to create, including neighborhood context and who it's for" },
+          builder_name: { type: "string", description: "The builder's name" },
+          neighborhood: { type: "string", description: "The builder's neighborhood or community" }
+        },
+        required: ["idea_title", "idea_summary", "builder_name", "neighborhood"],
+        additionalProperties: false
+      }
+    }
   }
 ];
 
