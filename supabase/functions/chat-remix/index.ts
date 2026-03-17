@@ -61,6 +61,24 @@ const contributionTools = [
         additionalProperties: false
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "submit_gift_build_request",
+      description: "Submit a builder's idea for a free Gift Build session with the RTP team. TIMING IS KEY: Only offer this AFTER a remixed prompt has been created OR the builder has described a specific, buildable idea for their neighborhood. Do NOT offer early in the conversation. The builder should have a clear idea of what they want to build before this is offered.",
+      parameters: {
+        type: "object",
+        properties: {
+          idea_title: { type: "string", description: "A short title for the build idea" },
+          idea_summary: { type: "string", description: "A clear summary of what the builder wants to create, including neighborhood context and who it's for" },
+          builder_name: { type: "string", description: "The builder's name" },
+          neighborhood: { type: "string", description: "The builder's neighborhood or community" }
+        },
+        required: ["idea_title", "idea_summary", "builder_name", "neighborhood"],
+        additionalProperties: false
+      }
+    }
   }
 ];
 
@@ -497,6 +515,20 @@ PRIVACY IN CONTRIBUTIONS - CRITICAL:
 - Example guidance: "Since this will be public, let's use first names only and keep location details general like 'a neighborhood in Brooklyn' rather than specific addresses"
 - Help them edit out PII if they include it in their draft before presenting for consent
 
+4. GIFT BUILD REQUESTS:
+   When a builder has developed a concrete idea -- either through remixing an existing prompt or articulating a new build concept -- you can offer to submit a Gift Build request.
+   
+   TIMING IS KEY: Do NOT offer this early in conversation. Only offer after:
+   - A remixed prompt has been created, OR
+   - The builder has described a specific, buildable idea for their neighborhood
+   
+   THE OFFER: "If you'd like hands-on help bringing this to life, I can submit a Gift Build request to Josh from the RTP team. He'll walk you through an initial build and help you get set up with the right tools -- completely free. Want me to send this over?"
+   
+   After submission, share the scheduling link: https://cal.com/joshnesbit/
+   Encourage them to book at least a week out so Josh can review their idea first.
+   
+   If someone asks about Gift Builds before they have an idea ready, suggest they develop their concept first -- either by chatting more with you or exploring the library. You can also point them to the Get Support page where they can request a Gift Build directly.
+
 COMMITMENTS:
 When users express intentions, plans, or commitments during conversation (like "I'm going to talk to my neighbor" or "I want to host a block party"):
 - Encourage them warmly and acknowledge the commitment
@@ -614,6 +646,85 @@ Begin by understanding what they're looking for - whether that's exploring the l
           url: args.url,
           ...(userId ? { user_id: userId } : {})
         }).select('id').single();
+      } else if (functionName === 'submit_gift_build_request') {
+        // Handle gift build request - call notify-gift-build edge function
+        console.log('Gift build request:', args);
+        
+        // Get builder email from profile if authenticated
+        let builderEmail = '';
+        if (userId) {
+          const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
+          builderEmail = profile?.email || '';
+        }
+
+        // Build conversation context from recent messages
+        const recentMessages = messages.slice(-6).map((m: any) => `${m.role}: ${m.content}`).join('\n');
+        
+        const giftBuildPayload = {
+          builder_name: args.builder_name,
+          builder_email: builderEmail,
+          neighborhood: args.neighborhood,
+          idea_title: args.idea_title,
+          idea_summary: args.idea_summary,
+          conversation_context: recentMessages,
+          source: 'sidekick'
+        };
+
+        // Insert directly and send email via notify-gift-build
+        const { error: giftInsertError } = await supabase.from('gift_build_requests').insert({
+          ...giftBuildPayload,
+          user_id: userId
+        });
+
+        if (giftInsertError) {
+          console.error('Gift build insert error:', giftInsertError);
+          return new Response(
+            JSON.stringify({ response: `I ran into a technical issue submitting your Gift Build request. Would you like to try again?` }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Send email notification via Resend
+        try {
+          const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+          if (RESEND_API_KEY) {
+            const { Resend } = await import('https://esm.sh/resend@2.0.0');
+            const resendClient = new Resend(RESEND_API_KEY);
+            const timestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" });
+            
+            await resendClient.emails.send({
+              from: "Relational Tech Studio <notifications@relationaltechproject.org>",
+              to: ["josh@relationaltechproject.org"],
+              subject: `🎁 Gift Build Request: ${args.idea_title}`,
+              html: `
+                <div style="font-family: Georgia, serif; max-width: 500px; padding: 20px;">
+                  <h2 style="color: #3d3129; margin-bottom: 16px;">Gift Build Request</h2>
+                  <p style="color: #7a6d61; line-height: 1.6;">A builder wants hands-on help bringing an idea to life!</p>
+                  <div style="background: #f7f0e8; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0 0 8px 0;"><strong>Builder:</strong> ${args.builder_name}</p>
+                    ${builderEmail ? `<p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${builderEmail}</p>` : ''}
+                    <p style="margin: 0 0 8px 0;"><strong>Neighborhood:</strong> ${args.neighborhood}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Idea:</strong> ${args.idea_title}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Description:</strong></p>
+                    <p style="margin: 0 0 8px 0; color: #3d3129; line-height: 1.6;">${args.idea_summary}</p>
+                    <p style="margin: 12px 0 0 0; color: #7a6d61; font-size: 14px;"><strong>Source:</strong> Sidekick chat · <strong>Submitted:</strong> ${timestamp} ET</p>
+                  </div>
+                  <p style="color: #7a6d61; font-size: 14px;">— Relational Tech Studio</p>
+                </div>
+              `,
+            });
+            console.log('Gift build email sent');
+          }
+        } catch (emailError) {
+          console.error('Gift build email error (non-fatal):', emailError);
+        }
+
+        return new Response(
+          JSON.stringify({ 
+            response: `Your Gift Build request has been sent to Josh from the RTP team! He'll review your idea -- "${args.idea_title}" -- and prepare for your session.\n\nNext step: Book a jam session so Josh can walk you through an initial build and get you set up with the right tools. We recommend booking at least a week out so he has time to review your idea.\n\nSchedule here: https://cal.com/joshnesbit/\n\nThis is going to be great!`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
       if (insertResult?.error) {

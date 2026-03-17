@@ -124,6 +124,45 @@ export type Database = {
           },
         ]
       }
+      gift_build_requests: {
+        Row: {
+          builder_email: string | null
+          builder_name: string
+          conversation_context: string | null
+          created_at: string
+          id: string
+          idea_summary: string
+          idea_title: string
+          neighborhood: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          builder_email?: string | null
+          builder_name: string
+          conversation_context?: string | null
+          created_at?: string
+          id?: string
+          idea_summary: string
+          idea_title: string
+          neighborhood?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Update: {
+          builder_email?: string | null
+          builder_name?: string
+          conversation_context?: string | null
+          created_at?: string
+          id?: string
+          idea_summary?: string
+          idea_title?: string
+          neighborhood?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       library_bookmarks: {
         Row: {
           created_at: string
