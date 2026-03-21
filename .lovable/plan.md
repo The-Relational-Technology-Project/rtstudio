@@ -1,20 +1,41 @@
 
-# Update Privacy Page and Add Transparency to Auth Page
 
-## Changes
+# Secure API for External Profile Access
 
-### 1. Privacy Page (`src/pages/Privacy.tsx`)
+## Approach
 
-Remove the "Sidekick Conversations" bullet that currently reads:
+Create a private edge function that uses a shared secret to authenticate requests, then queries profiles using the service role (bypassing RLS). Your Claude skill calls this endpoint with the secret.
 
-> **Sidekick Conversations:** Your chat history with the Sidekick, so you can pick up where you left off and track your commitments.
+## How It Works
 
-Chat history is not persisted across sessions (it lives only in React state via `SidekickContext`), so this claim is inaccurate and should be removed.
+1. **New edge function: `admin-profiles`** — accepts a bearer token, validates it against a secret (`ADMIN_API_KEY`), then returns all profiles using the Supabase service role client
+2. **New secret: `ADMIN_API_KEY`** — a strong random token you generate and store both in Studio secrets and in your Claude skill.md
+3. Claude's skill calls: `POST https://{supabase_url}/functions/v1/admin-profiles` with `Authorization: Bearer {ADMIN_API_KEY}`
 
-### 2. Auth Page (`src/pages/Auth.tsx`)
+## Response Shape
 
-Add a transparency note below the existing helper text ("We'll send you a link..."). The new text:
+Returns all profiles with: `id`, `display_name`, `full_name`, `email`, `neighborhood`, `neighborhood_description`, `dreams`, `tech_familiarity`, `ai_coding_experience`, `local_tech_ecosystem`, `profile_completed`, `created_at`, `updated_at`
 
-> The Relational Tech Studio is offered for free by the Relational Tech Project, a nonprofit project of Raft Foundation. [View our Privacy & Terms](/privacy).
+Optional query param `?since=2026-03-01T00:00:00Z` to fetch only recently updated profiles (for incremental sync).
 
-This will be a small `text-muted-foreground` paragraph with a `Link` to `/privacy`, placed after the existing helper text at the bottom of the auth form.
+## Technical Details
+
+**File:** `supabase/functions/admin-profiles/index.ts`
+
+- Validates `Authorization: Bearer <token>` against `ADMIN_API_KEY` env var
+- Uses `SUPABASE_SERVICE_ROLE_KEY` to create a service-role client (bypasses RLS)
+- Queries `profiles` table, optionally filtered by `updated_at > since`
+- Returns JSON array of profiles
+- No JWT verification needed (custom auth via secret)
+
+**Config:** Add `[functions.admin-profiles]` with `verify_jwt = false` to `supabase/config.toml`
+
+**Secret:** I'll prompt you to set an `ADMIN_API_KEY` value — you generate a strong random string and use the same value in your Claude skill
+
+## Security
+
+- The service role key never leaves the edge function
+- The `ADMIN_API_KEY` acts as a simple bearer token gate
+- No public access without the secret
+- Profiles data stays private from the public REST API
+
