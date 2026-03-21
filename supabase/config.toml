@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.notify-gift-build]
 verify_jwt = false
+
+[functions.admin-profiles]
+verify_jwt = false
