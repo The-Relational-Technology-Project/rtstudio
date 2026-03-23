@@ -1,41 +1,50 @@
 
 
-# Secure API for External Profile Access
+# Redesign Tool Cards in Library: Try It / Build It (Revised)
 
-## Approach
+## Overview
 
-Create a private edge function that uses a shared secret to authenticate requests, then queries profiles using the service role (bypassing RLS). Your Claude skill calls this endpoint with the secret.
+Replace the current View/Visit/Remix button pattern on tool and tech_for_building Library cards with two clear actions: **"Try It"** and **"Build It"**. Add an optional **"join"** badge for tools where the existing instance is open to new communities.
 
-## How It Works
+## Database Changes
 
-1. **New edge function: `admin-profiles`** — accepts a bearer token, validates it against a secret (`ADMIN_API_KEY`), then returns all profiles using the Supabase service role client
-2. **New secret: `ADMIN_API_KEY`** — a strong random token you generate and store both in Studio secrets and in your Claude skill.md
-3. Claude's skill calls: `POST https://{supabase_url}/functions/v1/admin-profiles` with `Authorization: Bearer {ADMIN_API_KEY}`
+Add three columns to the `tools` table via migration:
 
-## Response Shape
+- `is_joinable` (boolean, default false) — shows a "join" badge on the card
+- `lovable_url` (text, nullable) — link to the Lovable project
+- `github_url` (text, nullable) — link to the GitHub repo
 
-Returns all profiles with: `id`, `display_name`, `full_name`, `email`, `neighborhood`, `neighborhood_description`, `dreams`, `tech_familiarity`, `ai_coding_experience`, `local_tech_ecosystem`, `profile_completed`, `created_at`, `updated_at`
+Set `is_joinable = true` for Community Supplies only.
 
-Optional query param `?since=2026-03-01T00:00:00Z` to fetch only recently updated profiles (for incremental sync).
+## UI Changes (LibraryCard.tsx)
 
-## Technical Details
+**Card footer** for tool/tech_for_building types changes to:
 
-**File:** `supabase/functions/admin-profiles/index.ts`
+```
+[Try It]  [Build It]
+```
 
-- Validates `Authorization: Bearer <token>` against `ADMIN_API_KEY` env var
-- Uses `SUPABASE_SERVICE_ROLE_KEY` to create a service-role client (bypasses RLS)
-- Queries `profiles` table, optionally filtered by `updated_at > since`
-- Returns JSON array of profiles
-- No JWT verification needed (custom auth via secret)
+- **Badge area**: Small "join" badge next to the type badge when `item.isJoinable` is true
+- **Try It**: Opens the existing detail dialog (screenshot, longer description, external link). The dialog keeps its current content but the footer button inside it becomes "Visit" (opens URL in new tab) instead of the generic "Discuss in Sidekick". This preserves the current View experience as part of the Try It flow.
+- **Build It**: Opens a separate dialog/panel showing three on-ramps:
+  - **Prompt** — "The recipe that nearly builds it" — shows the tool's child prompt(s) from the `prompts` table
+  - **Remix** — "Start a Sidekick chat" — triggers the existing `handleDiscussInSidekick` flow
+  - **Source** — Platform-specific links: "View on Lovable" and/or "View on GitHub" using the new `lovable_url` / `github_url` fields
 
-**Config:** Add `[functions.admin-profiles]` with `verify_jwt = false` to `supabase/config.toml`
+## Type Changes (src/types/library.ts)
 
-**Secret:** I'll prompt you to set an `ADMIN_API_KEY` value — you generate a strong random string and use the same value in your Claude skill
+Add to `LibraryItem`: `isJoinable?: boolean`, `lovableUrl?: string`, `githubUrl?: string`
 
-## Security
+## Data Mapping (Library.tsx)
 
-- The service role key never leaves the edge function
-- The `ADMIN_API_KEY` acts as a simple bearer token gate
-- No public access without the secret
-- Profiles data stays private from the public REST API
+Map new fields from tools query; fetch child prompts for tool items.
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| Migration | Add `is_joinable`, `lovable_url`, `github_url` columns; set Community Supplies joinable |
+| `src/types/library.ts` | Add new fields |
+| `src/pages/Library.tsx` | Map new fields; fetch prompts with tools |
+| `src/components/LibraryCard.tsx` | Replace footer buttons with Try It / Build It; add join badge; add Build It panel; keep existing detail dialog for Try It |
 
