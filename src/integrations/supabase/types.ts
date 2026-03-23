@@ -503,8 +503,11 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          github_url: string | null
           id: string
           image_url: string | null
+          is_joinable: boolean
+          lovable_url: string | null
           name: string
           screenshot_urls: string[] | null
           sort_order: number
@@ -516,8 +519,11 @@ export type Database = {
         Insert: {
           created_at?: string
           description: string
+          github_url?: string | null
           id?: string
           image_url?: string | null
+          is_joinable?: boolean
+          lovable_url?: string | null
           name: string
           screenshot_urls?: string[] | null
           sort_order?: number
@@ -529,8 +535,11 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string
+          github_url?: string | null
           id?: string
           image_url?: string | null
+          is_joinable?: boolean
+          lovable_url?: string | null
           name?: string
           screenshot_urls?: string[] | null
           sort_order?: number
