@@ -30,10 +30,20 @@ const Library = () => {
 
   const fetchLibraryItems = useCallback(async () => {
     try {
-      const [storiesData, toolsData] = await Promise.all([
+      const [storiesData, toolsData, promptsData] = await Promise.all([
         supabase.from("stories").select("*").order("created_at", { ascending: false }),
         supabase.from("tools").select("*").order("created_at", { ascending: false }),
+        supabase.from("prompts").select("*"),
       ]);
+
+      const promptsByTool = new Map<string, any[]>();
+      (promptsData.data || []).forEach((p: any) => {
+        if (p.parent_tool_id) {
+          const existing = promptsByTool.get(p.parent_tool_id) || [];
+          existing.push({ id: p.id, title: p.title, description: p.description, examplePrompt: p.example_prompt, category: p.category });
+          promptsByTool.set(p.parent_tool_id, existing);
+        }
+      });
 
       const allItems: LibraryItem[] = [
         ...(storiesData.data || []).map((story) => ({
@@ -46,7 +56,6 @@ const Library = () => {
           imageUrls: story.image_urls || [],
           userId: story.user_id,
         })),
-        // Prompts are no longer standalone cards — they appear as children within tool detail views
         ...(toolsData.data || []).map((tool: any) => ({
           id: tool.id,
           type: (tool.tool_category === "tech_for_building" ? "tech_for_building" : "tool") as ItemType,
@@ -56,6 +65,10 @@ const Library = () => {
           userId: tool.user_id,
           imageUrl: tool.image_url,
           toolCategory: tool.tool_category,
+          isJoinable: tool.is_joinable || false,
+          lovableUrl: tool.lovable_url,
+          githubUrl: tool.github_url,
+          childPrompts: promptsByTool.get(tool.id) || [],
         })),
       ];
 

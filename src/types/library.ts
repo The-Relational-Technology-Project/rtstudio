@@ -24,4 +24,7 @@ export interface LibraryItem {
   screenshotUrls?: string[];
   toolCategory?: string;
   childPrompts?: ChildPrompt[];
+  isJoinable?: boolean;
+  lovableUrl?: string;
+  githubUrl?: string;
 }
