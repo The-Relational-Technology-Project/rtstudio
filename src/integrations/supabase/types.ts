@@ -187,6 +187,33 @@ export type Database = {
         }
         Relationships: []
       }
+      library_embeddings: {
+        Row: {
+          content_hash: string
+          created_at: string | null
+          embedding: string
+          id: string
+          item_id: string
+          item_type: string
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string | null
+          embedding: string
+          id?: string
+          item_id: string
+          item_type: string
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string | null
+          embedding?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+        }
+        Relationships: []
+      }
       magic_link_tokens: {
         Row: {
           created_at: string
@@ -593,6 +620,18 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      match_library_items: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          item_id: string
+          item_type: string
+          similarity: number
+        }[]
       }
     }
     Enums: {
