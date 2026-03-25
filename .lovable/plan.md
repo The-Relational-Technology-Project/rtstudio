@@ -1,50 +1,124 @@
 
 
-# Redesign Tool Cards in Library: Try It / Build It (Revised)
+# Semantic Search via Vector Embeddings
 
 ## Overview
 
-Replace the current View/Visit/Remix button pattern on tool and tech_for_building Library cards with two clear actions: **"Try It"** and **"Build It"**. Add an optional **"join"** badge for tools where the existing instance is open to new communities.
+Replace keyword-based ILIKE search in Sidekick's RAG with vector similarity search using pgvector and OpenAI embeddings. Every library item gets an embedding vector; user messages get embedded at query time and matched via cosine similarity.
+
+## Important Note
+
+Anthropic/Claude does not offer an embeddings endpoint. This plan uses **OpenAI's `text-embedding-3-small`** model ($0.02 per 1M tokens — effectively free for this scale). You'll need an OpenAI API key.
+
+## Architecture
+
+```text
+User message
+    │
+    ▼
+chat-remix edge function
+    │
+    ├─ Embed user message (OpenAI text-embedding-3-small)
+    │
+    ├─ Vector similarity search across library_embeddings table
+    │   (pgvector cosine distance, top 3 per type)
+    │
+    ├─ Build library context from top matches
+    │
+    └─ Send to Lovable AI gateway (unchanged)
+```
 
 ## Database Changes
 
-Add three columns to the `tools` table via migration:
+**Migration 1: Enable pgvector + create embeddings table**
 
-- `is_joinable` (boolean, default false) — shows a "join" badge on the card
-- `lovable_url` (text, nullable) — link to the Lovable project
-- `github_url` (text, nullable) — link to the GitHub repo
+```sql
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
 
-Set `is_joinable = true` for Community Supplies only.
+CREATE TABLE public.library_embeddings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  item_type text NOT NULL,        -- 'story', 'prompt', 'tool'
+  item_id uuid NOT NULL,
+  content_hash text NOT NULL,     -- detect when content changes
+  embedding vector(1536) NOT NULL,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE (item_type, item_id)
+);
 
-## UI Changes (LibraryCard.tsx)
-
-**Card footer** for tool/tech_for_building types changes to:
-
+CREATE INDEX ON public.library_embeddings 
+  USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10);
 ```
-[Try It]  [Build It]
+
+RLS: No public access (only service role reads/writes from edge functions).
+
+**Migration 2: Similarity search function**
+
+```sql
+CREATE OR REPLACE FUNCTION match_library_items(
+  query_embedding vector(1536),
+  match_threshold float DEFAULT 0.3,
+  match_count int DEFAULT 9
+)
+RETURNS TABLE (item_type text, item_id uuid, similarity float)
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT item_type, item_id, 
+    1 - (embedding <=> query_embedding) as similarity
+  FROM library_embeddings
+  WHERE 1 - (embedding <=> query_embedding) > match_threshold
+  ORDER BY embedding <=> query_embedding
+  LIMIT match_count;
+$$;
 ```
 
-- **Badge area**: Small "join" badge next to the type badge when `item.isJoinable` is true
-- **Try It**: Opens the existing detail dialog (screenshot, longer description, external link). The dialog keeps its current content but the footer button inside it becomes "Visit" (opens URL in new tab) instead of the generic "Discuss in Sidekick". This preserves the current View experience as part of the Try It flow.
-- **Build It**: Opens a separate dialog/panel showing three on-ramps:
-  - **Prompt** — "The recipe that nearly builds it" — shows the tool's child prompt(s) from the `prompts` table
-  - **Remix** — "Start a Sidekick chat" — triggers the existing `handleDiscussInSidekick` flow
-  - **Source** — Platform-specific links: "View on Lovable" and/or "View on GitHub" using the new `lovable_url` / `github_url` fields
+## New Edge Function: `embed-library`
 
-## Type Changes (src/types/library.ts)
+Batch-embeds all library items. Called manually to backfill, and can be triggered when items are added/updated.
 
-Add to `LibraryItem`: `isJoinable?: boolean`, `lovableUrl?: string`, `githubUrl?: string`
+- Fetches all stories, prompts, tools
+- For each item, generates a text blob: `"{title} | {category} | {description/summary} | {content snippet}"`
+- Hashes the text, skips items with matching `content_hash`
+- Calls OpenAI embeddings API in batches of 50
+- Upserts into `library_embeddings`
+- Protected by `ADMIN_API_KEY` (same pattern as `admin-profiles`)
 
-## Data Mapping (Library.tsx)
+## New Secret
 
-Map new fields from tools query; fetch child prompts for tool items.
+- `OPENAI_API_KEY` — needed for the embeddings API calls
+
+## Changes to `chat-remix/index.ts`
+
+Replace the keyword extraction + ILIKE search block (lines ~268-365) with:
+
+1. Call OpenAI embeddings API to embed the latest user message (single API call, ~2ms)
+2. Call `match_library_items` RPC with the query embedding
+3. Fetch full item details for the top matches (same as current: title, description, etc.)
+4. Build library context string (same format as current)
+
+Everything downstream (system prompt, tool calls, contribution logic) stays unchanged.
+
+## Fallback
+
+If the OpenAI embeddings call fails (rate limit, network), fall back to the existing keyword search so Sidekick never breaks.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| Migration | Add `is_joinable`, `lovable_url`, `github_url` columns; set Community Supplies joinable |
-| `src/types/library.ts` | Add new fields |
-| `src/pages/Library.tsx` | Map new fields; fetch prompts with tools |
-| `src/components/LibraryCard.tsx` | Replace footer buttons with Try It / Build It; add join badge; add Build It panel; keep existing detail dialog for Try It |
+| Migration | Enable pgvector, create `library_embeddings` table + index + RPC |
+| `supabase/functions/embed-library/index.ts` | New: batch embed all library items |
+| `supabase/functions/chat-remix/index.ts` | Replace keyword search with vector similarity |
+| `supabase/config.toml` | Add `[functions.embed-library]` with `verify_jwt = false` |
+| Secret: `OPENAI_API_KEY` | New secret for embeddings API |
+
+## Keeping Embeddings Fresh
+
+After the initial backfill, the `embed-library` function can be called:
+- Manually after adding new library items
+- Or we add a small check in `chat-remix`: if an item has no embedding, embed it on the fly and cache it
+
+## Cost
+
+~30 library items x ~500 tokens each = ~15K tokens per full sync. At $0.02/1M tokens, a full re-embed costs fractions of a cent. Per-query embedding is ~50 tokens = effectively free.
 
