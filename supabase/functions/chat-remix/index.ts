@@ -265,144 +265,143 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     // Get the latest user message for context search
     const latestUserMessage = messages[messages.length - 1]?.content || '';
 
-    // Extract meaningful keywords from the user message
-    const stopWords = new Set([
-      'i', 'want', 'a', 'the', 'to', 'for', 'of', 'and', 'or', 'in', 'on', 'at',
-      'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
-      'do', 'does', 'did', 'will', 'would', 'should', 'could', 'can', 'may',
-      'this', 'that', 'these', 'those', 'it', 'its', 'my', 'our', 'let', 'lets',
-      'remix', 'create', 'build', 'make', 'help', 'me', 'us', 'please'
-    ]);
+    // --- Vector similarity search (with keyword fallback) ---
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
-    const keywords = latestUserMessage
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, ' ')
-      .split(/\s+/)
-      .filter((word: string) => word.length > 2 && !stopWords.has(word))
-      .slice(0, 5);
-
-    console.log('Extracted keywords:', keywords);
-
-    // Search for relevant content from all library sources
     let relevantPrompts: any[] = [];
     let relevantStories: any[] = [];
     let relevantTools: any[] = [];
-    
-    if (keywords.length > 0) {
-      const promptSearchConditions = keywords.map((keyword: string) => {
-        const sanitized = keyword.replace(/[%_]/g, '');
-        return `title.ilike.%${sanitized}%,category.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
-      }).join(',');
+    let usedVectorSearch = false;
 
-      const storySearchConditions = keywords.map((keyword: string) => {
-        const sanitized = keyword.replace(/[%_]/g, '');
-        return `title.ilike.%${sanitized}%,story_text.ilike.%${sanitized}%,attribution.ilike.%${sanitized}%`;
-      }).join(',');
+    if (OPENAI_API_KEY && latestUserMessage.trim()) {
+      try {
+        // Embed the user's message
+        const embResponse = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "text-embedding-3-small",
+            input: latestUserMessage,
+          }),
+        });
 
-      const toolSearchConditions = keywords.map((keyword: string) => {
-        const sanitized = keyword.replace(/[%_]/g, '');
-        return `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
-      }).join(',');
+        if (embResponse.ok) {
+          const embData = await embResponse.json();
+          const queryEmbedding = embData.data[0].embedding;
 
-      const [promptsResult, storiesResult, toolsResult] = await Promise.all([
-        supabase.from('prompts').select('title, category, description, example_prompt').or(promptSearchConditions).limit(10),
-        supabase.from('stories').select('title, story_text, attribution, full_story_text').or(storySearchConditions).limit(10),
-        supabase.from('tools').select('name, description, url').or(toolSearchConditions).limit(10)
-      ]);
-
-      if (promptsResult.data) {
-        relevantPrompts = promptsResult.data.map((prompt: any) => {
-          let score = 0;
-          const titleLower = prompt.title.toLowerCase();
-          const categoryLower = prompt.category.toLowerCase();
-          const descLower = (prompt.description || '').toLowerCase();
-          
-          keywords.forEach((keyword: string) => {
-            if (titleLower.includes(keyword)) score += 10;
-            if (categoryLower.includes(keyword)) score += 5;
-            if (descLower.includes(keyword)) score += 2;
+          // Call the similarity search RPC
+          const { data: matches, error: matchError } = await supabase.rpc('match_library_items', {
+            query_embedding: JSON.stringify(queryEmbedding),
+            match_threshold: 0.25,
+            match_count: 9,
           });
-          
-          return { ...prompt, score };
-        }).sort((a: any, b: any) => b.score - a.score).slice(0, 3);
-      }
 
-      if (storiesResult.data) {
-        relevantStories = storiesResult.data.map((story: any) => {
-          let score = 0;
-          const titleLower = (story.title || '').toLowerCase();
-          const textLower = story.story_text.toLowerCase();
-          
-          keywords.forEach((keyword: string) => {
-            if (titleLower.includes(keyword)) score += 10;
-            if (textLower.includes(keyword)) score += 3;
-          });
-          
-          return { ...story, score };
-        }).sort((a: any, b: any) => b.score - a.score).slice(0, 3);
-      }
+          if (!matchError && matches && matches.length > 0) {
+            usedVectorSearch = true;
+            console.log('Vector search matches:', matches.map((m: any) => `${m.item_type}:${m.item_id} (${m.similarity.toFixed(3)})`));
 
-      if (toolsResult.data) {
-        relevantTools = toolsResult.data.map((tool: any) => {
-          let score = 0;
-          const nameLower = tool.name.toLowerCase();
-          const descLower = tool.description.toLowerCase();
-          
-          keywords.forEach((keyword: string) => {
-            if (nameLower.includes(keyword)) score += 10;
-            if (descLower.includes(keyword)) score += 5;
-          });
-          
-          return { ...tool, score };
-        }).sort((a: any, b: any) => b.score - a.score).slice(0, 3);
-      }
+            // Group matched IDs by type
+            const storyIds = matches.filter((m: any) => m.item_type === 'story').map((m: any) => m.item_id);
+            const promptIds = matches.filter((m: any) => m.item_type === 'prompt').map((m: any) => m.item_id);
+            const toolMatchIds = matches.filter((m: any) => m.item_type === 'tool').map((m: any) => m.item_id);
 
-      console.log('Found content:', {
-        prompts: relevantPrompts.map(p => ({ title: p.title, score: p.score })),
-        stories: relevantStories.map(s => ({ title: s.title, score: s.score })),
-        tools: relevantTools.map(t => ({ name: t.name, score: t.score }))
-      });
+            // Fetch full details in parallel
+            const [pRes, sRes, tRes] = await Promise.all([
+              promptIds.length > 0
+                ? supabase.from('prompts').select('id, title, category, description, example_prompt').in('id', promptIds)
+                : Promise.resolve({ data: [] }),
+              storyIds.length > 0
+                ? supabase.from('stories').select('id, title, story_text, attribution, full_story_text').in('id', storyIds)
+                : Promise.resolve({ data: [] }),
+              toolMatchIds.length > 0
+                ? supabase.from('tools').select('id, name, description, url').in('id', toolMatchIds)
+                : Promise.resolve({ data: [] }),
+            ]);
+
+            relevantPrompts = (pRes.data || []).slice(0, 3);
+            relevantStories = (sRes.data || []).slice(0, 3);
+            relevantTools = (tRes.data || []).slice(0, 3);
+          }
+        } else {
+          console.error('OpenAI embeddings API error:', embResponse.status);
+        }
+      } catch (embError) {
+        console.error('Vector search failed, falling back to keyword search:', embError);
+      }
     }
 
-    // Fetch IDs for the relevant items
-    const promptIds = relevantPrompts.length > 0 
-      ? (await supabase.from('prompts').select('id, title').in('title', relevantPrompts.map(p => p.title))).data || []
-      : [];
-    
-    const storyIds = relevantStories.length > 0
-      ? (await supabase.from('stories').select('id, title').in('title', relevantStories.map(s => s.title || 'Untitled').filter(t => t !== 'Untitled'))).data || []
-      : [];
-    
-    const toolIds = relevantTools.length > 0
-      ? (await supabase.from('tools').select('id, name').in('name', relevantTools.map(t => t.name))).data || []
-      : [];
+    // Fallback: keyword search if vector search didn't produce results
+    if (!usedVectorSearch && latestUserMessage.trim()) {
+      const stopWords = new Set([
+        'i', 'want', 'a', 'the', 'to', 'for', 'of', 'and', 'or', 'in', 'on', 'at',
+        'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
+        'do', 'does', 'did', 'will', 'would', 'should', 'could', 'can', 'may',
+        'this', 'that', 'these', 'those', 'it', 'its', 'my', 'our', 'let', 'lets',
+        'remix', 'create', 'build', 'make', 'help', 'me', 'us', 'please'
+      ]);
+      
+      const keywords = latestUserMessage
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, ' ')
+        .split(/\s+/)
+        .filter((word: string) => word.length > 2 && !stopWords.has(word))
+        .slice(0, 5);
+
+      console.log('Fallback keyword search:', keywords);
+
+      if (keywords.length > 0) {
+        const promptSearchConditions = keywords.map((keyword: string) => {
+          const sanitized = keyword.replace(/[%_]/g, '');
+          return `title.ilike.%${sanitized}%,category.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
+        }).join(',');
+
+        const storySearchConditions = keywords.map((keyword: string) => {
+          const sanitized = keyword.replace(/[%_]/g, '');
+          return `title.ilike.%${sanitized}%,story_text.ilike.%${sanitized}%,attribution.ilike.%${sanitized}%`;
+        }).join(',');
+
+        const toolSearchConditions = keywords.map((keyword: string) => {
+          const sanitized = keyword.replace(/[%_]/g, '');
+          return `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
+        }).join(',');
+
+        const [promptsResult, storiesResult, toolsResult] = await Promise.all([
+          supabase.from('prompts').select('id, title, category, description, example_prompt').or(promptSearchConditions).limit(3),
+          supabase.from('stories').select('id, title, story_text, attribution, full_story_text').or(storySearchConditions).limit(3),
+          supabase.from('tools').select('id, name, description, url').or(toolSearchConditions).limit(3)
+        ]);
+
+        relevantPrompts = promptsResult.data || [];
+        relevantStories = storiesResult.data || [];
+        relevantTools = toolsResult.data || [];
+      }
+    }
 
     // Build library context
     let libraryContext = '';
     
     if (relevantPrompts.length > 0) {
       libraryContext += `\n\nRELEVANT PROMPTS FROM THE LIBRARY:\n${relevantPrompts.map(p => {
-        const promptId = promptIds.find(pi => pi.title === p.title)?.id || 'unknown';
-        return `\n---\nID: ${promptId}\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nExample Prompt:\n${p.example_prompt}\n---`;
+        return `\n---\nID: ${p.id}\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nExample Prompt:\n${p.example_prompt}\n---`;
       }).join('\n')}`;
     }
 
     if (relevantStories.length > 0) {
       if (demoMode) {
-        // In demo mode, only mention that stories exist without details
         libraryContext += `\n\nNOTE: There are ${relevantStories.length} relevant community stories in the library that relate to this topic. Encourage the visitor to sign up to read the full stories from neighbors who've tried similar things.`;
       } else {
         libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map(s => {
-          const storyId = storyIds.find(si => si.title === (s.title || 'Untitled'))?.id || 'unknown';
-          return `\n---\nID: ${storyId}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
+          return `\n---\nID: ${s.id}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
         }).join('\n')}`;
       }
     }
 
     if (relevantTools.length > 0) {
       libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map(t => {
-        const toolId = toolIds.find(ti => ti.name === t.name)?.id || 'unknown';
-        return `\n---\nID: ${toolId}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\n---`;
+        return `\n---\nID: ${t.id}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\n---`;
       }).join('\n')}`;
     }
 
