@@ -405,6 +405,70 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
       }).join('\n')}`;
     }
 
+    // --- Relational Tech Network RSS feed (cached) ---
+    let networkContext = '';
+    try {
+      const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+      const { data: cached } = await supabase
+        .from('network_feed_cache')
+        .select('items, fetched_at')
+        .eq('id', 'latest')
+        .maybeSingle();
+
+      let feedItems: any[] = [];
+      const cacheAge = cached?.fetched_at ? Date.now() - new Date(cached.fetched_at).getTime() : Infinity;
+
+      if (cached && cacheAge < CACHE_TTL_MS) {
+        feedItems = cached.items || [];
+        console.log('Network feed: using cache (' + feedItems.length + ' items)');
+      } else {
+        console.log('Network feed: fetching fresh RSS');
+        const feedRes = await fetch('https://updates.relationaltechproject.org/feed.xml', {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (feedRes.ok) {
+          const xmlText = await feedRes.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(xmlText, 'text/xml');
+          const items = doc?.querySelectorAll?.('item') || [];
+
+          feedItems = [];
+          for (let i = 0; i < Math.min(items.length, 15); i++) {
+            const item = items[i];
+            const title = item.querySelector('title')?.textContent || '';
+            const description = item.querySelector('description')?.textContent || '';
+            const link = item.querySelector('link')?.textContent || '';
+            const pubDate = item.querySelector('pubDate')?.textContent || '';
+            feedItems.push({ title, description: description.slice(0, 300), link, pubDate });
+          }
+
+          // Upsert cache
+          await supabase.from('network_feed_cache').upsert({
+            id: 'latest',
+            items: feedItems,
+            fetched_at: new Date().toISOString(),
+          });
+          console.log('Network feed: cached ' + feedItems.length + ' items');
+        } else {
+          console.error('Network feed fetch failed:', feedRes.status);
+          feedItems = cached?.items || [];
+        }
+      }
+
+      if (feedItems.length > 0) {
+        const recentItems = feedItems.slice(0, 10);
+        networkContext = `\n\nRELATIONAL TECH NETWORK UPDATES (from the open-source ecosystem):
+These are recent updates from projects in the Relational Tech Network — other builders creating open-source neighborhood tools. Reference these when relevant to show what's growing in the ecosystem.
+${recentItems.map((item: any) => {
+  const date = item.pubDate ? new Date(item.pubDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  return `\n- ${item.title}${date ? ' (' + date + ')' : ''}: ${item.description}${item.link ? ' — ' + item.link : ''}`;
+}).join('')}`;
+      }
+    } catch (feedError) {
+      console.error('Network feed error (non-fatal):', feedError);
+    }
+
     const systemPrompt = `You are Sidekick, an AI assistant for the Relational Technology Studio. You help people explore stories, prompts, and tools from the library, guide them in creating relational tech for their neighborhoods, AND act as a commons librarian who helps people contribute their own gifts to the shared library.
 
 CRITICAL: Do not use markdown formatting in your responses. Write in plain text only - no asterisks, no hashtags, no special formatting. Use simple line breaks and natural language.
