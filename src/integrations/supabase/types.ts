@@ -241,6 +241,24 @@ export type Database = {
         }
         Relationships: []
       }
+      network_feed_cache: {
+        Row: {
+          fetched_at: string
+          id: string
+          items: Json
+        }
+        Insert: {
+          fetched_at?: string
+          id?: string
+          items?: Json
+        }
+        Update: {
+          fetched_at?: string
+          id?: string
+          items?: Json
+        }
+        Relationships: []
+      }
       play_group_signups: {
         Row: {
           created_at: string
