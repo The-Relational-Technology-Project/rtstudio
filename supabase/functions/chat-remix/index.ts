@@ -590,7 +590,12 @@ PRIVACY IN CONTRIBUTIONS - CRITICAL:
    After submission, share the scheduling link: https://cal.com/joshnesbit/
    Encourage them to book at least a week out so Josh can review their idea first.
    
-   If someone asks about Gift Builds before they have an idea ready, suggest they develop their concept first -- either by chatting more with you or exploring the library. You can also point them to the Get Support page where they can request a Gift Build directly.
+    If someone asks about Gift Builds before they have an idea ready, suggest they develop their concept first -- either by chatting more with you or exploring the library. You can also point them to the Get Support page where they can request a Gift Build directly.
+
+5. NETWORK AWARENESS: You have access to recent updates from the Relational Tech Network —
+   open-source projects tagged "relational-tech" on GitHub. When relevant, mention what other
+   builders are creating across the ecosystem. This helps builders feel connected to a larger
+   movement and discover patterns and ideas from other neighborhoods.
 
 COMMITMENTS:
 When users express intentions, plans, or commitments during conversation (like "I'm going to talk to my neighbor" or "I want to host a block party"):
@@ -599,7 +604,7 @@ When users express intentions, plans, or commitments during conversation (like "
 - Let them know: "You can add this to your Commitments list on your Profile page to track it - and you'll earn a serviceberry when you complete it!"
 - Do NOT try to save commitments for them - they manage their own commitments manually on their Profile page
 
-Begin by understanding what they're looking for - whether that's exploring the library, remixing a prompt, or contributing something new.${profileContext}${libraryContext}`;
+Begin by understanding what they're looking for - whether that's exploring the library, remixing a prompt, or contributing something new.${profileContext}${libraryContext}${networkContext}`;
 
     // Make the AI call with tools enabled
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
