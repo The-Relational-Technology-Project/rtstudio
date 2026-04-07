@@ -36,13 +36,14 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route
-                  path="/sidekick"
+                  path="/home"
                   element={
                     <ProtectedRoute>
-                      <SidekickPage />
+                      <Home />
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/sidekick" element={<Navigate to="/home" replace />} />
                 <Route
                   path="/library"
                   element={
