@@ -25,10 +25,7 @@ export const TopNav = () => {
   const { profile, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  const mobileNavItems = [
-    ...navItems,
-    { name: "Profile", path: "/profile" },
-  ];
+  const mobileNavItems = navItems;
 
   const handleSignOut = async () => {
     await signOut();
