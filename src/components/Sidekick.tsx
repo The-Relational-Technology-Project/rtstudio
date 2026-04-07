@@ -332,48 +332,77 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
         ) : (
           <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto px-4 sm:px-6 py-4">
             {messages.map((message, idx) => {
-              // Format the message content
-              const displayContent = message.role === "assistant" 
-                ? formatMessageContent(message.content)
-                : message.content;
+              if (message.role === "user") {
+                return (
+                  <div key={idx} data-message-index={idx} className="flex justify-end">
+                    <div className="max-w-[85%]">
+                      <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-foreground">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
 
-              // Split by markdown bold (**text**) for rendering
-              const parts = displayContent.split(/(\*\*[^*]+\*\*)/g);
+              // Assistant message — check for prompt block
+              const parsed = formatMessageContent(message.content);
 
               return (
-                <div key={idx} data-message-index={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%]`}>
-                    <div
-                      className={`p-3 rounded-xl ${
-                        message.role === "user"
-                          ? "bg-primary/10 border border-primary/20 text-foreground"
-                          : "bg-secondary/50 border border-border"
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                        {parts.map((part, partIndex) => {
-                          if (part.startsWith('**') && part.endsWith('**')) {
-                            return (
-                              <span key={partIndex} className="font-semibold text-primary">
-                                {part.slice(2, -2)}
-                              </span>
-                            );
-                          }
-                          return <span key={partIndex}>{part}</span>;
-                        })}
-                      </p>
-                      {message.role === "assistant" && (
-                        <Button
-                          onClick={() => copyToClipboard(message.content)}
-                          variant="ghost"
-                          size="sm"
-                          className="mt-2 h-7 text-xs"
-                        >
-                          <Copy className="w-3 h-3 mr-1" />
-                          Copy
-                        </Button>
-                      )}
-                    </div>
+                <div key={idx} data-message-index={idx} className="flex justify-start">
+                  <div className="max-w-[85%] space-y-3">
+                    {parsed.before && (
+                      <div className="p-3 rounded-xl bg-secondary/50 border border-border">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderBoldText(parsed.before)}</p>
+                      </div>
+                    )}
+                    {parsed.prompt && (
+                      <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed font-mono">{parsed.prompt}</p>
+                        <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/20">
+                          <Button
+                            onClick={() => copyToClipboard(parsed.prompt!)}
+                            size="sm"
+                            className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                          >
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copy Prompt
+                          </Button>
+                        </div>
+                        <div className="space-y-2 pt-1">
+                          <p className="text-xs text-muted-foreground">Paste your prompt into any of these to start building:</p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://lovable.dev", "_blank")}>
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Lovable
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://claude.ai/code", "_blank")}>
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Claude Code
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://dyad.sh", "_blank")}>
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Dyad
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {parsed.after && (
+                      <div className="p-3 rounded-xl bg-secondary/50 border border-border">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderBoldText(parsed.after)}</p>
+                      </div>
+                    )}
+                    {!parsed.prompt && (
+                      <Button
+                        onClick={() => copyToClipboard(message.content)}
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 h-7 text-xs"
+                      >
+                        <Copy className="w-3 h-3 mr-1" />
+                        Copy
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
