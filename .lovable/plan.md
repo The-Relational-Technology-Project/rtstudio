@@ -1,25 +1,53 @@
 
-# Semantic Search via Vector Embeddings — IMPLEMENTED
 
-## Status: ✅ Complete
+# Improve Sidekick Search: Hybrid Vector + Keyword
 
-### What was done
+## Problem
 
-1. **Database**: pgvector extension enabled, `library_embeddings` table created with RLS (no public access), `match_library_items` RPC function for cosine similarity search
-2. **`supabase/functions/embed-library/index.ts`**: New edge function that batch-embeds all library items using OpenAI `text-embedding-3-small`. Protected by `ADMIN_API_KEY`. Skips items with unchanged content hash.
-3. **`supabase/functions/chat-remix/index.ts`**: RAG search upgraded — embeds user message via OpenAI, runs vector similarity search via `match_library_items` RPC. Falls back to keyword ILIKE search if vector search fails or returns no results.
-4. **Secrets**: `OPENAI_API_KEY` added for embeddings API calls.
-5. **Backfill**: 82 library items embedded successfully.
+The current search uses vector-first with a binary fallback: if vector search returns any results above the 0.25 threshold, keyword search is skipped entirely. This means a query like "walking tour" can match general items semantically but miss the exact "Walking App" tool that would have been caught by keyword matching.
 
----
+## Solution: Hybrid Search (Always Run Both, Merge Results)
 
-# Relational Tech Network RSS Feed Integration — IMPLEMENTED
+Instead of vector-OR-keyword, always run both and merge results with deduplication. This ensures exact keyword matches are never lost.
 
-## Status: ✅ Complete
+## Changes
 
-### What was done
+### 1. Lower vector threshold from 0.25 to 0.15
 
-1. **Database**: `network_feed_cache` table created (single-row cache with 6-hour TTL, service-role only access via RLS)
-2. **`supabase/functions/chat-remix/index.ts`**: Fetches and parses the public RSS feed from `https://updates.relationaltechproject.org/feed.xml`, caches parsed items, and injects up to 10 recent network updates into Sidekick's system prompt context
-3. **System prompt**: Added capability #5 "NETWORK AWARENESS" so Sidekick can reference what other builders are creating across the open-source relational tech ecosystem
-4. **Graceful degradation**: Feed fetch has a 5-second timeout; failures are non-fatal and fall back to cached data or no network context
+Widens the net for semantic matches without sacrificing relevance (cosine similarity of 0.15 still indicates meaningful relatedness with `text-embedding-3-small`).
+
+### 2. Always run keyword search alongside vector search
+
+Remove the `if (!usedVectorSearch)` gate. Run keyword search every time regardless of vector results.
+
+### 3. Merge and deduplicate results
+
+Combine vector and keyword results, preferring vector-matched items (they have similarity scores) but adding any keyword-only matches that vector search missed. Cap at 3 per type.
+
+### 4. Update `match_library_items` RPC default threshold
+
+Change the function's default `match_threshold` parameter from 0.3 to 0.15 to match the new calling convention.
+
+## Technical Detail
+
+In `supabase/functions/chat-remix/index.ts` (~line 296-400):
+
+```text
+BEFORE:
+  vector search (threshold 0.25) → if results, done
+  ELSE keyword search
+
+AFTER:
+  vector search (threshold 0.15) → collect results
+  keyword search → always run, collect results
+  merge: vector results first, then keyword-only items not already found
+  cap at 3 per type
+```
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| Migration | Update `match_library_items` default threshold to 0.15 |
+| `supabase/functions/chat-remix/index.ts` | Lower threshold to 0.15; remove fallback gate; add merge/dedup logic |
+
