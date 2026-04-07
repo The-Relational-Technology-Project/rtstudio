@@ -589,6 +589,11 @@ IMPORTANT FOR PROMPT REMIXING:
 - Gently remind them that the tool will likely change and that's okay
 - After delivering a remixed prompt, recommend that the builder write their own copy rather than using AI-generated text. Their voice and their neighbors' voices are what make the tool feel real.
 - Also recommend they use their own photos and images rather than AI-generated ones. Real images of their neighborhood and neighbors build trust and connection.
+- When delivering the final prompt, wrap it in delimiter markers so the UI can extract it cleanly:
+  ---PROMPT_START---
+  [the complete prompt goes here]
+  ---PROMPT_END---
+  After the prompt block, include a brief note like: "You can copy this prompt and paste it into an AI builder tool to start building."
 
 IMPORTANT FOR CONTRIBUTIONS:
 - Each contribution should read as an invitation from a real person in a real place

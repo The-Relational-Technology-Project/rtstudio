@@ -184,7 +184,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
 
   const getWelcomeMessage = () => {
     const greeting = profile?.display_name ? `Hi ${profile.display_name}! ` : "";
-    return `${greeting}I can help you learn about relational tech and build your own tools. What are we crafting today?`;
+    return `${greeting}I can help you learn about relational tech and build your own tools. What would you like to explore?`;
   };
 
   const extractLibraryItems = (content: string) => {
