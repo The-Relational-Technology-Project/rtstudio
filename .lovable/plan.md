@@ -1,74 +1,73 @@
 
 
-# Sidekick UX Improvements from Demo Feedback
+# RT Studio Home: Two-Column Layout for Logged-In Users
 
-## Phase 1: Quick Wins
+## Overview
 
-### 1. Make tool card images clickable
-**File:** `src/components/LibraryCard.tsx` — add `onClick` and `cursor-pointer` to the image wrapper to open the detail dialog.
+Keep the existing Landing page at `/` for unauthenticated visitors. Create a new `Home` page that authenticated users get redirected to. This Home page has a two-column desktop layout (Sidekick chat + sidebar with Events, RT Updates, Studio Updates) and a tabbed mobile layout.
 
-### 2. Remove sycophantic openers from system prompt
-**File:** `supabase/functions/chat-remix/index.ts` — add to YOUR STYLE:
-```
-- Never open with flattery like "I love that idea!" or "Great question!" — jump straight into being helpful.
-```
+## Changes
 
-### 3. Ban the word "template"
-**File:** `supabase/functions/chat-remix/index.ts` — add to YOUR STYLE:
-```
-- Never use the word "template" — say "prompt" or "starting point"
-```
+### 1. Database: `studio_log` table
 
-### 4. Reword welcome buttons for clarity
-**File:** `src/components/Sidekick.tsx` — change labels and auto-fill messages:
-- "Remix Something" → "Customize a tool for my neighborhood"
-- "Discover Stories" → "Read neighbor stories"
-- "Explore Tools" → "Browse neighborhood tools"
-- "Contribute" stays, message unchanged
-- Welcome text: "What are we crafting today?" → "What would you like to explore?"
+New migration to create a `studio_log` table (columns: `id`, `created_at`, `log_type` text, `title` text, `description` text, `url` text nullable). Public select RLS policy. Seed with a few initial entries describing recent Studio improvements.
 
-## Phase 2: Prompt Copy & Builder Links
+### 2. Landing page redirect update
 
-### 5. Prompt delimiters + "Copy Prompt" button + builder tool links
+In `src/pages/Landing.tsx`, change the authenticated redirect from `/sidekick` to `/home` (line 34).
 
-**a) System prompt** — instruct Sidekick to wrap final prompts:
-```
----PROMPT_START---
-[the complete prompt]
----PROMPT_END---
-```
-After the prompt, include: "You can paste this prompt into one of these AI builder tools to start building."
+### 3. Routes (`src/App.tsx`)
 
-**b) Frontend** — detect `---PROMPT_START---` / `---PROMPT_END---` in assistant messages. When found, render:
-- The prompt in a visually distinct card with a **"Copy Prompt"** button
-- Three linked buttons below the prompt block:
-  - **Lovable** → `https://lovable.dev`
-  - **Claude Code** → `https://claude.ai/code`
-  - **Dyad** → `https://dyad.sh`
-- Label: "Paste your prompt into any of these to start building"
-- If no delimiters found, render normally (current behavior)
+- Add `/home` route → new `Home` component (protected)
+- Keep `/sidekick` route but redirect to `/home`
+- Keep `/` → Landing (handles auth redirect to `/home`)
 
-## Phase 3: Conversation Management
+### 4. Nav update (`src/components/TopNav.tsx`)
 
-### 6. "New Chat" button + system prompt nudge
-**File:** `src/components/Sidekick.tsx` — add a "New Chat" button in the header (visible when messages exist) that calls `clearMessages()`.
+- Replace "Sidekick" nav item with "Home" pointing to `/home`
+- Add "Profile" as a visible text link on desktop (alongside Library, Get Support)
+- Simplify the dropdown to sign-out only
 
-**File:** `supabase/functions/chat-remix/index.ts` — add to YOUR STYLE:
-```
-- If the conversation shifts to a different topic, suggest starting a fresh chat.
-```
+### 5. New `src/pages/Home.tsx`
 
-## Deferred (noted for future)
+Two-column layout on desktop:
+- **Left (flex-1):** `<Sidekick fullPage />`
+- **Right (280px, collapsible):** `<HomeSidebar />`
 
-- Follow-up nudge / email after prompt delivery (needs pg_cron + email infra)
-- Save conversations to profile like Claude Projects (needs new table + UI)
-- Admin portal mention in walking tour tool description (database content update)
+Mobile: tab bar switching between Sidekick, Events, and Updates.
+
+### 6. New `src/components/HomeSidebar.tsx`
+
+Three stacked sections:
+- **RT Events:** Luma calendar iframe
+- **RT Updates:** Client-side fetch of `https://updates.relationaltechproject.org/feed.xml`, parsed with DOMParser, 3 most recent items, cached in localStorage for 15 min
+- **Studio Updates:** Query `studio_log` table, show 3-4 recent entries
+
+Collapsible via a toggle button.
+
+### 7. AI-generated studio log entries
+
+In `chat-remix` edge function, when a contribution is saved, use Lovable AI to generate a 1-2 line description and insert into `studio_log`.
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/LibraryCard.tsx` | Make image clickable |
-| `src/components/Sidekick.tsx` | Reword welcome/buttons; New Chat button; prompt-block copy UI with Lovable/Claude Code/Dyad links |
-| `supabase/functions/chat-remix/index.ts` | Anti-sycophancy; no "template"; prompt delimiters; fresh-convo nudge |
+| Migration | Create `studio_log` table + seed data |
+| `src/pages/Landing.tsx` | Redirect authenticated users to `/home` |
+| `src/App.tsx` | Add `/home` route, redirect `/sidekick` → `/home` |
+| `src/components/TopNav.tsx` | Update nav: Home, Library, Profile, Get Support |
+| `src/pages/Home.tsx` | New: two-column layout |
+| `src/components/HomeSidebar.tsx` | New: Events + RT Updates + Studio Updates |
+| `src/pages/SidekickPage.tsx` | Redirect to `/home` or remove |
+| `supabase/functions/chat-remix/index.ts` | Insert studio_log on contribution |
+
+## Implementation Order
+
+1. Migration (studio_log table + seed)
+2. Routes + nav restructuring
+3. Home page with two-column layout
+4. HomeSidebar (Luma, RSS, studio_log)
+5. Mobile tab bar
+6. AI-generated log entries on contribution
 
