@@ -268,9 +268,22 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   return (
     <div id="sidekick-chat" className={`w-full ${fullPage ? 'max-w-4xl' : 'max-w-5xl'} mx-auto ${!fullPage && 'mb-8'} scroll-mt-20 flex flex-col gap-4`}>
       <Card className={`flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background ${fullPage ? 'h-[500px]' : 'h-[500px]'}`}>
-        <div className="flex items-center gap-2 p-4 sm:p-6 pb-0 shrink-0">
-          <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
+        <div className="flex items-center justify-between p-4 sm:p-6 pb-0 shrink-0">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
+          </div>
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { clearMessages(); setLibraryItems([]); setRecentContribution(null); setContributionHistory([]); }}
+              className="text-xs text-muted-foreground"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              New Chat
+            </Button>
+          )}
         </div>
 
         {messages.length === 0 ? (
