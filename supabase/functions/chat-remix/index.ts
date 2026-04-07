@@ -265,17 +265,19 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     // Get the latest user message for context search
     const latestUserMessage = messages[messages.length - 1]?.content || '';
 
-    // --- Vector similarity search (with keyword fallback) ---
+    // --- Hybrid search: always run both vector + keyword, merge results ---
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
     let relevantPrompts: any[] = [];
     let relevantStories: any[] = [];
     let relevantTools: any[] = [];
-    let usedVectorSearch = false;
 
+    // Track vector-matched IDs for deduplication
+    const vectorMatchedIds = new Set<string>();
+
+    // 1. Vector similarity search
     if (OPENAI_API_KEY && latestUserMessage.trim()) {
       try {
-        // Embed the user's message
         const embResponse = await fetch("https://api.openai.com/v1/embeddings", {
           method: "POST",
           headers: {
@@ -292,23 +294,22 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
           const embData = await embResponse.json();
           const queryEmbedding = embData.data[0].embedding;
 
-          // Call the similarity search RPC
           const { data: matches, error: matchError } = await supabase.rpc('match_library_items', {
             query_embedding: JSON.stringify(queryEmbedding),
-            match_threshold: 0.25,
+            match_threshold: 0.15,
             match_count: 9,
           });
 
           if (!matchError && matches && matches.length > 0) {
-            usedVectorSearch = true;
             console.log('Vector search matches:', matches.map((m: any) => `${m.item_type}:${m.item_id} (${m.similarity.toFixed(3)})`));
 
-            // Group matched IDs by type
             const storyIds = matches.filter((m: any) => m.item_type === 'story').map((m: any) => m.item_id);
             const promptIds = matches.filter((m: any) => m.item_type === 'prompt').map((m: any) => m.item_id);
             const toolMatchIds = matches.filter((m: any) => m.item_type === 'tool').map((m: any) => m.item_id);
 
-            // Fetch full details in parallel
+            // Track all vector-matched IDs
+            matches.forEach((m: any) => vectorMatchedIds.add(m.item_id));
+
             const [pRes, sRes, tRes] = await Promise.all([
               promptIds.length > 0
                 ? supabase.from('prompts').select('id, title, category, description, example_prompt').in('id', promptIds)
@@ -329,12 +330,12 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
           console.error('OpenAI embeddings API error:', embResponse.status);
         }
       } catch (embError) {
-        console.error('Vector search failed, falling back to keyword search:', embError);
+        console.error('Vector search failed:', embError);
       }
     }
 
-    // Fallback: keyword search if vector search didn't produce results
-    if (!usedVectorSearch && latestUserMessage.trim()) {
+    // 2. Keyword search — always run alongside vector, merge unique results
+    if (latestUserMessage.trim()) {
       const stopWords = new Set([
         'i', 'want', 'a', 'the', 'to', 'for', 'of', 'and', 'or', 'in', 'on', 'at',
         'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
@@ -350,7 +351,7 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
         .filter((word: string) => word.length > 2 && !stopWords.has(word))
         .slice(0, 5);
 
-      console.log('Fallback keyword search:', keywords);
+      console.log('Keyword search (hybrid):', keywords);
 
       if (keywords.length > 0) {
         const promptSearchConditions = keywords.map((keyword: string) => {
@@ -369,14 +370,38 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
         }).join(',');
 
         const [promptsResult, storiesResult, toolsResult] = await Promise.all([
-          supabase.from('prompts').select('id, title, category, description, example_prompt').or(promptSearchConditions).limit(3),
-          supabase.from('stories').select('id, title, story_text, attribution, full_story_text').or(storySearchConditions).limit(3),
-          supabase.from('tools').select('id, name, description, url').or(toolSearchConditions).limit(3)
+          supabase.from('prompts').select('id, title, category, description, example_prompt').or(promptSearchConditions).limit(5),
+          supabase.from('stories').select('id, title, story_text, attribution, full_story_text').or(storySearchConditions).limit(5),
+          supabase.from('tools').select('id, name, description, url').or(toolSearchConditions).limit(5)
         ]);
 
-        relevantPrompts = promptsResult.data || [];
-        relevantStories = storiesResult.data || [];
-        relevantTools = toolsResult.data || [];
+        const kwPrompts = promptsResult.data || [];
+        const kwStories = storiesResult.data || [];
+        const kwTools = toolsResult.data || [];
+
+        // Merge: add keyword-only items not already found by vector search
+        const existingPromptIds = new Set(relevantPrompts.map((p: any) => p.id));
+        const existingStoryIds = new Set(relevantStories.map((s: any) => s.id));
+        const existingToolIds = new Set(relevantTools.map((t: any) => t.id));
+
+        for (const p of kwPrompts) {
+          if (!existingPromptIds.has(p.id) && relevantPrompts.length < 3) {
+            relevantPrompts.push(p);
+            console.log(`Keyword added prompt: ${p.title}`);
+          }
+        }
+        for (const s of kwStories) {
+          if (!existingStoryIds.has(s.id) && relevantStories.length < 3) {
+            relevantStories.push(s);
+            console.log(`Keyword added story: ${s.title}`);
+          }
+        }
+        for (const t of kwTools) {
+          if (!existingToolIds.has(t.id) && relevantTools.length < 3) {
+            relevantTools.push(t);
+            console.log(`Keyword added tool: ${t.name}`);
+          }
+        }
       }
     }
 
