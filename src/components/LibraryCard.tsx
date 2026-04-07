@@ -64,7 +64,7 @@ export const LibraryCard = ({
     <>
       <Card className="flex flex-col hover:shadow-lg transition-shadow overflow-hidden">
         {item.imageUrl && (
-          <div className="aspect-[16/10] overflow-hidden bg-muted">
+          <div className="aspect-[16/10] overflow-hidden bg-muted cursor-pointer" onClick={() => setIsDetailOpen(true)}>
             <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover object-top" loading="lazy" />
           </div>
         )}

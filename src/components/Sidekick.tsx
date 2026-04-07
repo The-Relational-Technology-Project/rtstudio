@@ -5,7 +5,7 @@ import { Textarea } from "./ui/textarea";
 import { Card } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Send, Sparkles, Gift } from "lucide-react";
+import { Copy, Send, Sparkles, Gift, ExternalLink, RotateCcw } from "lucide-react";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LibraryItemPreview } from "@/components/LibraryItemPreview";
@@ -39,7 +39,7 @@ interface ContributionData {
 export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { messages, setMessages } = useSidekick();
+  const { messages, setMessages, clearMessages } = useSidekick();
   const { user, profile } = useAuth();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -184,7 +184,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
 
   const getWelcomeMessage = () => {
     const greeting = profile?.display_name ? `Hi ${profile.display_name}! ` : "";
-    return `${greeting}I can help you learn about relational tech and build your own tools. What are we crafting today?`;
+    return `${greeting}I can help you learn about relational tech and build your own tools. What would you like to explore?`;
   };
 
   const extractLibraryItems = (content: string) => {
@@ -212,9 +212,31 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     }
   };
 
-  const formatMessageContent = (content: string): string => {
-    // Replace [LIBRARY_ITEM:type:id:title] with just the title in the text
-    return content.replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**');
+  const formatMessageContent = (content: string): { before: string; prompt: string | null; after: string } => {
+    // Check for prompt delimiters
+    const promptStartIdx = content.indexOf('---PROMPT_START---');
+    const promptEndIdx = content.indexOf('---PROMPT_END---');
+    
+    if (promptStartIdx !== -1 && promptEndIdx !== -1 && promptEndIdx > promptStartIdx) {
+      const before = content.substring(0, promptStartIdx).replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**').trim();
+      const prompt = content.substring(promptStartIdx + '---PROMPT_START---'.length, promptEndIdx).trim();
+      const after = content.substring(promptEndIdx + '---PROMPT_END---'.length).replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**').trim();
+      return { before, prompt, after };
+    }
+    
+    // No delimiters — return everything as "before"
+    const cleaned = content.replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**');
+    return { before: cleaned, prompt: null, after: '' };
+  };
+
+  const renderBoldText = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <span key={i} className="font-semibold text-primary">{part.slice(2, -2)}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -246,9 +268,22 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   return (
     <div id="sidekick-chat" className={`w-full ${fullPage ? 'max-w-4xl' : 'max-w-5xl'} mx-auto ${!fullPage && 'mb-8'} scroll-mt-20 flex flex-col gap-4`}>
       <Card className={`flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background ${fullPage ? 'h-[500px]' : 'h-[500px]'}`}>
-        <div className="flex items-center gap-2 p-4 sm:p-6 pb-0 shrink-0">
-          <Sparkles className="w-5 h-5 text-primary" />
-          <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
+        <div className="flex items-center justify-between p-4 sm:p-6 pb-0 shrink-0">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
+          </div>
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { clearMessages(); setLibraryItems([]); setRecentContribution(null); setContributionHistory([]); }}
+              className="text-xs text-muted-foreground"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              New Chat
+            </Button>
+          )}
         </div>
 
         {messages.length === 0 ? (
@@ -261,26 +296,26 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("Help me find a prompt to remix")}
+                  onClick={() => setInput("I'd like to customize a tool for my neighborhood")}
                   className="text-xs"
                 >
-                  Remix Something
+                  Customize a tool
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("Show me some community stories")}
+                  onClick={() => setInput("Show me stories from neighbors")}
                   className="text-xs"
                 >
-                  Discover Stories
+                  Read neighbor stories
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("What tools can help me organize a block party?")}
+                  onClick={() => setInput("What neighborhood tools are in the library?")}
                   className="text-xs"
                 >
-                  Explore Tools
+                  Browse tools
                 </Button>
                 <Button 
                   variant="outline" 
@@ -297,48 +332,77 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
         ) : (
           <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto px-4 sm:px-6 py-4">
             {messages.map((message, idx) => {
-              // Format the message content
-              const displayContent = message.role === "assistant" 
-                ? formatMessageContent(message.content)
-                : message.content;
+              if (message.role === "user") {
+                return (
+                  <div key={idx} data-message-index={idx} className="flex justify-end">
+                    <div className="max-w-[85%]">
+                      <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-foreground">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
 
-              // Split by markdown bold (**text**) for rendering
-              const parts = displayContent.split(/(\*\*[^*]+\*\*)/g);
+              // Assistant message — check for prompt block
+              const parsed = formatMessageContent(message.content);
 
               return (
-                <div key={idx} data-message-index={idx} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-[85%]`}>
-                    <div
-                      className={`p-3 rounded-xl ${
-                        message.role === "user"
-                          ? "bg-primary/10 border border-primary/20 text-foreground"
-                          : "bg-secondary/50 border border-border"
-                      }`}
-                    >
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                        {parts.map((part, partIndex) => {
-                          if (part.startsWith('**') && part.endsWith('**')) {
-                            return (
-                              <span key={partIndex} className="font-semibold text-primary">
-                                {part.slice(2, -2)}
-                              </span>
-                            );
-                          }
-                          return <span key={partIndex}>{part}</span>;
-                        })}
-                      </p>
-                      {message.role === "assistant" && (
-                        <Button
-                          onClick={() => copyToClipboard(message.content)}
-                          variant="ghost"
-                          size="sm"
-                          className="mt-2 h-7 text-xs"
-                        >
-                          <Copy className="w-3 h-3 mr-1" />
-                          Copy
-                        </Button>
-                      )}
-                    </div>
+                <div key={idx} data-message-index={idx} className="flex justify-start">
+                  <div className="max-w-[85%] space-y-3">
+                    {parsed.before && (
+                      <div className="p-3 rounded-xl bg-secondary/50 border border-border">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderBoldText(parsed.before)}</p>
+                      </div>
+                    )}
+                    {parsed.prompt && (
+                      <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed font-mono">{parsed.prompt}</p>
+                        <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/20">
+                          <Button
+                            onClick={() => copyToClipboard(parsed.prompt!)}
+                            size="sm"
+                            className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                          >
+                            <Copy className="w-3 h-3 mr-1" />
+                            Copy Prompt
+                          </Button>
+                        </div>
+                        <div className="space-y-2 pt-1">
+                          <p className="text-xs text-muted-foreground">Paste your prompt into any of these to start building:</p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://lovable.dev", "_blank")}>
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Lovable
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://claude.ai/code", "_blank")}>
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Claude Code
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://dyad.sh", "_blank")}>
+                              <ExternalLink className="w-3 h-3 mr-1" />
+                              Dyad
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {parsed.after && (
+                      <div className="p-3 rounded-xl bg-secondary/50 border border-border">
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderBoldText(parsed.after)}</p>
+                      </div>
+                    )}
+                    {!parsed.prompt && (
+                      <Button
+                        onClick={() => copyToClipboard(message.content)}
+                        variant="ghost"
+                        size="sm"
+                        className="mt-1 h-7 text-xs"
+                      >
+                        <Copy className="w-3 h-3 mr-1" />
+                        Copy
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
