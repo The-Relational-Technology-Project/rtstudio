@@ -212,9 +212,31 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     }
   };
 
-  const formatMessageContent = (content: string): string => {
-    // Replace [LIBRARY_ITEM:type:id:title] with just the title in the text
-    return content.replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**');
+  const formatMessageContent = (content: string): { before: string; prompt: string | null; after: string } => {
+    // Check for prompt delimiters
+    const promptStartIdx = content.indexOf('---PROMPT_START---');
+    const promptEndIdx = content.indexOf('---PROMPT_END---');
+    
+    if (promptStartIdx !== -1 && promptEndIdx !== -1 && promptEndIdx > promptStartIdx) {
+      const before = content.substring(0, promptStartIdx).replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**').trim();
+      const prompt = content.substring(promptStartIdx + '---PROMPT_START---'.length, promptEndIdx).trim();
+      const after = content.substring(promptEndIdx + '---PROMPT_END---'.length).replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**').trim();
+      return { before, prompt, after };
+    }
+    
+    // No delimiters — return everything as "before"
+    const cleaned = content.replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**');
+    return { before: cleaned, prompt: null, after: '' };
+  };
+
+  const renderBoldText = (text: string) => {
+    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <span key={i} className="font-semibold text-primary">{part.slice(2, -2)}</span>;
+      }
+      return <span key={i}>{part}</span>;
+    });
   };
 
   const handleSend = async (e: React.FormEvent) => {
