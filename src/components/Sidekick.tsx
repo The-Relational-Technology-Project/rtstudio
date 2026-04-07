@@ -296,26 +296,26 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("Help me find a prompt to remix")}
+                  onClick={() => setInput("I'd like to customize a tool for my neighborhood")}
                   className="text-xs"
                 >
-                  Remix Something
+                  Customize a tool
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("Show me some community stories")}
+                  onClick={() => setInput("Show me stories from neighbors")}
                   className="text-xs"
                 >
-                  Discover Stories
+                  Read neighbor stories
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("What tools can help me organize a block party?")}
+                  onClick={() => setInput("What neighborhood tools are in the library?")}
                   className="text-xs"
                 >
-                  Explore Tools
+                  Browse tools
                 </Button>
                 <Button 
                   variant="outline" 
