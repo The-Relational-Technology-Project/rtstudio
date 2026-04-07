@@ -871,6 +871,17 @@ Begin by understanding what they're looking for - whether that's exploring the l
         }
       }
       
+      // Log contribution to studio_log
+      try {
+        await supabase.from('studio_log').insert({
+          log_type: 'contribution',
+          title: `New ${contributionType}: ${contributionTitle}`,
+          description: `A neighbor contributed a ${contributionType} to the shared library.`,
+        });
+      } catch (logErr) {
+        console.error('Studio log insert error (non-fatal):', logErr);
+      }
+      
       // Return success response with contribution info
       return new Response(
         JSON.stringify({ 
