@@ -9,7 +9,7 @@ import AuthCallback from "./pages/AuthCallback";
 import ChangePassword from "./pages/ChangePassword";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
-import SidekickPage from "./pages/SidekickPage";
+import Home from "./pages/Home";
 import Library from "./pages/Library";
 import Profile from "./pages/Profile";
 import Support from "./pages/Support";

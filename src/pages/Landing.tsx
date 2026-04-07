@@ -31,7 +31,7 @@ const Landing = () => {
       if (!hasProfileContent) {
         navigate("/profile", { replace: true });
       } else {
-        navigate("/sidekick", { replace: true });
+        navigate("/home", { replace: true });
       }
     }
   }, [user, profile, navigate]);
