@@ -39,7 +39,7 @@ interface ContributionData {
 export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { messages, setMessages } = useSidekick();
+  const { messages, setMessages, clearMessages } = useSidekick();
   const { user, profile } = useAuth();
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
