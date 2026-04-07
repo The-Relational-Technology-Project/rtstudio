@@ -2,14 +2,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import ChangePassword from "./pages/ChangePassword";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
-import SidekickPage from "./pages/SidekickPage";
+import Home from "./pages/Home";
 import Library from "./pages/Library";
 import Profile from "./pages/Profile";
 import Support from "./pages/Support";
@@ -36,13 +36,14 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route
-                  path="/sidekick"
+                  path="/home"
                   element={
                     <ProtectedRoute>
-                      <SidekickPage />
+                      <Home />
                     </ProtectedRoute>
                   }
                 />
+                <Route path="/sidekick" element={<Navigate to="/home" replace />} />
                 <Route
                   path="/library"
                   element={

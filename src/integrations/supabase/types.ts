@@ -485,6 +485,33 @@ export type Database = {
           },
         ]
       }
+      studio_log: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          log_type: string
+          title: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          log_type?: string
+          title: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          log_type?: string
+          title?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       tool_comments: {
         Row: {
           comment: string

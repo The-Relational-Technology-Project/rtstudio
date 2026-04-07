@@ -14,8 +14,9 @@ import {
 import { useState } from "react";
 
 const navItems = [
-  { name: "Sidekick", path: "/sidekick" },
+  { name: "Home", path: "/home" },
   { name: "Library", path: "/library" },
+  { name: "Profile", path: "/profile" },
   { name: "Get Support", path: "/support" },
 ];
 
@@ -24,10 +25,7 @@ export const TopNav = () => {
   const { profile, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  const mobileNavItems = [
-    ...navItems,
-    { name: "Profile", path: "/profile" },
-  ];
+  const mobileNavItems = navItems;
 
   const handleSignOut = async () => {
     await signOut();
@@ -77,13 +75,6 @@ export const TopNav = () => {
                     <p className="text-xs text-muted-foreground">{profile.neighborhood}</p>
                   )}
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/profile" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
