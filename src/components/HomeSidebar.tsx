@@ -47,20 +47,29 @@ function parseRSS(xml: string): RSSItem[] {
   }
 }
 
-function getCachedFeed(): RSSItem[] | null {
+interface CachedFeed {
+  items: RSSItem[];
+  summaries: string[];
+  timestamp: number;
+}
+
+function getCachedFeed(): CachedFeed | null {
   try {
     const cached = localStorage.getItem(RSS_CACHE_KEY);
     if (!cached) return null;
-    const { items, timestamp } = JSON.parse(cached);
-    if (Date.now() - timestamp > RSS_CACHE_DURATION) return null;
-    return items;
+    const parsed = JSON.parse(cached);
+    if (Date.now() - parsed.timestamp > RSS_CACHE_DURATION) return null;
+    return parsed;
   } catch {
     return null;
   }
 }
 
-function cacheFeed(items: RSSItem[]) {
-  localStorage.setItem(RSS_CACHE_KEY, JSON.stringify({ items, timestamp: Date.now() }));
+function cacheFeedWithSummaries(items: RSSItem[], summaries: string[]) {
+  localStorage.setItem(
+    RSS_CACHE_KEY,
+    JSON.stringify({ items, summaries, timestamp: Date.now() })
+  );
 }
 
 const EventsSection = () => (
@@ -71,9 +80,9 @@ const EventsSection = () => (
     </h3>
     <div className="rounded-xl border border-border overflow-hidden bg-card">
       <iframe
-        src="https://lu.ma/embed/calendar/cal-FCvnRdKnHkfRb5u/events"
+        src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events"
         className="w-full border-0"
-        style={{ height: 280 }}
+        style={{ height: 350 }}
         allowFullScreen
         title="Relational Tech Events"
       />
@@ -83,22 +92,51 @@ const EventsSection = () => (
 
 const RTUpdatesSection = () => {
   const [items, setItems] = useState<RSSItem[]>([]);
+  const [summaries, setSummaries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const cached = getCachedFeed();
     if (cached) {
-      setItems(cached);
+      setItems(cached.items);
+      setSummaries(cached.summaries || []);
       setLoading(false);
       return;
     }
 
     fetch("https://updates.relationaltechproject.org/feed.xml")
       .then((r) => r.text())
-      .then((xml) => {
+      .then(async (xml) => {
         const parsed = parseRSS(xml);
-        cacheFeed(parsed);
+
+        // Try to get AI summaries
+        let aiSummaries: string[] = [];
+        try {
+          const descriptions = parsed.map((p) => p.description).filter(Boolean);
+          if (descriptions.length > 0) {
+            const res = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/summarize-feed`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                },
+                body: JSON.stringify({ descriptions }),
+              }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              aiSummaries = data.summaries || [];
+            }
+          }
+        } catch {
+          // Summaries are optional
+        }
+
+        cacheFeedWithSummaries(parsed, aiSummaries);
         setItems(parsed);
+        setSummaries(aiSummaries);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -127,8 +165,13 @@ const RTUpdatesSection = () => {
               <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">
                 {item.title}
               </p>
+              {summaries[i] && (
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                  {summaries[i]}
+                </p>
+              )}
               {item.pubDate && (
-                <p className="text-[11px] text-muted-foreground mt-1">
+                <p className="text-[11px] text-muted-foreground/70 mt-1">
                   {formatDistanceToNow(new Date(item.pubDate), { addSuffix: true })}
                 </p>
               )}
