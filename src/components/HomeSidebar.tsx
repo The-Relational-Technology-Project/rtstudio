@@ -78,12 +78,14 @@ const EventsSection = () => (
       <Calendar className="h-3.5 w-3.5 text-primary" />
       RT Events
     </h3>
-    <div className="rounded-xl border border-border overflow-hidden bg-card">
+    <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
       <iframe
-        src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events"
+        src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events?compact=true&lt=light"
         className="w-full border-0"
-        style={{ height: 350 }}
+        style={{ height: 450 }}
         allowFullScreen
+        aria-hidden="false"
+        tabIndex={0}
         title="Relational Tech Events"
       />
     </div>
