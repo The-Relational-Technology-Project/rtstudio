@@ -87,7 +87,7 @@ const Home = () => {
                   sidebarOpen ? "w-[280px] opacity-100" : "w-0 opacity-0"
                 )}
               >
-                <div className="w-[280px] py-8 pr-4">
+                <div className="w-[280px] pt-12 py-8 pr-4">
                   <HomeSidebar />
                 </div>
               </div>

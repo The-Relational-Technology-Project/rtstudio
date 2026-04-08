@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Calendar, Radio, Wrench } from "lucide-react";
+import { ExternalLink, Calendar, Radio, Wrench, ChevronDown, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface RSSItem {
@@ -24,7 +24,8 @@ interface HomeSidebarProps {
 }
 
 const RSS_CACHE_KEY = "rt_network_feed";
-const RSS_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
+const RSS_CACHE_DURATION = 15 * 60 * 1000;
+const EVENT_COUNT_CACHE_KEY = "rt_event_count";
 
 function parseRSS(xml: string): RSSItem[] {
   try {
@@ -45,6 +46,13 @@ function parseRSS(xml: string): RSSItem[] {
   } catch {
     return [];
   }
+}
+
+/** Extract project name from RSS title like "cozy-corner: 15 commits by lovable-dev[bot]" */
+function extractProjectName(title: string): string {
+  const colonIdx = title.indexOf(":");
+  if (colonIdx > 0) return title.slice(0, colonIdx).trim();
+  return title;
 }
 
 interface CachedFeed {
@@ -72,25 +80,91 @@ function cacheFeedWithSummaries(items: RSSItem[], summaries: string[]) {
   );
 }
 
-const EventsSection = () => (
-  <section>
-    <h3 className="text-sm font-fraunces font-bold text-foreground flex items-center gap-1.5 mb-3">
-      <Calendar className="h-3.5 w-3.5 text-primary" />
-      RT Events
-    </h3>
-    <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
-      <iframe
-        src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events?compact=true&lt=light"
-        className="w-full border-0"
-        style={{ height: 450 }}
-        allowFullScreen
-        aria-hidden="false"
-        tabIndex={0}
-        title="Relational Tech Events"
-      />
-    </div>
-  </section>
-);
+function getCachedEventCount(): number | null {
+  try {
+    const cached = localStorage.getItem(EVENT_COUNT_CACHE_KEY);
+    if (!cached) return null;
+    const parsed = JSON.parse(cached);
+    if (Date.now() - parsed.timestamp > RSS_CACHE_DURATION) return null;
+    return parsed.count;
+  } catch {
+    return null;
+  }
+}
+
+function cacheEventCount(count: number) {
+  localStorage.setItem(
+    EVENT_COUNT_CACHE_KEY,
+    JSON.stringify({ count, timestamp: Date.now() })
+  );
+}
+
+const EventsSection = () => {
+  const [expanded, setExpanded] = useState(false);
+  const [eventCount, setEventCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    const cached = getCachedEventCount();
+    if (cached !== null) {
+      setEventCount(cached);
+      return;
+    }
+
+    fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luma-event-count`,
+      {
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+      }
+    )
+      .then((r) => r.json())
+      .then((data) => {
+        if (typeof data.count === "number") {
+          setEventCount(data.count);
+          cacheEventCount(data.count);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const countLabel =
+    eventCount !== null && eventCount > 0
+      ? `${eventCount} upcoming`
+      : "Upcoming events";
+
+  return (
+    <section>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between text-sm font-fraunces font-bold text-foreground mb-3 hover:text-primary transition-colors"
+      >
+        <span className="flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5 text-primary" />
+          RT Events — {countLabel}
+        </span>
+        {expanded ? (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+      </button>
+      {expanded && (
+        <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
+          <iframe
+            src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events?compact=true&lt=light"
+            className="w-full border-0"
+            style={{ height: 300 }}
+            allowFullScreen
+            aria-hidden="false"
+            tabIndex={0}
+            title="Relational Tech Events"
+          />
+        </div>
+      )}
+    </section>
+  );
+};
 
 const RTUpdatesSection = () => {
   const [items, setItems] = useState<RSSItem[]>([]);
@@ -111,7 +185,6 @@ const RTUpdatesSection = () => {
       .then(async (xml) => {
         const parsed = parseRSS(xml);
 
-        // Try to get AI summaries
         let aiSummaries: string[] = [];
         try {
           const descriptions = parsed.map((p) => p.description).filter(Boolean);
@@ -156,29 +229,32 @@ const RTUpdatesSection = () => {
         <p className="text-xs text-muted-foreground">No recent updates.</p>
       ) : (
         <div className="space-y-3">
-          {items.map((item, i) => (
-            <a
-              key={i}
-              href={item.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors group"
-            >
-              <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">
-                {item.title}
-              </p>
-              {summaries[i] && (
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  {summaries[i]}
+          {items.map((item, i) => {
+            const displayText = summaries[i] || item.description || item.title;
+            const projectName = extractProjectName(item.title);
+
+            return (
+              <a
+                key={i}
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors group"
+              >
+                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">
+                  {displayText}
                 </p>
-              )}
-              {item.pubDate && (
-                <p className="text-[11px] text-muted-foreground/70 mt-1">
-                  {formatDistanceToNow(new Date(item.pubDate), { addSuffix: true })}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {projectName}
                 </p>
-              )}
-            </a>
-          ))}
+                {item.pubDate && (
+                  <p className="text-[11px] text-muted-foreground/70 mt-1">
+                    {formatDistanceToNow(new Date(item.pubDate), { addSuffix: true })}
+                  </p>
+                )}
+              </a>
+            );
+          })}
           <a
             href="https://updates.relationaltechproject.org"
             target="_blank"
@@ -253,7 +329,6 @@ export const HomeSidebar = ({ section }: HomeSidebarProps) => {
     );
   }
 
-  // Full sidebar (desktop)
   return (
     <div className="space-y-8">
       <EventsSection />
