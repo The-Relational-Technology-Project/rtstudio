@@ -1,49 +1,53 @@
 
 
-# Home Page Fixes: Sidebar Toggle, Events Embed, and Network Update Summaries
+# Fix: Dynamic Event Count for Collapsible Events Section
 
-## Changes
+## Problem
 
-### 1. Bigger sidebar toggle button
-**File:** `src/pages/Home.tsx` (lines 76-82)
+The Luma iframe is sandboxed — we can't read event count from it. A hardcoded "2 upcoming" would go stale immediately.
 
-Replace the tiny `»`/`«` text button with a proper icon button using `ChevronRight`/`ChevronLeft` from lucide-react. Larger hit target (~32x32px), rounded, with hover background. Vertically centered on the sidebar edge.
+## Options
 
-### 2. Fix RT Events calendar embed
-**File:** `src/components/HomeSidebar.tsx` (lines 73-79)
+1. **Fetch Luma's public iCal/API feed** — Luma exposes a public `.ics` feed for calendars. We can fetch `https://luma.com/calendar/cal-nic0320bsY3RbWC/export.ics`, parse it, and count events with dates ≥ today. This gives a real count.
 
-Replace the old Luma embed URL with the new one provided:
-- Old: `https://lu.ma/embed/calendar/cal-FCvnRdKnHkfRb5u/events`
-- New: `https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events`
+2. **Just say "Upcoming events"** without a count — simpler, always accurate, no external fetch needed.
 
-Also increase iframe height slightly (280 → 350) to better show upcoming events.
+3. **Fetch Luma's embed page HTML** and try to extract event count — fragile, could break anytime.
 
-### 3. AI-summarized Network Updates descriptions
-**File:** `src/components/HomeSidebar.tsx`
+## Recommendation
 
-The RSS feed items have a `description` field that currently isn't displayed. We'll add a new edge function `summarize-feed` that:
+**Option 1** is the most robust. We'll fetch the iCal feed client-side (it's public, no auth needed), parse it lightly to count future events, cache the count in localStorage for 15 minutes alongside the RSS cache. The collapsed header then shows "RT Events — 3 upcoming" with a real number.
 
-1. Accepts an array of RSS item descriptions
-2. Calls Lovable AI (gemini-2.5-flash-lite — fast and cheap) to produce a plain-language 1-line summary for each
-3. Returns the summaries
+If the iCal feed turns out to be blocked by CORS (likely), we fall back to **Option 2** ("Upcoming events" without a count) — still clean and honest.
 
-The `RTUpdatesSection` component will:
-1. Fetch RSS as before
-2. Call the `summarize-feed` edge function with the raw descriptions
-3. Display the AI summary below each item title
-4. Cache the summaries alongside the RSS items in localStorage (same 15-min cache)
+A third hybrid: proxy the iCal fetch through a tiny edge function to avoid CORS, cache the count there. This guarantees the count works.
 
-This keeps the AI call server-side (edge function) and avoids exposing API keys client-side. The summaries get cached so repeat visits don't re-call the AI.
+## Plan
 
-### Edge function: `supabase/functions/summarize-feed/index.ts`
+### File: `src/components/HomeSidebar.tsx`
 
-Accepts `{ descriptions: string[] }`, calls Lovable AI with a system prompt like "Summarize each GitHub update in one plain-language sentence. No jargon. Focus on what changed and why it matters for neighborhoods." Returns `{ summaries: string[] }`.
+- Make `EventsSection` stateful with `expanded` (default: collapsed) and `eventCount`
+- On mount, try fetching the Luma iCal feed via a new edge function `luma-event-count`
+- Collapsed: show "RT Events — N upcoming" (or "Upcoming events" if count unavailable)
+- Expanded: show the Luma iframe (height reduced to ~300px)
+- Cache count in localStorage for 15 min
+
+### File: `supabase/functions/luma-event-count/index.ts` (new)
+
+- Fetch `https://luma.com/calendar/cal-nic0320bsY3RbWC/export.ics`
+- Parse VEVENT blocks, count those with DTSTART ≥ today
+- Return `{ count: N }`
+- Simple, no API key needed
+
+### File: `src/pages/Home.tsx`
+
+- Add spacing between toggle button and sidebar content
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/pages/Home.tsx` | Larger, more visible sidebar toggle button |
-| `src/components/HomeSidebar.tsx` | New Luma URL; display AI summaries below titles |
-| `supabase/functions/summarize-feed/index.ts` | New edge function for AI summarization |
+| `src/components/HomeSidebar.tsx` | Collapsible events with dynamic count; RSS card hierarchy swap |
+| `src/pages/Home.tsx` | Spacing fix |
+| `supabase/functions/luma-event-count/index.ts` | New: fetch iCal, return upcoming event count |
 
