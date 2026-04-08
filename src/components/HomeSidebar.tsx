@@ -24,7 +24,7 @@ interface HomeSidebarProps {
 }
 
 const RSS_CACHE_KEY = "rt_network_feed";
-const RSS_CACHE_DURATION = 15 * 60 * 1000;
+const RSS_CACHE_DURATION = 5 * 60 * 1000;
 const EVENT_COUNT_CACHE_KEY = "rt_event_count";
 
 function parseRSS(xml: string): RSSItem[] {
@@ -33,8 +33,7 @@ function parseRSS(xml: string): RSSItem[] {
     const doc = parser.parseFromString(xml, "text/xml");
     const items = doc.querySelectorAll("item");
     const result: RSSItem[] = [];
-    items.forEach((item, i) => {
-      if (i >= 3) return;
+    items.forEach((item) => {
       result.push({
         title: item.querySelector("title")?.textContent || "",
         link: item.querySelector("link")?.textContent || "",
@@ -42,7 +41,9 @@ function parseRSS(xml: string): RSSItem[] {
         description: item.querySelector("description")?.textContent || "",
       });
     });
-    return result;
+    // Sort newest first, then take top 3
+    result.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+    return result.slice(0, 3);
   } catch {
     return [];
   }
