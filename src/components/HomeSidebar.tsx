@@ -71,9 +71,9 @@ const EventsSection = () => (
     </h3>
     <div className="rounded-xl border border-border overflow-hidden bg-card">
       <iframe
-        src="https://lu.ma/embed/calendar/cal-FCvnRdKnHkfRb5u/events"
+        src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events"
         className="w-full border-0"
-        style={{ height: 280 }}
+        style={{ height: 350 }}
         allowFullScreen
         title="Relational Tech Events"
       />
