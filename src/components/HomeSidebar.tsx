@@ -24,7 +24,7 @@ interface HomeSidebarProps {
 }
 
 const RSS_CACHE_KEY = "rt_network_feed";
-const RSS_CACHE_DURATION = 15 * 60 * 1000;
+const RSS_CACHE_DURATION = 5 * 60 * 1000;
 const EVENT_COUNT_CACHE_KEY = "rt_event_count";
 
 function parseRSS(xml: string): RSSItem[] {
