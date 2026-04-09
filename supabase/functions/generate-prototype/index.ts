@@ -49,20 +49,40 @@ serve(async (req) => {
     // Authenticate user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
+      console.error('No Authorization header found');
       return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
+        JSON.stringify({ error: 'Authentication required. Please sign in.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const token = authHeader.replace('Bearer ', '');
     const userSupabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
       global: { headers: { Authorization: authHeader } }
     });
-    const { data: { user }, error: authError } = await userSupabase.auth.getUser();
-
-    if (authError || !user?.id) {
+    
+    // Use getClaims for fast validation, fall back to getUser
+    let builderId: string;
+    try {
+      const { data: claimsData, error: claimsError } = await userSupabase.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims?.sub) {
+        // Fallback to getUser
+        const { data: { user }, error: authError } = await userSupabase.auth.getUser();
+        if (authError || !user?.id) {
+          console.error('Auth validation failed:', authError?.message);
+          return new Response(
+            JSON.stringify({ error: 'Invalid authentication. Please sign in again.' }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        builderId = user.id;
+      } else {
+        builderId = claimsData.claims.sub as string;
+      }
+    } catch (authErr) {
+      console.error('Auth exception:', authErr);
       return new Response(
-        JSON.stringify({ error: 'Invalid authentication' }),
+        JSON.stringify({ error: 'Authentication failed. Please sign in again.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

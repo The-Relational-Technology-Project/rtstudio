@@ -89,29 +89,19 @@ const Home = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prototype`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(session?.access_token
-              ? { Authorization: `Bearer ${session.access_token}` }
-              : {}),
-          },
-          body: JSON.stringify({
-            prompt: refinement,
-            refinementOf: prototype.prototypeId,
-            currentCode: prototype.code,
-          }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke("generate-prototype", {
+        body: {
+          prompt: refinement,
+          refinementOf: prototype.prototypeId,
+          currentCode: prototype.code,
+        },
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : undefined,
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to refine prototype");
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setPrototype({
         code: data.code,

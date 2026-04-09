@@ -45,7 +45,7 @@ export const PromptReviewModal = ({
             Review your build prompt
           </DialogTitle>
           <DialogDescription>
-            This prompt was generated from your conversation. Edit it to get exactly what you want, then hit Build.
+            This prompt came from your Sidekick conversation. Make any tweaks you'd like before building your prototype.
           </DialogDescription>
         </DialogHeader>
 
