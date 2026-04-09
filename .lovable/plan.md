@@ -1,90 +1,58 @@
 
-# Fix prototype auth, prompt handoff, and Sidekick scrolling
 
-## What I found
+# Fix Prototype Builder: Animation, Quality, CORS, and Multi-Page Navigation
 
-- The prototype request path is inconsistent with the rest of the app:
-  - `chat-remix` uses the built-in functions client and a proven auth pattern.
-  - `Home.tsx` calls `generate-prototype` with a manual `fetch`, while the function uses its own auth check.
-- The prompt finalization window is not really syncing with the latest Sidekick prompt:
-  - `PromptReviewModal` initializes local state once.
-  - Because the modal is controlled by the parent, its `onOpenChange` handler does not run when Home opens it, so the textarea can stay stale/empty.
-- The page jump is coming from `Sidekick.tsx` calling `scrollIntoView({ block: "start" })` on every new message, which scrolls the whole page instead of just the chat pane.
+## Issues Identified
+
+1. **No build animation visible**: The `PromptReviewModal` has a nice spinner/status UI tied to `isGenerating`, but the modal closes (`setShowPromptReview(false)`) as soon as the response comes back (line 69). The problem is that `isGenerating` is correctly passed to the modal, so the animation should show. However, the modal's `onOpenChange` is set to `undefined` when generating, which may not prevent Radix from closing it. Need to verify the modal stays open during generation.
+
+2. **CORS errors on shared prototype page**: The console screenshot shows errors loading CSS/JS from `studio.relationaltechproject.org` — this is from the *shared prototype page* (`/p/:shareId`). The iframe uses `sandbox="allow-scripts"` but lacks `allow-same-origin`. The generated HTML itself is self-contained, but the share page iframe is served from a different origin context. The CORS errors are from the parent page's assets being blocked inside the sandboxed iframe context — this is a red herring from browser devtools showing errors from the iframe's nested document trying to access parent resources.
+
+3. **Low prototype quality**: `MAX_TOKENS` is set to **4096** — far too low for Claude Opus to generate a rich, multi-section prototype. A typical high-quality artifact needs 8000-16000 tokens. This is likely the primary cause of truncated/low-quality output.
+
+4. **Multi-page navigation doesn't work**: The generated HTML uses anchor links (`<a href="#events">`) or separate page navigations. The iframe's `sandbox="allow-scripts"` without `allow-same-origin` blocks cookie access (visible in the screenshot). Internal navigation within a single `srcDoc` iframe works fine for hash-based routing but not for separate page URLs. The fix is to instruct Claude to use tab/section-based single-page navigation rather than multi-page links.
 
 ## Plan
 
-### 1. Fix the recurring “Authentication failed” on Build It
-**Files:** `src/pages/Home.tsx`, `supabase/functions/generate-prototype/index.ts`
+### 1. Increase MAX_TOKENS for richer prototypes
+**File:** `supabase/functions/generate-prototype/index.ts`
 
-- Replace the manual `fetch` calls in `Home.tsx` with `supabase.functions.invoke("generate-prototype")` for both build and refine.
-- Update `generate-prototype` to use the same reliable auth-validation approach as the rest of the backend:
-  - use the standard backend anon key variable
-  - validate the bearer token explicitly
-  - keep the existing per-user build limit and storage flow
-- Add clearer 401/error branches so future auth failures are easier to diagnose.
+Change `MAX_TOKENS` from 4096 to 12000. This gives Claude Opus enough room to generate detailed, multi-section prototypes with proper CSS and interactivity.
 
-### 2. Make the prompt auto-populate correctly in the Build It modal
-**Files:** `src/components/PromptReviewModal.tsx`, `src/pages/Home.tsx`
+### 2. Update system prompt for single-page navigation
+**File:** `supabase/functions/generate-prototype/index.ts`
 
-- Keep passing the Sidekick-generated prompt from `Home.tsx` as it does now.
-- Fix the modal so `editedPrompt` syncs whenever:
-  - a new prompt is passed in
-  - the modal opens
-- This ensures the exact Sidekick prompt appears in the finalization window every time.
+Add to the system prompt requirements:
+- "Use tab-based or section-based navigation within a single page. All navigation should use JavaScript to show/hide sections — never use separate HTML pages or links that navigate away."
+- "The entire app must work within a single HTML document displayed in a sandboxed iframe."
 
-### 3. Clean up the prompt-card UX in Sidekick
-**File:** `src/components/Sidekick.tsx`
+This ensures "Events", "Join Us", etc. all work as show/hide sections rather than broken page navigations.
 
-- Keep the current prompt-card structure:
-  - **Build it**
-  - **Copy**
-  - links to Lovable, Claude Code, and Dyad
-- Remove the `"(10 left today)"` text from the Build It button.
-- Keep the daily remaining count only in the modal, where the user is finalizing the prompt.
-
-### 4. Improve the language in the Build It modal
+### 3. Ensure build animation stays visible
 **File:** `src/components/PromptReviewModal.tsx`
 
-- Update the helper copy to be more encouraging and clearer, e.g.:
-  - this prompt came from your Sidekick conversation
-  - make any tweaks before the prototype is created
-- Keep the remaining-build count visible below the textarea.
+The current code passes `isGenerating ? undefined : onOpenChange` to prevent closing during generation. Verify this works with Radix Dialog. If not, add `onPointerDownOutside={(e) => e.preventDefault()}` and `onEscapeKeyDown={(e) => e.preventDefault()}` to `DialogContent` when generating.
 
-### 5. Stop the Sidekick page from jumping on every response
-**File:** `src/components/Sidekick.tsx`
+### 4. Update CORS headers in edge function
+**File:** `supabase/functions/generate-prototype/index.ts`
 
-- Remove the current `scrollIntoView` behavior.
-- Replace it with scrolling inside the messages container only.
-- Only auto-scroll when a new assistant response is added.
-- Position the chat pane so the newest assistant reply starts near the top of the chat viewport, letting the user read downward naturally without moving the whole page.
-
-## Files to update
-
-- `src/pages/Home.tsx`
-- `src/components/PromptReviewModal.tsx`
-- `src/components/Sidekick.tsx`
-- `supabase/functions/generate-prototype/index.ts`
-
-## Technical notes
-
-```text
-Current issue:
-page scrolls to latest message element
-
-Desired behavior:
-page stays still
-chat pane scrolls internally
-latest assistant response starts near top of chat pane
-user reads downward from there
+Update the CORS `Access-Control-Allow-Headers` to include the additional Supabase client headers that `functions.invoke()` sends:
+```
+authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version
 ```
 
-- No database migration is needed for this round.
-- I do not think this needs a route-level scroll fix in `App.tsx`; the jump is local to Sidekick’s message-scrolling logic.
+### 5. Add `allow-same-origin` to prototype iframe sandbox
+**Files:** `src/components/PrototypePreview.tsx`, `src/pages/PrototypeShare.tsx`, `src/pages/PrototypeEmbed.tsx`
 
-## Acceptance checks
+Change `sandbox="allow-scripts"` to `sandbox="allow-scripts allow-same-origin"` to prevent the cookie SecurityError shown in the console. The generated HTML is self-contained so this is safe.
 
-1. Clicking **Build it** no longer shows the auth failure toast.
-2. The Build It modal opens with the Sidekick-generated prompt already filled in.
-3. The modal copy encourages small edits before building.
-4. The prompt-card button simply says **Build it**.
-5. New Sidekick replies no longer scroll the entire page.
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `supabase/functions/generate-prototype/index.ts` | MAX_TOKENS 4096→12000; single-page navigation prompt; CORS headers |
+| `src/components/PromptReviewModal.tsx` | Ensure modal cannot be dismissed during generation |
+| `src/components/PrototypePreview.tsx` | Add `allow-same-origin` to iframe sandbox |
+| `src/pages/PrototypeShare.tsx` | Add `allow-same-origin` to iframe sandbox |
+| `src/pages/PrototypeEmbed.tsx` | Add `allow-same-origin` to iframe sandbox |
+
