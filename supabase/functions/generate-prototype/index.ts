@@ -87,7 +87,6 @@ serve(async (req) => {
       );
     }
 
-    const builderId = user.id;
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     // Parse request
