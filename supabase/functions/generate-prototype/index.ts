@@ -3,12 +3,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 // Model config — switch to claude-sonnet-4-20250514 when volume grows
 const CLAUDE_MODEL = 'claude-opus-4-20250514';
-const MAX_TOKENS = 4096;
+const MAX_TOKENS = 12000;
 const DAILY_LIMIT = 10;
 
 const SYSTEM_PROMPT = `You are a frontend prototype builder for neighborhood community tools. You build for the Relational Tech Studio, an open commons where people in neighborhoods across the country are building small, local, open-source tools with their neighbors.
