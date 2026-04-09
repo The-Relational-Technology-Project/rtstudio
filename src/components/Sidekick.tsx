@@ -61,11 +61,14 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   const processedMessageIdsRef = useRef(new Set<number>());
 
   const scrollToLatestMessage = () => {
-    if (messagesContainerRef.current && messages.length > 0) {
-      const messageElements = messagesContainerRef.current.querySelectorAll('[data-message-index]');
-      const lastMessageElement = messageElements[messageElements.length - 1];
+    const container = messagesContainerRef.current;
+    if (container && messages.length > 0) {
+      const messageElements = container.querySelectorAll('[data-message-index]');
+      const lastMessageElement = messageElements[messageElements.length - 1] as HTMLElement | undefined;
       if (lastMessageElement) {
-        lastMessageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Scroll within the chat container only — don't move the page
+        const offsetTop = lastMessageElement.offsetTop - container.offsetTop;
+        container.scrollTo({ top: offsetTop, behavior: 'smooth' });
       }
     }
   };
@@ -370,11 +373,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                             >
                               <Hammer className="w-3.5 h-3.5 mr-1" />
                               Build it
-                              {buildsRemaining > 0 && (
-                                <span className="ml-1.5 opacity-70">
-                                  ({buildsRemaining} left today)
-                                </span>
-                              )}
                             </Button>
                           )}
                           <Button

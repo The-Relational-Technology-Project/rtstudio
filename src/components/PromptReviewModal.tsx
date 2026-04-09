@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import {
@@ -25,15 +25,14 @@ export const PromptReviewModal = ({
 }: PromptReviewModalProps) => {
   const [editedPrompt, setEditedPrompt] = useState(prompt);
 
-  // Sync prompt when it changes (e.g., from conversation summary)
-  if (prompt !== editedPrompt && !open) {
-    // Will sync on next open
-  }
-
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
+  // Sync editedPrompt whenever the prompt prop changes or the modal opens
+  useEffect(() => {
+    if (open) {
       setEditedPrompt(prompt);
     }
+  }, [open, prompt]);
+
+  const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
   };
 
@@ -46,7 +45,7 @@ export const PromptReviewModal = ({
             Review your build prompt
           </DialogTitle>
           <DialogDescription>
-            This prompt was generated from your conversation. Edit it to get exactly what you want, then hit Build.
+            This prompt came from your Sidekick conversation. Make any tweaks you'd like before building your prototype.
           </DialogDescription>
         </DialogHeader>
 
