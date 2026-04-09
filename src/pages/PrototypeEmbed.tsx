@@ -10,14 +10,18 @@ const PrototypeEmbed = () => {
     if (!shareId) return;
 
     const fetchPrototype = async () => {
-      const { data } = await supabase
-        .from("prototypes")
-        .select("generated_code")
-        .eq("share_id", shareId)
-        .maybeSingle();
-
-      if (data?.generated_code) {
-        setCode(data.generated_code);
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prototypes?share_id=eq.${shareId}&select=generated_code`,
+        {
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
+      const items = await response.json();
+      if (items?.[0]?.generated_code) {
+        setCode(items[0].generated_code);
       }
     };
 
