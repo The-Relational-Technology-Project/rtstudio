@@ -737,6 +737,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      increment_prototype_counter: { Args: never; Returns: undefined }
       match_library_items: {
         Args: {
           match_count?: number
