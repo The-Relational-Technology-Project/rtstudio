@@ -14,13 +14,21 @@ const PrototypeShare = () => {
     if (!shareId) return;
 
     const fetchPrototype = async () => {
-      const { data, error: fetchError } = await supabase
-        .from("prototypes")
-        .select("generated_code, tool_name, is_shared, share_view_count")
-        .eq("share_id", shareId)
-        .maybeSingle();
+      // Use a direct fetch to avoid RLS issues for anon users viewing shared prototypes
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/prototypes?share_id=eq.${shareId}&select=generated_code,tool_name,share_view_count`,
+        {
+          headers: {
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+        }
+      );
 
-      if (fetchError || !data) {
+      const items = await response.json();
+      const data = items?.[0];
+
+      if (!data) {
         setError("Prototype not found");
         setLoading(false);
         return;
