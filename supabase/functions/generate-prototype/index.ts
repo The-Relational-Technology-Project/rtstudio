@@ -198,9 +198,12 @@ serve(async (req) => {
     }
 
     // Increment global counter
-    await supabase.rpc('increment_prototype_counter').catch((err: any) => {
-      console.error('Counter increment error (non-fatal):', err);
-    });
+    try {
+      const { error: counterErr } = await supabase.rpc('increment_prototype_counter');
+      if (counterErr) console.error('Counter increment error (non-fatal):', counterErr);
+    } catch (counterEx) {
+      console.error('Counter increment exception (non-fatal):', counterEx);
+    }
 
     console.log(`Prototype generated: ${prototype.id}, tokens: ${tokensUsed}`);
 
