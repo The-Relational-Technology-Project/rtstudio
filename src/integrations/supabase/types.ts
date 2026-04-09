@@ -369,6 +369,77 @@ export type Database = {
           },
         ]
       }
+      prototype_counter: {
+        Row: {
+          count: number
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          count?: number
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          count?: number
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      prototypes: {
+        Row: {
+          builder_id: string
+          created_at: string
+          generated_code: string
+          id: string
+          is_shared: boolean
+          model: string
+          prompt: string
+          refinement_of: string | null
+          share_id: string | null
+          share_view_count: number
+          tokens_used: number | null
+          tool_name: string | null
+        }
+        Insert: {
+          builder_id: string
+          created_at?: string
+          generated_code: string
+          id?: string
+          is_shared?: boolean
+          model?: string
+          prompt: string
+          refinement_of?: string | null
+          share_id?: string | null
+          share_view_count?: number
+          tokens_used?: number | null
+          tool_name?: string | null
+        }
+        Update: {
+          builder_id?: string
+          created_at?: string
+          generated_code?: string
+          id?: string
+          is_shared?: boolean
+          model?: string
+          prompt?: string
+          refinement_of?: string | null
+          share_id?: string | null
+          share_view_count?: number
+          tokens_used?: number | null
+          tool_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prototypes_refinement_of_fkey"
+            columns: ["refinement_of"]
+            isOneToOne: false
+            referencedRelation: "prototypes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rate_limit_attempts: {
         Row: {
           attempted_at: string
@@ -666,6 +737,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      increment_prototype_counter: { Args: never; Returns: undefined }
       match_library_items: {
         Args: {
           match_count?: number

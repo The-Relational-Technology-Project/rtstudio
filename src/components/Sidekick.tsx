@@ -5,7 +5,7 @@ import { Textarea } from "./ui/textarea";
 import { Card } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Send, Sparkles, Gift, ExternalLink, RotateCcw } from "lucide-react";
+import { Copy, Send, Sparkles, Gift, ExternalLink, RotateCcw, Hammer } from "lucide-react";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LibraryItemPreview } from "@/components/LibraryItemPreview";
@@ -19,6 +19,8 @@ interface SidekickProps {
   initialPrompt?: string;
   onClearInitialPrompt?: () => void;
   fullPage?: boolean;
+  onBuildIt?: (summaryPrompt: string) => void;
+  buildsRemaining?: number;
 }
 
 interface LibraryItemData {
@@ -36,7 +38,7 @@ interface ContributionData {
   title: string;
 }
 
-export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false }: SidekickProps) => {
+export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onBuildIt, buildsRemaining = 10 }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { messages, setMessages, clearMessages } = useSidekick();
@@ -416,6 +418,32 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Build it button - shows after 3+ user messages */}
+        {onBuildIt && messages.filter(m => m.role === "user").length >= 3 && (
+          <div className="px-4 sm:px-6 pb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => {
+                // Generate a summary prompt from conversation
+                const userMessages = messages.filter(m => m.role === "user").map(m => m.content);
+                const summary = userMessages.join("\n\n");
+                onBuildIt(summary);
+              }}
+              disabled={buildsRemaining <= 0}
+            >
+              <Hammer className="w-3.5 h-3.5 mr-1.5" />
+              Build it
+              {buildsRemaining > 0 && (
+                <span className="ml-2 text-muted-foreground">
+                  ({buildsRemaining} of 10 remaining)
+                </span>
+              )}
+            </Button>
           </div>
         )}
 
