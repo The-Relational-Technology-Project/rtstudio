@@ -3,7 +3,12 @@ import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Sidekick } from "@/components/Sidekick";
 import { HomeSidebar } from "@/components/HomeSidebar";
+import { PrototypePreview } from "@/components/PrototypePreview";
+import { PromptReviewModal } from "@/components/PromptReviewModal";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { MessageSquare, Calendar, Bell, ChevronLeft, ChevronRight } from "lucide-react";
 
