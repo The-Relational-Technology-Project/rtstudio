@@ -19,6 +19,8 @@ interface SidekickProps {
   initialPrompt?: string;
   onClearInitialPrompt?: () => void;
   fullPage?: boolean;
+  onBuildIt?: (summaryPrompt: string) => void;
+  buildsRemaining?: number;
 }
 
 interface LibraryItemData {
