@@ -244,6 +244,15 @@ const Home = () => {
       </main>
 
       <Footer />
+
+      <PromptReviewModal
+        open={showPromptReview}
+        onOpenChange={setShowPromptReview}
+        prompt={pendingPrompt}
+        remaining={buildsRemaining}
+        onConfirm={handleConfirmBuild}
+        isGenerating={isGenerating}
+      />
     </div>
   );
 };
