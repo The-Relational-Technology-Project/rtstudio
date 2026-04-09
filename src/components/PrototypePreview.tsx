@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "./ui/card";
 import { Textarea } from "./ui/textarea";
 import { useToast } from "@/hooks/use-toast";
