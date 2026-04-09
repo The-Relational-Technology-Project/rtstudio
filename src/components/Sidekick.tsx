@@ -361,17 +361,34 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                       <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
                         <p className="text-sm whitespace-pre-wrap leading-relaxed font-mono">{parsed.prompt}</p>
                         <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/20">
+                          {onBuildIt && (
+                            <Button
+                              onClick={() => onBuildIt(parsed.prompt!)}
+                              size="sm"
+                              className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                              disabled={buildsRemaining <= 0}
+                            >
+                              <Hammer className="w-3.5 h-3.5 mr-1" />
+                              Build it
+                              {buildsRemaining > 0 && (
+                                <span className="ml-1.5 opacity-70">
+                                  ({buildsRemaining} left today)
+                                </span>
+                              )}
+                            </Button>
+                          )}
                           <Button
                             onClick={() => copyToClipboard(parsed.prompt!)}
+                            variant="outline"
                             size="sm"
-                            className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                            className="h-8 text-xs"
                           >
                             <Copy className="w-3 h-3 mr-1" />
-                            Copy Prompt
+                            Copy
                           </Button>
                         </div>
                         <div className="space-y-2 pt-1">
-                          <p className="text-xs text-muted-foreground">Paste your prompt into any of these to start building:</p>
+                          <p className="text-xs text-muted-foreground">Or paste into:</p>
                           <div className="flex flex-wrap gap-2">
                             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://lovable.dev", "_blank")}>
                               <ExternalLink className="w-3 h-3 mr-1" />
