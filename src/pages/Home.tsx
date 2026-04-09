@@ -182,8 +182,15 @@ const Home = () => {
         {isMobile ? (
           <div className="w-full">
             {activeTab === "sidekick" && (
-              <div className="max-w-6xl mx-auto px-4 py-6">
-                <Sidekick fullPage />
+              <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
+                {prototype && (
+                  <PrototypePreview
+                    {...prototype}
+                    onRefine={handleRefine}
+                    isRefining={isRefining}
+                  />
+                )}
+                <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} />
               </div>
             )}
             {activeTab === "events" && (
