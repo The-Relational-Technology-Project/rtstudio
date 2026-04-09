@@ -370,11 +370,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                             >
                               <Hammer className="w-3.5 h-3.5 mr-1" />
                               Build it
-                              {buildsRemaining > 0 && (
-                                <span className="ml-1.5 opacity-70">
-                                  ({buildsRemaining} left today)
-                                </span>
-                              )}
                             </Button>
                           )}
                           <Button
