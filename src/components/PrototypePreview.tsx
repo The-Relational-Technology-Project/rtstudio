@@ -133,7 +133,7 @@ export const PrototypePreview = ({
           <iframe
             ref={iframeRef}
             srcDoc={code}
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
             className="w-full border-0"
             style={{ minHeight: "400px", maxHeight: "700px", height: "500px" }}
             title="Prototype preview"

@@ -3,12 +3,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 // Model config — switch to claude-sonnet-4-20250514 when volume grows
 const CLAUDE_MODEL = 'claude-opus-4-20250514';
-const MAX_TOKENS = 4096;
+const MAX_TOKENS = 12000;
 const DAILY_LIMIT = 10;
 
 const SYSTEM_PROMPT = `You are a frontend prototype builder for neighborhood community tools. You build for the Relational Tech Studio, an open commons where people in neighborhoods across the country are building small, local, open-source tools with their neighbors.
@@ -26,6 +26,9 @@ Requirements:
 - Include 6-10 sample data items so the prototype feels populated and alive.
 - Use a cohesive color palette. Warm neutrals with one or two accent colors.
 - Good typography. Readable, friendly, not generic.
+- CRITICAL: Use tab-based or section-based navigation within a single page. All navigation MUST use JavaScript to show/hide sections — NEVER use separate HTML pages or links that navigate away from the current document.
+- The entire app must work within a single HTML document displayed in a sandboxed iframe. Hash-based routing (showing/hiding divs) is the correct pattern for multi-section prototypes.
+- Make the prototype rich, detailed, and polished. Include thoughtful micro-interactions, hover states, transitions, and visual polish. This should feel like a real product, not a wireframe.
 
 The prototype should help a builder imagine what their tool could become, and help their neighbors react to something concrete rather than an abstract idea. This is a conversation starter, not a final product.
 
