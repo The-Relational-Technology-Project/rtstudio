@@ -207,8 +207,15 @@ const Home = () => {
         ) : (
           <div className="max-w-[1400px] mx-auto flex gap-0">
             {/* Sidekick column */}
-            <div className="flex-1 min-w-0 px-4 py-8">
-              <Sidekick fullPage />
+            <div className="flex-1 min-w-0 px-4 py-8 space-y-4">
+              {prototype && (
+                <PrototypePreview
+                  {...prototype}
+                  onRefine={handleRefine}
+                  isRefining={isRefining}
+                />
+              )}
+              <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} />
             </div>
 
             {/* Sidebar toggle + sidebar */}
