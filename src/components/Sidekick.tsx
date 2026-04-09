@@ -361,17 +361,34 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                       <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
                         <p className="text-sm whitespace-pre-wrap leading-relaxed font-mono">{parsed.prompt}</p>
                         <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/20">
+                          {onBuildIt && (
+                            <Button
+                              onClick={() => onBuildIt(parsed.prompt!)}
+                              size="sm"
+                              className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                              disabled={buildsRemaining <= 0}
+                            >
+                              <Hammer className="w-3.5 h-3.5 mr-1" />
+                              Build it
+                              {buildsRemaining > 0 && (
+                                <span className="ml-1.5 opacity-70">
+                                  ({buildsRemaining} left today)
+                                </span>
+                              )}
+                            </Button>
+                          )}
                           <Button
                             onClick={() => copyToClipboard(parsed.prompt!)}
+                            variant="outline"
                             size="sm"
-                            className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
+                            className="h-8 text-xs"
                           >
                             <Copy className="w-3 h-3 mr-1" />
-                            Copy Prompt
+                            Copy
                           </Button>
                         </div>
                         <div className="space-y-2 pt-1">
-                          <p className="text-xs text-muted-foreground">Paste your prompt into any of these to start building:</p>
+                          <p className="text-xs text-muted-foreground">Or paste into:</p>
                           <div className="flex flex-wrap gap-2">
                             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://lovable.dev", "_blank")}>
                               <ExternalLink className="w-3 h-3 mr-1" />
@@ -421,31 +438,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
           </div>
         )}
 
-        {/* Build it button - shows after 3+ user messages */}
-        {onBuildIt && messages.filter(m => m.role === "user").length >= 3 && (
-          <div className="px-4 sm:px-6 pb-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
-              onClick={() => {
-                // Generate a summary prompt from conversation
-                const userMessages = messages.filter(m => m.role === "user").map(m => m.content);
-                const summary = userMessages.join("\n\n");
-                onBuildIt(summary);
-              }}
-              disabled={buildsRemaining <= 0}
-            >
-              <Hammer className="w-3.5 h-3.5 mr-1.5" />
-              Build it
-              {buildsRemaining > 0 && (
-                <span className="ml-2 text-muted-foreground">
-                  ({buildsRemaining} of 10 remaining)
-                </span>
-              )}
-            </Button>
-          </div>
-        )}
 
         <form onSubmit={handleSend} className="flex gap-2 shrink-0 p-4 sm:p-6 pt-0 border-t border-border/50" data-tour="chat-input">
           <Textarea
