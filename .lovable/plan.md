@@ -1,53 +1,117 @@
 
 
-# Fix: Dynamic Event Count for Collapsible Events Section
+# Prototype Builder for RT Studio
 
-## Problem
+## Overview
 
-The Luma iframe is sandboxed — we can't read event count from it. A hardcoded "2 upcoming" would go stale immediately.
+Add a "Build it" capability to Sidekick: after a builder develops a tool idea through conversation, they can generate a live clickthrough prototype (single-page HTML) rendered in an iframe on the Home screen. Prototypes can be shared via public URLs, downloaded, embedded, and refined iteratively.
 
-## Options
+## Architecture
 
-1. **Fetch Luma's public iCal/API feed** — Luma exposes a public `.ics` feed for calendars. We can fetch `https://luma.com/calendar/cal-nic0320bsY3RbWC/export.ics`, parse it, and count events with dates ≥ today. This gives a real count.
+```text
+Sidekick chat (existing)
+  └─ "Build it" button (after 3+ exchanges)
+       └─ Prompt review/edit modal
+            └─ Edge Function: generate-prototype
+                 ├─ Calls Anthropic Claude API
+                 ├─ Stores result in prototypes table
+                 ├─ Checks rate limit (10/day/builder)
+                 └─ Returns generated HTML
 
-2. **Just say "Upcoming events"** without a count — simpler, always accurate, no external fetch needed.
+Home layout (top to bottom):
+  1. PrototypePreview (new, only when prototype exists)
+  2. Sidekick chat (existing)
+  3. Library items (existing)
+```
 
-3. **Fetch Luma's embed page HTML** and try to extract event count — fragile, could break anytime.
+## Database
 
-## Recommendation
+### New table: `prototypes`
+- id, builder_id (uuid, no FK to auth.users), prompt, generated_code, model, tokens_used, created_at, is_shared, share_id (unique), share_view_count, tool_name, refinement_of (self-ref)
+- RLS: builders can SELECT/INSERT their own; public can SELECT where is_shared = true (for share pages)
 
-**Option 1** is the most robust. We'll fetch the iCal feed client-side (it's public, no auth needed), parse it lightly to count future events, cache the count in localStorage for 15 minutes alongside the RSS cache. The collapsed header then shows "RT Events — 3 upcoming" with a real number.
+### New table: `prototype_counter`
+- Single-row table tracking total prototypes built (simple counter as requested)
 
-If the iCal feed turns out to be blocked by CORS (likely), we fall back to **Option 2** ("Upcoming events" without a count) — still clean and honest.
+## Edge Function: `generate-prototype`
 
-A third hybrid: proxy the iCal fetch through a tiny edge function to avoid CORS, cache the count there. This guarantees the count works.
+- Accepts `{ prompt, refinementOf?, currentCode? }`
+- Validates JWT, extracts builder_id
+- Checks daily rate limit (count from prototypes table where builder_id and created_at > today): max 10/day
+- Calls Anthropic Messages API with Claude Opus (model stored as config variable for easy switching)
+- Uses the system prompt from the spec (neighborhood-focused, self-contained HTML, mobile-friendly, warm aesthetic)
+- Stores result in `prototypes` table
+- Increments the prototype counter
+- Returns `{ code, model, usage, prototypeId }`
+- Requires `ANTHROPIC_API_KEY` secret (will ask you to provide it)
 
-## Plan
+## New Components
 
-### File: `src/components/HomeSidebar.tsx`
+### `PrototypePreview.tsx`
+- Renders generated HTML in sandboxed iframe (`sandbox="allow-scripts"`)
+- Auto-sizes height (min 400px, max 700px)
+- Entrance animation: fade + slide up, ~400ms
+- Collapse/minimize button
+- Action buttons row:
+  - **Share with neighbors** — saves share_id, copies public URL, opens share dialog
+  - **Download code** — downloads as `[tool-name]-prototype.html`
+  - **Download prompt** — downloads prompt as `.txt`
+  - **Embed** — shows copyable iframe snippet
+  - **Refine** — text input for refinement instructions, triggers new generation with original prompt + refinement + current code as context
 
-- Make `EventsSection` stateful with `expanded` (default: collapsed) and `eventCount`
-- On mount, try fetching the Luma iCal feed via a new edge function `luma-event-count`
-- Collapsed: show "RT Events — N upcoming" (or "Upcoming events" if count unavailable)
-- Expanded: show the Luma iframe (height reduced to ~300px)
-- Cache count in localStorage for 15 min
+### `PromptReviewModal.tsx`
+- Shows AI-generated summary prompt from conversation
+- Builder can edit before confirming
+- Shows remaining builds for the day
+- Confirm triggers generation
 
-### File: `supabase/functions/luma-event-count/index.ts` (new)
+## Public Share Pages
 
-- Fetch `https://luma.com/calendar/cal-nic0320bsY3RbWC/export.ics`
-- Parse VEVENT blocks, count those with DTSTART ≥ today
-- Return `{ count: N }`
-- Simple, no API key needed
+### Route: `/p/:shareId`
+- Public page (no auth required), renders prototype full-width in iframe
+- Small banner: "[Builder name] is prototyping a neighborhood tool — Built with Relational Tech Studio" with link back to Studio
+- Increments view_count on load
 
-### File: `src/pages/Home.tsx`
+### Route: `/p/:shareId/embed`
+- Clean iframe render without banner, for external embedding
 
-- Add spacing between toggle button and sidebar content
+## Sidekick Integration
+
+- Add state for prototype data in Sidekick context or lifted to Home
+- "Build it" button appears after 3+ user messages in conversation
+- Button shows remaining daily builds (e.g., "8 of 10 remaining")
+- On click: Sidekick generates a summary prompt from conversation context (via existing chat-remix function with a special mode), then opens PromptReviewModal
+- After generation: prototype preview animates into view above chat
+
+## Implementation Order
+
+1. Ask for Anthropic API key via `add_secret`
+2. Migration: create `prototypes` and `prototype_counter` tables with RLS
+3. Edge function: `generate-prototype`
+4. Components: `PrototypePreview`, `PromptReviewModal`
+5. Sidekick integration: "Build it" button + prompt generation
+6. Home page layout: prototype preview above Sidekick
+7. Public share pages: `/p/:shareId` and `/p/:shareId/embed`
+8. Mobile responsiveness for all new UI
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/HomeSidebar.tsx` | Collapsible events with dynamic count; RSS card hierarchy swap |
-| `src/pages/Home.tsx` | Spacing fix |
-| `supabase/functions/luma-event-count/index.ts` | New: fetch iCal, return upcoming event count |
+| Migration | Create `prototypes` + `prototype_counter` tables |
+| `supabase/functions/generate-prototype/index.ts` | New: Anthropic API call, rate limiting, storage |
+| `src/components/PrototypePreview.tsx` | New: iframe preview + action buttons |
+| `src/components/PromptReviewModal.tsx` | New: prompt review/edit before generation |
+| `src/components/Sidekick.tsx` | Add "Build it" button, prompt summary logic |
+| `src/pages/Home.tsx` | Add PrototypePreview above Sidekick |
+| `src/pages/PrototypeShare.tsx` | New: public share page |
+| `src/pages/PrototypeEmbed.tsx` | New: clean embed page |
+| `src/App.tsx` | Add `/p/:shareId` and `/p/:shareId/embed` routes |
+| `supabase/config.toml` | Add generate-prototype function config |
+
+## Notes
+
+- The doc specifies Claude Opus (`claude-opus-4-20250514`). Since this requires Anthropic's API directly (not available via Lovable AI gateway), we'll need your Anthropic API key as a secret.
+- The prototype counter you mentioned will be a simple table that increments on each generation — could be displayed in Studio Updates or the sidebar.
+- Rate limiting uses the `prototypes` table itself (count today's rows per builder) rather than a separate rate limit table.
 
