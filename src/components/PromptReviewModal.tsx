@@ -25,15 +25,14 @@ export const PromptReviewModal = ({
 }: PromptReviewModalProps) => {
   const [editedPrompt, setEditedPrompt] = useState(prompt);
 
-  // Sync prompt when it changes (e.g., from conversation summary)
-  if (prompt !== editedPrompt && !open) {
-    // Will sync on next open
-  }
-
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
+  // Sync editedPrompt whenever the prompt prop changes or the modal opens
+  useEffect(() => {
+    if (open) {
       setEditedPrompt(prompt);
     }
+  }, [open, prompt]);
+
+  const handleOpenChange = (isOpen: boolean) => {
     onOpenChange(isOpen);
   };
 
