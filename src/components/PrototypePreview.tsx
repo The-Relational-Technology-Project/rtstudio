@@ -56,7 +56,12 @@ export const PrototypePreview = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    // Mark as shared in DB
+    await supabase
+      .from("prototypes")
+      .update({ is_shared: true })
+      .eq("id", prototypeId);
     copyToClipboard(shareUrl, "Share link");
   };
 
