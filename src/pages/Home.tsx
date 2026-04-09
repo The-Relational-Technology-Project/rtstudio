@@ -12,12 +12,140 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { MessageSquare, Calendar, Bell, ChevronLeft, ChevronRight } from "lucide-react";
 
+interface PrototypeData {
+  code: string;
+  prompt: string;
+  prototypeId: string;
+  shareId: string;
+  toolName?: string;
+  remaining: number;
+}
+
 type MobileTab = "sidekick" | "events" | "updates";
 
 const Home = () => {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<MobileTab>("sidekick");
+
+  // Prototype builder state
+  const [prototype, setPrototype] = useState<PrototypeData | null>(null);
+  const [showPromptReview, setShowPromptReview] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
+  const [buildsRemaining, setBuildsRemaining] = useState(10);
+
+  const handleBuildIt = (summaryPrompt: string) => {
+    setPendingPrompt(summaryPrompt);
+    setShowPromptReview(true);
+  };
+
+  const generatePrototype = async (prompt: string, refinementOf?: string, currentCode?: string) => {
+    setIsGenerating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prototype`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {}),
+          },
+          body: JSON.stringify({
+            prompt,
+            refinementOf,
+            currentCode,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate prototype");
+      }
+
+      setPrototype({
+        code: data.code,
+        prompt,
+        prototypeId: data.prototypeId,
+        shareId: data.shareId,
+        remaining: data.remaining,
+      });
+      setBuildsRemaining(data.remaining);
+      setShowPromptReview(false);
+    } catch (error) {
+      console.error("Prototype generation error:", error);
+      toast({
+        title: "Build failed",
+        description: error instanceof Error ? error.message : "Something went wrong. Try again or simplify your prompt.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleConfirmBuild = async (editedPrompt: string) => {
+    await generatePrototype(editedPrompt);
+  };
+
+  const handleRefine = async (refinement: string) => {
+    if (!prototype) return;
+    setIsRefining(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-prototype`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.access_token
+              ? { Authorization: `Bearer ${session.access_token}` }
+              : {}),
+          },
+          body: JSON.stringify({
+            prompt: refinement,
+            refinementOf: prototype.prototypeId,
+            currentCode: prototype.code,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to refine prototype");
+      }
+
+      setPrototype({
+        code: data.code,
+        prompt: refinement,
+        prototypeId: data.prototypeId,
+        shareId: data.shareId,
+        remaining: data.remaining,
+      });
+      setBuildsRemaining(data.remaining);
+    } catch (error) {
+      console.error("Refine error:", error);
+      toast({
+        title: "Refine failed",
+        description: error instanceof Error ? error.message : "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefining(false);
+    }
+  };
 
   const tabs: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
     { id: "sidekick", label: "Sidekick", icon: <MessageSquare className="h-4 w-4" /> },
