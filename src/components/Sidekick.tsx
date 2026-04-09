@@ -421,6 +421,32 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
           </div>
         )}
 
+        {/* Build it button - shows after 3+ user messages */}
+        {onBuildIt && messages.filter(m => m.role === "user").length >= 3 && (
+          <div className="px-4 sm:px-6 pb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-xs border-primary/30 text-primary hover:bg-primary/10"
+              onClick={() => {
+                // Generate a summary prompt from conversation
+                const userMessages = messages.filter(m => m.role === "user").map(m => m.content);
+                const summary = userMessages.join("\n\n");
+                onBuildIt(summary);
+              }}
+              disabled={buildsRemaining <= 0}
+            >
+              <Hammer className="w-3.5 h-3.5 mr-1.5" />
+              Build it
+              {buildsRemaining > 0 && (
+                <span className="ml-2 text-muted-foreground">
+                  ({buildsRemaining} of 10 remaining)
+                </span>
+              )}
+            </Button>
+          </div>
+        )}
+
         <form onSubmit={handleSend} className="flex gap-2 shrink-0 p-4 sm:p-6 pt-0 border-t border-border/50" data-tour="chat-input">
           <Textarea
             value={input}
