@@ -35,7 +35,7 @@ const PrototypeEmbed = () => {
   return (
     <iframe
       srcDoc={code}
-      sandbox="allow-scripts"
+      sandbox="allow-scripts allow-same-origin"
       className="w-full border-0"
       style={{ width: "100%", height: "100vh" }}
       title="Prototype"

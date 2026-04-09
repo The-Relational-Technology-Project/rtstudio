@@ -55,7 +55,11 @@ export const PromptReviewModal = ({
 
   return (
     <Dialog open={open} onOpenChange={isGenerating ? undefined : onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent
+        className="max-w-lg"
+        onPointerDownOutside={(e) => { if (isGenerating) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (isGenerating) e.preventDefault(); }}
+      >
         {isGenerating ? (
           <div className="flex flex-col items-center justify-center py-10 gap-6">
             <div className="relative">

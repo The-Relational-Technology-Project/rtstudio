@@ -26,6 +26,9 @@ Requirements:
 - Include 6-10 sample data items so the prototype feels populated and alive.
 - Use a cohesive color palette. Warm neutrals with one or two accent colors.
 - Good typography. Readable, friendly, not generic.
+- CRITICAL: Use tab-based or section-based navigation within a single page. All navigation MUST use JavaScript to show/hide sections — NEVER use separate HTML pages or links that navigate away from the current document.
+- The entire app must work within a single HTML document displayed in a sandboxed iframe. Hash-based routing (showing/hiding divs) is the correct pattern for multi-section prototypes.
+- Make the prototype rich, detailed, and polished. Include thoughtful micro-interactions, hover states, transitions, and visual polish. This should feel like a real product, not a wireframe.
 
 The prototype should help a builder imagine what their tool could become, and help their neighbors react to something concrete rather than an abstract idea. This is a conversation starter, not a final product.
 

@@ -87,7 +87,7 @@ const PrototypeShare = () => {
       <div className="flex-1">
         <iframe
           srcDoc={code}
-          sandbox="allow-scripts"
+          sandbox="allow-scripts allow-same-origin"
           className="w-full h-full border-0"
           style={{ minHeight: "calc(100vh - 40px)" }}
           title={toolName || "Prototype"}
