@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
-import { Sparkles, BookOpen, Users, ArrowRight, MessageSquare, ExternalLink } from "lucide-react";
+import { Sparkles, BookOpen, Users, ArrowRight, MessageSquare, ExternalLink, Hammer, Calendar } from "lucide-react";
 import { ToolGalleryCard } from "@/components/ToolGalleryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
