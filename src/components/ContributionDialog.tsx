@@ -4,13 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus, Sparkles, Wrench, BookOpen, Upload, X } from "lucide-react";
+import { Plus, BookOpen, Wrench, MessageCircle } from "lucide-react";
 
-type ContributionType = "story" | "prompt" | "tool" | null;
+type ContributionType = "story" | "tool" | "other" | null;
 
 interface ContributionDialogProps {
   open: boolean;
@@ -22,47 +21,38 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
   const [contributionType, setContributionType] = useState<ContributionType>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+
+  // Common fields
+  const [contributorName, setContributorName] = useState("");
+  const [contributorEmail, setContributorEmail] = useState("");
 
   // Story fields
-  const [storyTitle, setStoryTitle] = useState("");
-  const [storyText, setStoryText] = useState("");
-  const [storyAttribution, setStoryAttribution] = useState("");
-  const [storyImages, setStoryImages] = useState<File[]>([]);
-
-  // Prompt fields
-  const [promptTitle, setPromptTitle] = useState("");
-  const [promptDescription, setPromptDescription] = useState("");
-  const [promptExample, setPromptExample] = useState("");
-  const [promptCategory, setPromptCategory] = useState("");
+  const [storyDescription, setStoryDescription] = useState("");
 
   // Tool fields
   const [toolName, setToolName] = useState("");
   const [toolDescription, setToolDescription] = useState("");
   const [toolUrl, setToolUrl] = useState("");
 
+  // Other fields
+  const [otherText, setOtherText] = useState("");
+
   const resetForm = () => {
     setContributionType(null);
-    setStoryTitle("");
-    setStoryText("");
-    setStoryAttribution("");
-    setStoryImages([]);
-    setPromptTitle("");
-    setPromptDescription("");
-    setPromptExample("");
-    setPromptCategory("");
+    setContributorName("");
+    setContributorEmail("");
+    setStoryDescription("");
     setToolName("");
     setToolDescription("");
     setToolUrl("");
+    setOtherText("");
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setStoryImages((prev) => [...prev, ...files].slice(0, 5)); // Limit to 5 images
-  };
-
-  const removeImage = (index: number) => {
-    setStoryImages((prev) => prev.filter((_, i) => i !== index));
+  // Pre-fill from profile
+  const prefillFromProfile = () => {
+    if (profile?.display_name && !contributorName) setContributorName(profile.display_name);
+    if (profile?.email && !contributorEmail) setContributorEmail(profile.email);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -70,73 +60,41 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
     setIsSubmitting(true);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      let description = "";
+      let subject = "";
+
       if (contributionType === "story") {
-        // Upload images if any - now requires authentication and uses user folder
-        let imageUrls: string[] = [];
-        if (storyImages.length > 0) {
-          // Get authenticated user for folder structure
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) {
-            toast({
-              title: "Authentication required",
-              description: "Please sign in to upload images.",
-              variant: "destructive",
-            });
-            setIsSubmitting(false);
-            return;
-          }
-
-          const uploadPromises = storyImages.map(async (file) => {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-            // Use user folder structure for storage policy compliance
-            const filePath = `${user.id}/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-              .from('story-images')
-              .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-              .from('story-images')
-              .getPublicUrl(filePath);
-
-            return publicUrl;
-          });
-
-          imageUrls = await Promise.all(uploadPromises);
-        }
-
-        const { error } = await supabase.from("stories").insert({
-          title: storyTitle,
-          story_text: storyText,
-          full_story_text: storyText,
-          attribution: storyAttribution,
-          image_urls: imageUrls.length > 0 ? imageUrls : null,
-        });
-        if (error) throw error;
-        toast({ title: "Story shared!", description: "Your story has been added to the library." });
-      } else if (contributionType === "prompt") {
-        const { error } = await supabase.from("prompts").insert({
-          title: promptTitle,
-          description: promptDescription,
-          example_prompt: promptExample,
-          category: promptCategory,
-          ...(user ? { user_id: user.id } : {}),
-        } as any);
-        if (error) throw error;
-        toast({ title: "Prompt submitted!", description: "Your prompt has been added to the library." });
+        subject = `📖 Story Contribution from ${contributorName}`;
+        description = storyDescription;
       } else if (contributionType === "tool") {
-        const { error } = await supabase.from("tools").insert({
-          name: toolName,
-          description: toolDescription,
-          url: toolUrl,
-          ...(user ? { user_id: user.id } : {}),
-        } as any);
-        if (error) throw error;
-        toast({ title: "Tool suggested!", description: "Your tool has been added to the library." });
+        subject = `🔧 Tool Contribution: ${toolName} from ${contributorName}`;
+        description = `Tool Name: ${toolName}\nURL: ${toolUrl}\n\nDescription:\n${toolDescription}`;
+      } else if (contributionType === "other") {
+        subject = `💡 Contribution from ${contributorName}`;
+        description = otherText;
       }
+
+      const { error } = await supabase.functions.invoke("notify-contribution", {
+        body: {
+          contributor_name: contributorName,
+          contributor_email: contributorEmail,
+          contribution_type: contributionType,
+          description,
+          subject,
+        },
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : undefined,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Contribution submitted!",
+        description: "We'll follow up with you soon. Thank you for sharing!",
+      });
 
       resetForm();
       onOpenChange(false);
@@ -174,40 +132,40 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
               <Button
                 variant="outline"
                 className="h-auto flex flex-col items-start p-4 gap-2"
-                onClick={() => setContributionType("story")}
+                onClick={() => { setContributionType("story"); prefillFromProfile(); }}
               >
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-5 h-5" />
                   <span className="font-semibold">Share a Story</span>
                 </div>
                 <span className="text-sm text-muted-foreground text-left">
-                  Tell us about relational tech in your neighborhood
+                  Tell us about relational tech in your neighborhood — we'll reach out to have a conversation about it
                 </span>
               </Button>
               <Button
                 variant="outline"
                 className="h-auto flex flex-col items-start p-4 gap-2"
-                onClick={() => setContributionType("prompt")}
-              >
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5" />
-                  <span className="font-semibold">Submit a Prompt</span>
-                </div>
-                <span className="text-sm text-muted-foreground text-left">
-                  Share a prompt template for community building
-                </span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-auto flex flex-col items-start p-4 gap-2"
-                onClick={() => setContributionType("tool")}
+                onClick={() => { setContributionType("tool"); prefillFromProfile(); }}
               >
                 <div className="flex items-center gap-2">
                   <Wrench className="w-5 h-5" />
-                  <span className="font-semibold">Suggest a Tool</span>
+                  <span className="font-semibold">Share a Tool</span>
                 </div>
                 <span className="text-sm text-muted-foreground text-left">
-                  Recommend a tool that helps build community
+                  Share an example of relational tech you've found or built
+                </span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto flex flex-col items-start p-4 gap-2"
+                onClick={() => { setContributionType("other"); prefillFromProfile(); }}
+              >
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5" />
+                  <span className="font-semibold">Share something else</span>
+                </div>
+                <span className="text-sm text-muted-foreground text-left">
+                  Ideas, feedback, resources, or anything else you'd like to share
                 </span>
               </Button>
             </div>
@@ -216,128 +174,50 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
           <>
             <DialogHeader>
               <DialogTitle>
-                {contributionType === "story" && "Share Your Story"}
-                {contributionType === "prompt" && "Submit a Prompt"}
-                {contributionType === "tool" && "Suggest a Tool"}
+                {contributionType === "story" && "Share a Story"}
+                {contributionType === "tool" && "Share a Tool"}
+                {contributionType === "other" && "Share Something"}
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {contributionType === "story" && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="storyTitle">Title</Label>
-                    <Input
-                      id="storyTitle"
-                      value={storyTitle}
-                      onChange={(e) => setStoryTitle(e.target.value)}
-                      placeholder="Give your story a title..."
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="storyText">Your Story</Label>
-                    <Textarea
-                      id="storyText"
-                      value={storyText}
-                      onChange={(e) => setStoryText(e.target.value)}
-                      rows={5}
-                      placeholder="Share what's happening in your neighborhood..."
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="storyAttribution">Attribution</Label>
-                    <Input
-                      id="storyAttribution"
-                      value={storyAttribution}
-                      onChange={(e) => setStoryAttribution(e.target.value)}
-                      placeholder="Your name or 'Anonymous'"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="storyImages">Photos (optional, up to 5)</Label>
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        id="storyImages"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="cursor-pointer"
-                      />
-                      {storyImages.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2">
-                          {storyImages.map((file, index) => (
-                            <div key={index} className="relative group">
-                              <img
-                                src={URL.createObjectURL(file)}
-                                alt={`Preview ${index + 1}`}
-                                className="w-full h-24 object-cover rounded border"
-                              />
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => removeImage(index)}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
+              {/* Common name/email fields */}
+              <div className="space-y-2">
+                <Label htmlFor="contributorName">Your Name</Label>
+                <Input
+                  id="contributorName"
+                  value={contributorName}
+                  onChange={(e) => setContributorName(e.target.value)}
+                  placeholder="Your name..."
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contributorEmail">Your Email</Label>
+                <Input
+                  id="contributorEmail"
+                  type="email"
+                  value={contributorEmail}
+                  onChange={(e) => setContributorEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                />
+              </div>
 
-              {contributionType === "prompt" && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="promptTitle">Title</Label>
-                    <Input
-                      id="promptTitle"
-                      value={promptTitle}
-                      onChange={(e) => setPromptTitle(e.target.value)}
-                      placeholder="Name your prompt..."
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="promptCategory">Category</Label>
-                    <Input
-                      id="promptCategory"
-                      value={promptCategory}
-                      onChange={(e) => setPromptCategory(e.target.value)}
-                      placeholder="e.g., Gathering, Communication, Planning"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="promptDescription">Description</Label>
-                    <Textarea
-                      id="promptDescription"
-                      value={promptDescription}
-                      onChange={(e) => setPromptDescription(e.target.value)}
-                      rows={3}
-                      placeholder="Briefly describe what this prompt helps with..."
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="promptExample">Example Prompt</Label>
-                    <Textarea
-                      id="promptExample"
-                      value={promptExample}
-                      onChange={(e) => setPromptExample(e.target.value)}
-                      rows={5}
-                      placeholder="Paste your full prompt here..."
-                      required
-                    />
-                  </div>
-                </>
+              {contributionType === "story" && (
+                <div className="space-y-2">
+                  <Label htmlFor="storyDescription">Tell us briefly about your story</Label>
+                  <Textarea
+                    id="storyDescription"
+                    value={storyDescription}
+                    onChange={(e) => setStoryDescription(e.target.value)}
+                    rows={5}
+                    placeholder="What happened in your neighborhood? We'll reach out to have a conversation about it..."
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    We'll reach out to have a conversation about your story before it's published.
+                  </p>
+                </div>
               )}
 
               {contributionType === "tool" && (
@@ -359,7 +239,7 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
                       value={toolDescription}
                       onChange={(e) => setToolDescription(e.target.value)}
                       rows={4}
-                      placeholder="What does this tool do? How can it help?"
+                      placeholder="What does this tool do? How does it help neighbors?"
                       required
                     />
                   </div>
@@ -375,6 +255,20 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
                     />
                   </div>
                 </>
+              )}
+
+              {contributionType === "other" && (
+                <div className="space-y-2">
+                  <Label htmlFor="otherText">What would you like to share?</Label>
+                  <Textarea
+                    id="otherText"
+                    value={otherText}
+                    onChange={(e) => setOtherText(e.target.value)}
+                    rows={5}
+                    placeholder="Ideas, feedback, resources, or anything else..."
+                    required
+                  />
+                </div>
               )}
 
               <div className="flex gap-2">

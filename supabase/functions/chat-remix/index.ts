@@ -12,52 +12,17 @@ const contributionTools = [
   {
     type: "function",
     function: {
-      name: "submit_story",
-      description: "Submit a new story to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the story.",
+      name: "submit_contribution_interest",
+      description: "Notify the RTP team that a builder wants to contribute something to the commons. Only call this AFTER the builder agrees to connect with Deb about their contribution. This sends a summary to the team so Deb can follow up.",
       parameters: {
         type: "object",
         properties: {
-          title: { type: "string", description: "A clear, inviting title for the story" },
-          story_text: { type: "string", description: "A short summary (1-2 sentences) that captures the essence" },
-          full_story_text: { type: "string", description: "The complete story with rich context and details" },
-          attribution: { type: "string", description: "Who is sharing this and where (e.g., 'Maria from Sunset Park, Brooklyn')" }
+          contributor_name: { type: "string", description: "The contributor's name" },
+          contribution_type: { type: "string", enum: ["story", "tool", "idea", "other"], description: "What kind of contribution" },
+          summary: { type: "string", description: "A brief summary of what they want to contribute and why" },
+          neighborhood: { type: "string", description: "The contributor's neighborhood or community" }
         },
-        required: ["title", "story_text", "full_story_text", "attribution"],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "submit_prompt",
-      description: "Submit a new prompt template to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the prompt.",
-      parameters: {
-        type: "object",
-        properties: {
-          title: { type: "string", description: "A clear, descriptive title for the prompt" },
-          category: { type: "string", description: "Category like 'Gathering', 'Communication', 'Resource Sharing', 'Mutual Aid', etc." },
-          description: { type: "string", description: "Brief description of what this prompt helps create" },
-          example_prompt: { type: "string", description: "The full prompt text that can be used in AI builders" }
-        },
-        required: ["title", "category", "description", "example_prompt"],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "submit_tool",
-      description: "Submit a new tool recommendation to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the tool.",
-      parameters: {
-        type: "object",
-        properties: {
-          name: { type: "string", description: "The name of the tool" },
-          description: { type: "string", description: "How this tool helps with relational tech, including context from the contributor" },
-          url: { type: "string", description: "URL to the tool or resource" }
-        },
-        required: ["name", "description", "url"],
+        required: ["contributor_name", "contribution_type", "summary"],
         additionalProperties: false
       }
     }
@@ -526,39 +491,26 @@ YOUR CAPABILITIES:
    - Deliver a clear, complete prompt that can be copy-pasted directly into Lovable or Dyad
    - Suggest combinations with other relational tech tools if relevant (but don't be pushy)
 
-3. RECEIVE CONTRIBUTIONS (Commons Librarian Role):
-   This is a special gift. When someone wants to share a story, prompt, or tool recommendation, you become a gentle librarian who helps them craft and contribute their gift to the commons.
+3. RECEIVE CONTRIBUTIONS (Relational Approach):
+   When someone wants to share a story, idea, tool, or anything else with the commons, take a slow, relational approach. Do NOT jump into drafting or submitting content directly.
    
    RECOGNIZING CONTRIBUTION INTENT - Look for phrases like:
    - "We did something cool in our neighborhood..."
    - "I made a tool that..."
    - "Here's something that worked for us..."
    - "I want to share a story about..."
-   - "Can I add a prompt about..."
    - "I found a great tool for..."
    - Or any time someone shares an experience, idea, or resource that could help others
    
    THE CONTRIBUTION FLOW:
-   a) LISTEN & APPRECIATE: Thank them for wanting to share. Ask clarifying questions to understand:
-      - Who is sharing this? (Name and neighborhood/place)
-      - What's the context? What made this work?
-      - What would help someone else try this?
+   a) LISTEN & APPRECIATE: Thank them for wanting to share. Ask a few questions to understand what they want to contribute and why it matters to them.
    
-   b) LIGHTLY EDIT & FORMAT: Shape their words into a clear, inviting contribution while keeping their voice. Don't over-polish - authenticity matters more than perfection.
+   b) OFFER A CONVERSATION WITH DEB: After gathering some context, say something like:
+      "Would you be open to chatting with our steward, Deb, about this? She can help shape your contribution and make sure it lands well in the commons."
    
-   c) PRESENT FOR CONSENT: Show them exactly how their gift would appear in the library. Be specific:
-      "Here's how your story would appear in the commons:
-      
-      Title: [Your title]
-      From: [Attribution]
-      
-      [The formatted content]
-      
-      Would you like me to add this to the shared library? Others will be able to read it and be inspired by what worked in your neighborhood."
+   c) IF THEY SAY YES: Summarize the contribution idea and let them know you'll connect them with Deb. The summary will be sent to the team so Deb can follow up.
    
-   d) WAIT FOR EXPLICIT CONSENT: Only after they say yes, confirm, agree, or give clear permission should you call the submission function. Never submit without consent.
-   
-   e) CELEBRATE: After submission, thank them warmly. Their gift will help others.
+   d) DO NOT directly submit stories, prompts, or tools to the database from chat. All contributions go through a human conversation first.
 
 YOUR STYLE:
 - Be warm, conversational, and genuinely curious about their neighborhood
@@ -590,26 +542,17 @@ IMPORTANT FOR PROMPT REMIXING:
 - After delivering a remixed prompt, recommend that the builder write their own copy rather than using AI-generated text. Their voice and their neighbors' voices are what make the tool feel real.
 - Also recommend they use their own photos and images rather than AI-generated ones. Real images of their neighborhood and neighbors build trust and connection.
 - When delivering the final prompt, wrap it in delimiter markers so the UI can extract it cleanly:
+  Before the prompt block, introduce it with: "Here is a prompt you can use to build this."
   ---PROMPT_START---
   [the complete prompt goes here]
   ---PROMPT_END---
-  After the prompt block, include a brief note like: "You can copy this prompt and paste it into an AI builder tool to start building."
+  After the prompt block, include: "You can build a prototype here in Studio or build a fully-functional tool using an AI builder. A quick tip as you build: replace any AI-generated placeholder text with your own warm, plain-language voice. And of course, once you start adding real data, make sure to use real photos of your neighbors rather than any AI-generated placeholder images. Real faces are what build trust!"
 
 IMPORTANT FOR CONTRIBUTIONS:
-- Each contribution should read as an invitation from a real person in a real place
-- Attribution matters: always include who is sharing and where they're from
-- Context matters: what made this work? what's unique about their situation?
-- Keep their voice: light editing, not rewriting
-- NEVER call submission functions without explicit user consent
-- If they seem hesitant, reassure them that their contribution can inspire others even if it's imperfect
-
-PRIVACY IN CONTRIBUTIONS - CRITICAL:
-- Contributions are PUBLIC like a blog post - anyone can read them
-- Gently remind contributors NOT to include personally identifiable information
-- No full names of others, phone numbers, addresses, or private details
-- Use first names only, general neighborhood names, and keep details appropriately vague
-- Example guidance: "Since this will be public, let's use first names only and keep location details general like 'a neighborhood in Brooklyn' rather than specific addresses"
-- Help them edit out PII if they include it in their draft before presenting for consent
+- Take a slow, relational approach — no direct database submissions
+- After gathering context about the contribution, offer to connect them with Deb
+- If they agree, summarize the contribution and call submit_contribution_interest to notify the team
+- Each contribution should be shaped through human conversation
 
 4. GIFT BUILD REQUESTS:
    When a builder has developed a concrete idea -- either through remixing an existing prompt or articulating a new build concept -- you can offer to submit a Gift Build request.
@@ -687,78 +630,70 @@ Begin by understanding what they're looking for - whether that's exploring the l
       
       console.log('Tool call requested:', functionName, args);
       
-      let insertResult: any = null;
-      let contributionType = 'item';
-      let contributionTitle = 'Untitled';
-      
-      // Execute the appropriate database insert with deduplication check
-      if (functionName === 'submit_story') {
-        contributionType = 'story';
-        contributionTitle = args.title;
-        // Check for duplicate
-        const { data: existingStory } = await supabase.from('stories').select('id').eq('title', args.title).maybeSingle();
-        if (existingStory) {
-          console.log('Duplicate story detected, skipping insert:', args.title);
-          return new Response(
-            JSON.stringify({ response: `"${args.title}" is already in the library! No need to add it again.` }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+      if (functionName === 'submit_contribution_interest') {
+        // Handle contribution interest - send email to Deb
+        console.log('Contribution interest:', args);
+        
+        let contributorEmail = '';
+        if (userId) {
+          const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
+          contributorEmail = profile?.email || '';
         }
-        insertResult = await supabase.from('stories').insert({
-          title: args.title,
-          story_text: args.story_text,
-          full_story_text: args.full_story_text,
-          attribution: args.attribution
-        }).select('id').single();
-      } else if (functionName === 'submit_prompt') {
-        contributionType = 'prompt';
-        contributionTitle = args.title;
-        // Check for duplicate
-        const { data: existingPrompt } = await supabase.from('prompts').select('id').eq('title', args.title).maybeSingle();
-        if (existingPrompt) {
-          console.log('Duplicate prompt detected, skipping insert:', args.title);
-          return new Response(
-            JSON.stringify({ response: `"${args.title}" is already in the library! No need to add it again.` }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+
+        const recentMessages = messages.slice(-6).map((m: any) => `${m.role}: ${m.content}`).join('\n');
+
+        try {
+          const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+          if (RESEND_API_KEY) {
+            const { Resend } = await import('https://esm.sh/resend@2.0.0');
+            const resendClient = new Resend(RESEND_API_KEY);
+            const timestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" });
+            
+            await resendClient.emails.send({
+              from: "Relational Tech Studio <notifications@relationaltechproject.org>",
+              to: ["deborah@relationaltechproject.org"],
+              subject: `🌿 Contribution Interest: ${args.contribution_type} from ${args.contributor_name}`,
+              html: `
+                <div style="font-family: Georgia, serif; max-width: 500px; padding: 20px;">
+                  <h2 style="color: #3d3129; margin-bottom: 16px;">New Contribution Interest</h2>
+                  <p style="color: #7a6d61; line-height: 1.6;">A builder would like to chat about contributing to the commons.</p>
+                  <div style="background: #f7f0e8; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0 0 8px 0;"><strong>Name:</strong> ${args.contributor_name}</p>
+                    ${contributorEmail ? `<p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${contributorEmail}</p>` : ''}
+                    ${args.neighborhood ? `<p style="margin: 0 0 8px 0;"><strong>Neighborhood:</strong> ${args.neighborhood}</p>` : ''}
+                    <p style="margin: 0 0 8px 0;"><strong>Type:</strong> ${args.contribution_type}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Summary:</strong></p>
+                    <p style="margin: 0 0 8px 0; color: #3d3129; line-height: 1.6;">${args.summary}</p>
+                    <p style="margin: 12px 0 8px 0;"><strong>Conversation context:</strong></p>
+                    <p style="margin: 0; color: #7a6d61; font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${recentMessages}</p>
+                    <p style="margin: 12px 0 0 0; color: #7a6d61; font-size: 14px;"><strong>Submitted:</strong> ${timestamp} ET</p>
+                  </div>
+                  <p style="color: #7a6d61; font-size: 14px;">— Relational Tech Studio</p>
+                </div>
+              `,
+            });
+            console.log('Contribution interest email sent to Deb');
+          }
+        } catch (emailError) {
+          console.error('Contribution interest email error (non-fatal):', emailError);
         }
-        insertResult = await supabase.from('prompts').insert({
-          title: args.title,
-          category: args.category,
-          description: args.description,
-          example_prompt: args.example_prompt,
-          ...(userId ? { user_id: userId } : {})
-        }).select('id').single();
-      } else if (functionName === 'submit_tool') {
-        contributionType = 'tool';
-        contributionTitle = args.name;
-        // Check for duplicate
-        const { data: existingTool } = await supabase.from('tools').select('id').eq('name', args.name).maybeSingle();
-        if (existingTool) {
-          console.log('Duplicate tool detected, skipping insert:', args.name);
-          return new Response(
-            JSON.stringify({ response: `"${args.name}" is already in the library! No need to add it again.` }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        insertResult = await supabase.from('tools').insert({
-          name: args.name,
-          description: args.description,
-          url: args.url,
-          ...(userId ? { user_id: userId } : {})
-        }).select('id').single();
+
+        return new Response(
+          JSON.stringify({ 
+            response: `I've let Deb know about your interest in contributing. She'll reach out to you soon to chat about your ${args.contribution_type} and help shape it for the commons. Thank you for wanting to share!`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       } else if (functionName === 'submit_gift_build_request') {
-        // Handle gift build request - call notify-gift-build edge function
+        // Handle gift build request
         console.log('Gift build request:', args);
         
-        // Get builder email from profile if authenticated
         let builderEmail = '';
         if (userId) {
           const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
           builderEmail = profile?.email || '';
         }
 
-        // Build conversation context from recent messages
         const recentMessages = messages.slice(-6).map((m: any) => `${m.role}: ${m.content}`).join('\n');
         
         const giftBuildPayload = {
@@ -771,7 +706,6 @@ Begin by understanding what they're looking for - whether that's exploring the l
           source: 'sidekick'
         };
 
-        // Insert directly and send email via notify-gift-build
         const { error: giftInsertError } = await supabase.from('gift_build_requests').insert({
           ...giftBuildPayload,
           user_id: userId
@@ -785,7 +719,6 @@ Begin by understanding what they're looking for - whether that's exploring the l
           );
         }
 
-        // Send email notification via Resend
         try {
           const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
           if (RESEND_API_KEY) {
@@ -828,73 +761,13 @@ Begin by understanding what they're looking for - whether that's exploring the l
         );
       }
       
-      if (insertResult?.error) {
-        console.error('Database insert error:', insertResult.error);
-        return new Response(
-          JSON.stringify({ 
-            response: `I tried to add your ${contributionType} to the library, but ran into a technical issue. Would you like to try again?`,
-            error: insertResult.error.message 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      const newId = insertResult?.data?.id;
-      console.log('Contribution saved:', contributionType, newId);
-      
-      // Award serviceberries for library contribution (15 berries per spec)
-      // NOTE: award_serviceberries validates reason against an allowlist.
-      const contributionReasonMap: Record<string, string> = {
-        story: 'story_shared',
-        prompt: 'prompt_shared',
-        tool: 'tool_shared',
-      };
-
-      if (userId && userSupabase && newId) {
-        const reason = contributionReasonMap[contributionType] ?? null;
-        if (reason) {
-          const { error: serviceberryError } = await userSupabase.rpc('award_serviceberries', {
-            p_user_id: userId,
-            p_amount: 15,
-            p_reason: reason,
-            p_reference_id: newId
-          });
-        
-          if (serviceberryError) {
-            console.error('Serviceberries award error for contribution:', serviceberryError);
-            // Don't fail the whole operation, just log the error
-          } else {
-            console.log('Serviceberries awarded for contribution:', contributionType, newId);
-          }
-        } else {
-          console.warn('No serviceberries reason mapping for contributionType:', contributionType);
-        }
-      }
-      
-      // Log contribution to studio_log
-      try {
-        await supabase.from('studio_log').insert({
-          log_type: 'contribution',
-          title: `New ${contributionType}: ${contributionTitle}`,
-          description: `A neighbor contributed a ${contributionType} to the shared library.`,
-        });
-      } catch (logErr) {
-        console.error('Studio log insert error (non-fatal):', logErr);
-      }
-      
-      // Return success response with contribution info
+      // Unknown tool call
       return new Response(
-        JSON.stringify({ 
-          response: `Your ${contributionType} has been added to the commons! Thank you for this gift. "${contributionTitle}" is now part of our shared library, ready to inspire neighbors in other places. You can find it in the Library whenever you'd like to revisit it.`,
-          contribution: {
-            type: contributionType,
-            id: newId,
-            title: contributionTitle
-          }
-        }),
+        JSON.stringify({ response: choice.message.content || "I'm not sure how to handle that. Could you try again?" }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+    
     
     // Regular response (no tool call)
     const assistantMessage = choice.message.content;

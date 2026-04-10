@@ -66,7 +66,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
       const messageElements = container.querySelectorAll('[data-message-index]');
       const lastMessageElement = messageElements[messageElements.length - 1] as HTMLElement | undefined;
       if (lastMessageElement) {
-        // Scroll within the chat container only — don't move the page
         const offsetTop = lastMessageElement.offsetTop - container.offsetTop;
         container.scrollTo({ top: offsetTop, behavior: 'smooth' });
       }
@@ -172,7 +171,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     const processNewUserMessage = async () => {
       const lastMessage = messages[messages.length - 1];
       
-      // Only process if: new message exists, it's from user, we're not loading, and we haven't processed it yet
       if (
         messages.length > lastProcessedIndexRef.current + 1 &&
         lastMessage?.role === "user" &&
@@ -207,7 +205,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
       });
     }
 
-    // Update library items state (add new items at the top)
     if (newLibraryItems.length > 0) {
       setLibraryItems(prev => {
         const existingIds = prev.map(item => item.id);
@@ -218,27 +215,43 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
   };
 
   const formatMessageContent = (content: string): { before: string; prompt: string | null; after: string } => {
-    // Check for prompt delimiters
     const promptStartIdx = content.indexOf('---PROMPT_START---');
     const promptEndIdx = content.indexOf('---PROMPT_END---');
     
     if (promptStartIdx !== -1 && promptEndIdx !== -1 && promptEndIdx > promptStartIdx) {
-      const before = content.substring(0, promptStartIdx).replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**').trim();
+      const before = content.substring(0, promptStartIdx)
+        .replace(/\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g, '[LIBRARY_LINK:$2:$3]')
+        .trim();
       const prompt = content.substring(promptStartIdx + '---PROMPT_START---'.length, promptEndIdx).trim();
-      const after = content.substring(promptEndIdx + '---PROMPT_END---'.length).replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**').trim();
+      const after = content.substring(promptEndIdx + '---PROMPT_END---'.length)
+        .replace(/\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g, '[LIBRARY_LINK:$2:$3]')
+        .trim();
       return { before, prompt, after };
     }
     
-    // No delimiters — return everything as "before"
-    const cleaned = content.replace(/\[LIBRARY_ITEM:\w+:[^:]+:([^\]]+)\]/g, '**$1**');
+    const cleaned = content.replace(/\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g, '[LIBRARY_LINK:$2:$3]');
     return { before: cleaned, prompt: null, after: '' };
   };
 
-  const renderBoldText = (text: string) => {
-    const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  const renderFormattedText = (text: string) => {
+    // Split on both bold markers and library link markers
+    const parts = text.split(/(\*\*[^*]+\*\*|\[LIBRARY_LINK:[^\]]+\])/g);
     return parts.map((part, i) => {
       if (part.startsWith('**') && part.endsWith('**')) {
         return <span key={i} className="font-semibold text-primary">{part.slice(2, -2)}</span>;
+      }
+      const linkMatch = part.match(/^\[LIBRARY_LINK:([^:]+):([^\]]+)\]$/);
+      if (linkMatch) {
+        const [, id, title] = linkMatch;
+        return (
+          <button
+            key={i}
+            onClick={() => navigate(`/library?item=${id}`)}
+            className="font-semibold text-primary underline underline-offset-2 hover:text-primary/80 transition-colors cursor-pointer"
+          >
+            {title}
+          </button>
+        );
       }
       return <span key={i}>{part}</span>;
     });
@@ -301,35 +314,27 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("I'd like to customize a tool for my neighborhood")}
+                  onClick={() => setInput("I'd like to remix a tool for my neighborhood")}
                   className="text-xs"
                 >
-                  Customize a tool
+                  Remix a tool
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("Show me stories from neighbors")}
+                  onClick={() => setInput("I have an idea for something I want to build for my neighborhood")}
                   className="text-xs"
                 >
-                  Read neighbor stories
+                  Discuss an idea
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setInput("What neighborhood tools are in the library?")}
-                  className="text-xs"
-                >
-                  Browse tools
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setInput("I want to share something that worked in my neighborhood")}
+                  onClick={() => setInput("I'd like to contribute something to the commons")}
                   className="text-xs"
                 >
                   <Gift className="w-3 h-3 mr-1" />
-                  Contribute
+                  Contribute something
                 </Button>
               </div>
             </div>
@@ -349,7 +354,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                 );
               }
 
-              // Assistant message — check for prompt block
               const parsed = formatMessageContent(message.content);
 
               return (
@@ -357,7 +361,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                   <div className="max-w-[85%] space-y-3">
                     {parsed.before && (
                       <div className="p-3 rounded-xl bg-secondary/50 border border-border">
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderBoldText(parsed.before)}</p>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderFormattedText(parsed.before)}</p>
                       </div>
                     )}
                     {parsed.prompt && (
@@ -372,7 +376,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                               disabled={buildsRemaining <= 0}
                             >
                               <Hammer className="w-3.5 h-3.5 mr-1" />
-                              Build it
+                              Build a prototype
                             </Button>
                           )}
                           <Button
@@ -406,7 +410,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                     )}
                     {parsed.after && (
                       <div className="p-3 rounded-xl bg-secondary/50 border border-border">
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderBoldText(parsed.after)}</p>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderFormattedText(parsed.after)}</p>
                       </div>
                     )}
                     {!parsed.prompt && (
