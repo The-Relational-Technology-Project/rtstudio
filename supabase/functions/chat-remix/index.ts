@@ -12,52 +12,17 @@ const contributionTools = [
   {
     type: "function",
     function: {
-      name: "submit_story",
-      description: "Submit a new story to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the story.",
+      name: "submit_contribution_interest",
+      description: "Notify the RTP team that a builder wants to contribute something to the commons. Only call this AFTER the builder agrees to connect with Deb about their contribution. This sends a summary to the team so Deb can follow up.",
       parameters: {
         type: "object",
         properties: {
-          title: { type: "string", description: "A clear, inviting title for the story" },
-          story_text: { type: "string", description: "A short summary (1-2 sentences) that captures the essence" },
-          full_story_text: { type: "string", description: "The complete story with rich context and details" },
-          attribution: { type: "string", description: "Who is sharing this and where (e.g., 'Maria from Sunset Park, Brooklyn')" }
+          contributor_name: { type: "string", description: "The contributor's name" },
+          contribution_type: { type: "string", enum: ["story", "tool", "idea", "other"], description: "What kind of contribution" },
+          summary: { type: "string", description: "A brief summary of what they want to contribute and why" },
+          neighborhood: { type: "string", description: "The contributor's neighborhood or community" }
         },
-        required: ["title", "story_text", "full_story_text", "attribution"],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "submit_prompt",
-      description: "Submit a new prompt template to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the prompt.",
-      parameters: {
-        type: "object",
-        properties: {
-          title: { type: "string", description: "A clear, descriptive title for the prompt" },
-          category: { type: "string", description: "Category like 'Gathering', 'Communication', 'Resource Sharing', 'Mutual Aid', etc." },
-          description: { type: "string", description: "Brief description of what this prompt helps create" },
-          example_prompt: { type: "string", description: "The full prompt text that can be used in AI builders" }
-        },
-        required: ["title", "category", "description", "example_prompt"],
-        additionalProperties: false
-      }
-    }
-  },
-  {
-    type: "function",
-    function: {
-      name: "submit_tool",
-      description: "Submit a new tool recommendation to the commons library after user gives explicit consent. Only call this AFTER the user confirms they want to add the tool.",
-      parameters: {
-        type: "object",
-        properties: {
-          name: { type: "string", description: "The name of the tool" },
-          description: { type: "string", description: "How this tool helps with relational tech, including context from the contributor" },
-          url: { type: "string", description: "URL to the tool or resource" }
-        },
-        required: ["name", "description", "url"],
+        required: ["contributor_name", "contribution_type", "summary"],
         additionalProperties: false
       }
     }
