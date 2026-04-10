@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Model config — using Claude Opus 4.6
-const CLAUDE_MODEL = 'claude-opus-4-20250625';
+const CLAUDE_MODEL = 'claude-opus-4-6';
 const MAX_TOKENS = 12000;
 const DAILY_LIMIT = 10;
 
