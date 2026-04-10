@@ -127,7 +127,7 @@ const Landing = () => {
           <h2 className="text-3xl font-fraunces font-bold text-foreground text-center mb-12">
             What's Inside the Studio
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
             {/* Sidekick */}
             <div className="space-y-4">
               <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
@@ -137,12 +137,17 @@ const Landing = () => {
                       <MessageSquare className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <div className="bg-muted rounded-lg px-3 py-2 text-xs text-muted-foreground">
-                      I want to organize a block party for my street...
+                      I want to organize a tool library for my block...
                     </div>
                   </div>
                   <div className="flex items-start gap-2 justify-end">
                     <div className="bg-primary/10 rounded-lg px-3 py-2 text-xs text-foreground">
-                      Great idea! Let's start with a date and invite list. I can help you create a flyer too.
+                      Great idea! I found a similar tool in the library. Want me to build you a prototype?
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <div className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-[10px] font-medium">
+                      <Hammer className="h-3 w-3" /> Build a prototype
                     </div>
                   </div>
                 </div>
@@ -152,7 +157,49 @@ const Landing = () => {
                   <Sparkles className="h-5 w-5 text-primary" /> Sidekick
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Chat to explore ideas, remix tools, and move into action locally.
+                  Chat with an AI partner that knows your neighborhood context, surfaces relevant tools and stories, and helps you move from idea to action.
+                </p>
+              </div>
+            </div>
+
+            {/* Prototype Builder */}
+            <div className="space-y-4">
+              <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 border-b border-border pb-2">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 rounded-full bg-destructive/50" />
+                      <div className="w-2 h-2 rounded-full bg-yellow-400/50" />
+                      <div className="w-2 h-2 rounded-full bg-green-500/50" />
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono">prototype preview</div>
+                  </div>
+                  <div className="space-y-1.5 py-1">
+                    <div className="h-3 bg-muted rounded w-3/4" />
+                    <div className="h-2 bg-muted/60 rounded w-full" />
+                    <div className="h-2 bg-muted/60 rounded w-5/6" />
+                    <div className="flex gap-2 mt-2">
+                      <div className="h-6 bg-primary/20 rounded px-2 flex items-center">
+                        <span className="text-[9px] text-primary font-medium">Tab 1</span>
+                      </div>
+                      <div className="h-6 bg-muted rounded px-2 flex items-center">
+                        <span className="text-[9px] text-muted-foreground">Tab 2</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-1">
+                    <div className="inline-flex items-center gap-1 text-[10px] text-primary font-medium">
+                      <ExternalLink className="h-2.5 w-2.5" /> View and share
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-lg font-fraunces font-bold text-foreground mb-1 flex items-center gap-2">
+                  <Hammer className="h-5 w-5 text-primary" /> Prototype Builder
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Describe what you want to build and get a clickable prototype in minutes. Share it with neighbors for feedback.
                 </p>
               </div>
             </div>
@@ -161,7 +208,7 @@ const Landing = () => {
             <div className="space-y-4">
               <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
                 <div className="grid grid-cols-2 gap-2">
-                  {["Stories", "Tools", "Prompts", "Tech"].map((label) => (
+                  {["Stories", "Tools", "Prompts", "Patterns"].map((label) => (
                     <div key={label} className="bg-muted rounded-lg px-3 py-3 text-center">
                       <div className="text-xs font-medium text-foreground">{label}</div>
                       <div className="text-[10px] text-muted-foreground mt-0.5">from neighbors</div>
@@ -174,37 +221,52 @@ const Landing = () => {
                   <BookOpen className="h-5 w-5 text-primary" /> Library
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Stories, tools, and prompts shared by people building with neighbors.
+                  A growing commons of stories, tools, prompts, and patterns shared by builders across neighborhoods.
                 </p>
               </div>
             </div>
 
-            {/* Peer Network */}
+            {/* Events & Network */}
             <div className="space-y-4">
               <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
                 <div className="space-y-2">
-                  {["Oakland, CA", "Detroit, MI", "Brooklyn, NY"].map((place) => (
-                    <div key={place} className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-primary/20" />
-                      <div>
-                        <div className="text-xs font-medium text-foreground">{place}</div>
-                        <div className="text-[10px] text-muted-foreground">Building locally</div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Calendar className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[10px] font-medium text-foreground">Upcoming</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: "Builder Office Hours", meta: "Thu 6pm" },
+                      { label: "Relational Tech Meetup", meta: "Sat 2pm" },
+                    ].map((evt) => (
+                      <div key={evt.label} className="flex items-center justify-between bg-muted rounded-lg px-3 py-2">
+                        <span className="text-[10px] font-medium text-foreground">{evt.label}</span>
+                        <span className="text-[9px] text-muted-foreground">{evt.meta}</span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    {["Oakland, CA", "Detroit, MI"].map((place) => (
+                      <div key={place} className="flex items-center gap-1">
+                        <div className="w-4 h-4 rounded-full bg-primary/20" />
+                        <span className="text-[9px] text-muted-foreground">{place}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div>
                 <h3 className="text-lg font-fraunces font-bold text-foreground mb-1 flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" /> Peer Network
+                  <Users className="h-5 w-5 text-primary" /> Events & Network
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Join fellow builders crafting relational technology for their neighborhoods.
+                  Join live events, see what other builders are working on, and follow network updates in real time.
                 </p>
               </div>
             </div>
           </div>
         </div>
+      </div>
       </div>
 
       {/* What is Relational Tech? */}
