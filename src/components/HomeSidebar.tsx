@@ -151,17 +151,33 @@ const EventsSection = () => {
         )}
       </button>
       {expanded && (
-        <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
-          <iframe
-            src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events?compact=true&lt=light"
-            className="w-full border-0"
-            style={{ height: 300 }}
-            allowFullScreen
-            aria-hidden="false"
-            tabIndex={0}
-            title="Relational Tech Events"
-          />
-        </div>
+        eventCount !== null && eventCount > 0 ? (
+          <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
+            <iframe
+              src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events?compact=true&lt=light"
+              className="w-full border-0"
+              style={{ height: 300 }}
+              allowFullScreen
+              aria-hidden="false"
+              tabIndex={0}
+              title="Relational Tech Events"
+            />
+          </div>
+        ) : (
+          <div className="rounded-lg border border-border p-4 bg-card shadow-sm">
+            <p className="text-sm text-muted-foreground">
+              No events coming up, check back soon.{" "}
+              <a
+                href="https://luma.com/relationaltech"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-1"
+              >
+                View calendar <ExternalLink className="h-3 w-3" />
+              </a>
+            </p>
+          </div>
+        )
       )}
     </section>
   );
