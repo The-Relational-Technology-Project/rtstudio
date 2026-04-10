@@ -635,73 +635,70 @@ Begin by understanding what they're looking for - whether that's exploring the l
       let contributionTitle = 'Untitled';
       
       // Execute the appropriate database insert with deduplication check
-      if (functionName === 'submit_story') {
-        contributionType = 'story';
-        contributionTitle = args.title;
-        // Check for duplicate
-        const { data: existingStory } = await supabase.from('stories').select('id').eq('title', args.title).maybeSingle();
-        if (existingStory) {
-          console.log('Duplicate story detected, skipping insert:', args.title);
-          return new Response(
-            JSON.stringify({ response: `"${args.title}" is already in the library! No need to add it again.` }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+      if (functionName === 'submit_contribution_interest') {
+        // Handle contribution interest - send email to Deb
+        console.log('Contribution interest:', args);
+        
+        let contributorEmail = '';
+        if (userId) {
+          const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
+          contributorEmail = profile?.email || '';
         }
-        insertResult = await supabase.from('stories').insert({
-          title: args.title,
-          story_text: args.story_text,
-          full_story_text: args.full_story_text,
-          attribution: args.attribution
-        }).select('id').single();
-      } else if (functionName === 'submit_prompt') {
-        contributionType = 'prompt';
-        contributionTitle = args.title;
-        // Check for duplicate
-        const { data: existingPrompt } = await supabase.from('prompts').select('id').eq('title', args.title).maybeSingle();
-        if (existingPrompt) {
-          console.log('Duplicate prompt detected, skipping insert:', args.title);
-          return new Response(
-            JSON.stringify({ response: `"${args.title}" is already in the library! No need to add it again.` }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+
+        const recentMessages = messages.slice(-6).map((m: any) => `${m.role}: ${m.content}`).join('\n');
+
+        try {
+          const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+          if (RESEND_API_KEY) {
+            const { Resend } = await import('https://esm.sh/resend@2.0.0');
+            const resendClient = new Resend(RESEND_API_KEY);
+            const timestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" });
+            
+            await resendClient.emails.send({
+              from: "Relational Tech Studio <notifications@relationaltechproject.org>",
+              to: ["deborah@relationaltechproject.org"],
+              subject: `🌿 Contribution Interest: ${args.contribution_type} from ${args.contributor_name}`,
+              html: `
+                <div style="font-family: Georgia, serif; max-width: 500px; padding: 20px;">
+                  <h2 style="color: #3d3129; margin-bottom: 16px;">New Contribution Interest</h2>
+                  <p style="color: #7a6d61; line-height: 1.6;">A builder would like to chat about contributing to the commons.</p>
+                  <div style="background: #f7f0e8; padding: 16px; border-radius: 8px; margin: 20px 0;">
+                    <p style="margin: 0 0 8px 0;"><strong>Name:</strong> ${args.contributor_name}</p>
+                    ${contributorEmail ? `<p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${contributorEmail}</p>` : ''}
+                    ${args.neighborhood ? `<p style="margin: 0 0 8px 0;"><strong>Neighborhood:</strong> ${args.neighborhood}</p>` : ''}
+                    <p style="margin: 0 0 8px 0;"><strong>Type:</strong> ${args.contribution_type}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Summary:</strong></p>
+                    <p style="margin: 0 0 8px 0; color: #3d3129; line-height: 1.6;">${args.summary}</p>
+                    <p style="margin: 12px 0 8px 0;"><strong>Conversation context:</strong></p>
+                    <p style="margin: 0; color: #7a6d61; font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${recentMessages}</p>
+                    <p style="margin: 12px 0 0 0; color: #7a6d61; font-size: 14px;"><strong>Submitted:</strong> ${timestamp} ET</p>
+                  </div>
+                  <p style="color: #7a6d61; font-size: 14px;">— Relational Tech Studio</p>
+                </div>
+              `,
+            });
+            console.log('Contribution interest email sent to Deb');
+          }
+        } catch (emailError) {
+          console.error('Contribution interest email error (non-fatal):', emailError);
         }
-        insertResult = await supabase.from('prompts').insert({
-          title: args.title,
-          category: args.category,
-          description: args.description,
-          example_prompt: args.example_prompt,
-          ...(userId ? { user_id: userId } : {})
-        }).select('id').single();
-      } else if (functionName === 'submit_tool') {
-        contributionType = 'tool';
-        contributionTitle = args.name;
-        // Check for duplicate
-        const { data: existingTool } = await supabase.from('tools').select('id').eq('name', args.name).maybeSingle();
-        if (existingTool) {
-          console.log('Duplicate tool detected, skipping insert:', args.name);
-          return new Response(
-            JSON.stringify({ response: `"${args.name}" is already in the library! No need to add it again.` }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        insertResult = await supabase.from('tools').insert({
-          name: args.name,
-          description: args.description,
-          url: args.url,
-          ...(userId ? { user_id: userId } : {})
-        }).select('id').single();
+
+        return new Response(
+          JSON.stringify({ 
+            response: `I've let Deb know about your interest in contributing. She'll reach out to you soon to chat about your ${args.contribution_type} and help shape it for the commons. Thank you for wanting to share!`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       } else if (functionName === 'submit_gift_build_request') {
-        // Handle gift build request - call notify-gift-build edge function
+        // Handle gift build request
         console.log('Gift build request:', args);
         
-        // Get builder email from profile if authenticated
         let builderEmail = '';
         if (userId) {
           const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
           builderEmail = profile?.email || '';
         }
 
-        // Build conversation context from recent messages
         const recentMessages = messages.slice(-6).map((m: any) => `${m.role}: ${m.content}`).join('\n');
         
         const giftBuildPayload = {
@@ -714,7 +711,6 @@ Begin by understanding what they're looking for - whether that's exploring the l
           source: 'sidekick'
         };
 
-        // Insert directly and send email via notify-gift-build
         const { error: giftInsertError } = await supabase.from('gift_build_requests').insert({
           ...giftBuildPayload,
           user_id: userId
@@ -728,7 +724,6 @@ Begin by understanding what they're looking for - whether that's exploring the l
           );
         }
 
-        // Send email notification via Resend
         try {
           const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
           if (RESEND_API_KEY) {
@@ -771,48 +766,12 @@ Begin by understanding what they're looking for - whether that's exploring the l
         );
       }
       
-      if (insertResult?.error) {
-        console.error('Database insert error:', insertResult.error);
-        return new Response(
-          JSON.stringify({ 
-            response: `I tried to add your ${contributionType} to the library, but ran into a technical issue. Would you like to try again?`,
-            error: insertResult.error.message 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      const newId = insertResult?.data?.id;
-      console.log('Contribution saved:', contributionType, newId);
-      
-      // Award serviceberries for library contribution (15 berries per spec)
-      // NOTE: award_serviceberries validates reason against an allowlist.
-      const contributionReasonMap: Record<string, string> = {
-        story: 'story_shared',
-        prompt: 'prompt_shared',
-        tool: 'tool_shared',
-      };
-
-      if (userId && userSupabase && newId) {
-        const reason = contributionReasonMap[contributionType] ?? null;
-        if (reason) {
-          const { error: serviceberryError } = await userSupabase.rpc('award_serviceberries', {
-            p_user_id: userId,
-            p_amount: 15,
-            p_reason: reason,
-            p_reference_id: newId
-          });
-        
-          if (serviceberryError) {
-            console.error('Serviceberries award error for contribution:', serviceberryError);
-            // Don't fail the whole operation, just log the error
-          } else {
-            console.log('Serviceberries awarded for contribution:', contributionType, newId);
-          }
-        } else {
-          console.warn('No serviceberries reason mapping for contributionType:', contributionType);
-        }
-      }
+      // Unknown tool call
+      return new Response(
+        JSON.stringify({ response: choice.message.content || "I'm not sure how to handle that. Could you try again?" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
       
       // Log contribution to studio_log
       try {
