@@ -267,7 +267,6 @@ const Landing = () => {
           </div>
         </div>
       </div>
-      </div>
 
       {/* What is Relational Tech? */}
       <div className="border-t border-border">
