@@ -21,6 +21,7 @@ interface SidekickProps {
   fullPage?: boolean;
   onBuildIt?: (summaryPrompt: string) => void;
   buildsRemaining?: number;
+  prototypeSlot?: React.ReactNode;
 }
 
 interface LibraryItemData {
@@ -38,7 +39,7 @@ interface ContributionData {
   title: string;
 }
 
-export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onBuildIt, buildsRemaining = 10 }: SidekickProps) => {
+export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onBuildIt, buildsRemaining = 10, prototypeSlot }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { messages, setMessages, clearMessages } = useSidekick();
@@ -477,6 +478,9 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
           </div>
         </Card>
       )}
+
+      {/* Prototype slot - renders between chat and library items */}
+      {prototypeSlot}
 
       {libraryItems.length > 0 && (
         <div className="space-y-3">
