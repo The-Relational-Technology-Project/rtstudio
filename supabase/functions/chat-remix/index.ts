@@ -767,31 +767,7 @@ Begin by understanding what they're looking for - whether that's exploring the l
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-      
-      // Log contribution to studio_log
-      try {
-        await supabase.from('studio_log').insert({
-          log_type: 'contribution',
-          title: `New ${contributionType}: ${contributionTitle}`,
-          description: `A neighbor contributed a ${contributionType} to the shared library.`,
-        });
-      } catch (logErr) {
-        console.error('Studio log insert error (non-fatal):', logErr);
-      }
-      
-      // Return success response with contribution info
-      return new Response(
-        JSON.stringify({ 
-          response: `Your ${contributionType} has been added to the commons! Thank you for this gift. "${contributionTitle}" is now part of our shared library, ready to inspire neighbors in other places. You can find it in the Library whenever you'd like to revisit it.`,
-          contribution: {
-            type: contributionType,
-            id: newId,
-            title: contributionTitle
-          }
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    
     
     // Regular response (no tool call)
     const assistantMessage = choice.message.content;
