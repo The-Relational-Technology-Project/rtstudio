@@ -1,47 +1,40 @@
 
 
-# Upgrade Claude Model & Reorder Prototype Layout
+# Fix: Prototype JavaScript Getting Truncated
 
-## Changes
+## Problem
+The generated prototype HTML is being cut off before the `<script>` block. The uploaded prototype.html is 1403 lines but ends mid-content — the entire JavaScript section (tab switching, radio button handlers, form submission, etc.) is missing. This is because `MAX_TOKENS = 12000` isn't enough for rich prototypes.
 
-### 1. Upgrade Claude model to Opus 4.6
+## Root Cause
+Claude writes HTML/CSS first, then the `<script>` at the end. For a detailed 1400+ line prototype, 12,000 tokens runs out before the JS is written. No JavaScript = no interactivity.
+
+## Solution
+
+### 1. Increase MAX_TOKENS (edge function)
 **File:** `supabase/functions/generate-prototype/index.ts`
 
-Change line 10 from `claude-opus-4-20250514` to `claude-opus-4-20250625` (Opus 4.6). Update the comment accordingly.
+Increase `MAX_TOKENS` from `12000` to `16000`. Claude Opus 4.6 supports up to 32K output tokens, so this is safe. 16K should comfortably fit even rich prototypes with full JS.
 
-### 2. Move Referenced Library Items below prototype
-Currently, the "Referenced Library Items" section renders *inside* the `Sidekick` component (at the bottom). The prototype renders *after* Sidekick in `Home.tsx`. This means the actual order is:
+### 2. Update system prompt to prioritize JS placement
+Add an instruction to the system prompt telling Claude to write the `<script>` tag early or to keep CSS concise. Specifically, add:
 
-```text
-Sidekick chat
-Referenced Library Items   ← inside Sidekick
-Prototype                  ← in Home.tsx
+> "IMPORTANT: Keep your CSS concise and avoid excessive visual polish that inflates token count. The JavaScript functionality (tab switching, button handlers, form interactions) is MORE important than pixel-perfect CSS. If you must choose, cut CSS details before cutting JS functionality."
+
+### 3. Add truncation detection (edge function)
+After receiving the generated code, check if it ends with `</html>`. If not, the output was truncated. Return an error asking the user to simplify their prompt, rather than serving a broken prototype.
+
 ```
-
-To achieve the desired order (Sidekick → Prototype → Library Items):
-
-**File:** `src/components/Sidekick.tsx`
-- Add an optional `prototypeSlot` prop (`React.ReactNode`)
-- Move the "Referenced Library Items" section to render *after* the `prototypeSlot`
-- The render order inside Sidekick becomes: chat area → prompt card → `prototypeSlot` → library items
-
-**File:** `src/pages/Home.tsx`
-- Instead of rendering `<PrototypePreview>` as a sibling after `<Sidekick>`, pass it as the `prototypeSlot` prop:
-  ```
-  <Sidekick
-    prototypeSlot={prototype ? <PrototypePreview {...prototype} /> : null}
-    ...
-  />
-  ```
-- Remove the standalone `{prototype && <PrototypePreview>}` blocks (both mobile and desktop)
-
-This keeps widths matched automatically since everything flows inside the same container.
+if (!generatedCode.trimEnd().endsWith('</html>')) {
+  return new Response(
+    JSON.stringify({ error: 'The prototype was too complex and got cut off. Try simplifying your prompt or breaking it into smaller pieces.' }),
+    { status: 422, ... }
+  );
+}
+```
 
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/generate-prototype/index.ts` | Model `claude-opus-4-20250625` |
-| `src/components/Sidekick.tsx` | Add `prototypeSlot` prop, render between prompt card and library items |
-| `src/pages/Home.tsx` | Pass prototype as `prototypeSlot` instead of rendering separately |
+| `supabase/functions/generate-prototype/index.ts` | Increase MAX_TOKENS to 16000, add CSS-economy note to system prompt, add truncation detection |
 
