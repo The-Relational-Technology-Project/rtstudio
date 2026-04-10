@@ -73,7 +73,7 @@ export const PromptReviewModal = ({
                 {BUILD_STEPS[buildStep]}
               </p>
               <p className="text-xs text-muted-foreground mt-4">
-                This usually takes 30–60 seconds
+                This may take a few minutes
               </p>
               <p className="text-xs text-muted-foreground/70 mt-2 italic">
                 This is a good time to stretch, make tea, or text a neighbor 🙂
