@@ -630,11 +630,6 @@ Begin by understanding what they're looking for - whether that's exploring the l
       
       console.log('Tool call requested:', functionName, args);
       
-      let insertResult: any = null;
-      let contributionType = 'item';
-      let contributionTitle = 'Untitled';
-      
-      // Execute the appropriate database insert with deduplication check
       if (functionName === 'submit_contribution_interest') {
         // Handle contribution interest - send email to Deb
         console.log('Contribution interest:', args);
