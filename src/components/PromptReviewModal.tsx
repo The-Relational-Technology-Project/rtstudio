@@ -9,7 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "./ui/dialog";
-import { Hammer, Sparkles, Loader2 } from "lucide-react";
+import { Hammer } from "lucide-react";
 
 interface PromptReviewModalProps {
   open: boolean;
@@ -41,7 +41,6 @@ export const PromptReviewModal = ({
     }
   }, [open, prompt]);
 
-  // Cycle through build steps while generating
   useEffect(() => {
     if (!isGenerating) {
       setBuildStep(0);
@@ -75,6 +74,9 @@ export const PromptReviewModal = ({
               </p>
               <p className="text-xs text-muted-foreground mt-4">
                 This usually takes 30–60 seconds
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-2 italic">
+                This is a good time to stretch, make tea, or text a neighbor 🙂
               </p>
             </div>
           </div>
@@ -112,7 +114,7 @@ export const PromptReviewModal = ({
                 className="bg-primary hover:bg-primary/90"
               >
                 <Hammer className="w-4 h-4 mr-2" />
-                Build it
+                Build a prototype
               </Button>
             </DialogFooter>
           </>

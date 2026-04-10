@@ -7,6 +7,7 @@ import { PrototypePreview } from "@/components/PrototypePreview";
 import { PromptReviewModal } from "@/components/PromptReviewModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSidekick } from "@/contexts/SidekickContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -18,7 +19,6 @@ interface PrototypeData {
   prototypeId: string;
   shareId: string;
   toolName?: string;
-  remaining: number;
 }
 
 type MobileTab = "sidekick" | "events" | "updates";
@@ -26,6 +26,7 @@ type MobileTab = "sidekick" | "events" | "updates";
 const Home = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { setMessages } = useSidekick();
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<MobileTab>("sidekick");
@@ -35,7 +36,6 @@ const Home = () => {
   const [showPromptReview, setShowPromptReview] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isRefining, setIsRefining] = useState(false);
   const [buildsRemaining, setBuildsRemaining] = useState(10);
 
   const handleBuildIt = (summaryPrompt: string) => {
@@ -43,13 +43,13 @@ const Home = () => {
     setShowPromptReview(true);
   };
 
-  const generatePrototype = async (prompt: string, refinementOf?: string, currentCode?: string) => {
+  const generatePrototype = async (prompt: string) => {
     setIsGenerating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
       const { data, error } = await supabase.functions.invoke("generate-prototype", {
-        body: { prompt, refinementOf, currentCode },
+        body: { prompt },
         headers: session?.access_token
           ? { Authorization: `Bearer ${session.access_token}` }
           : undefined,
@@ -63,10 +63,15 @@ const Home = () => {
         prompt,
         prototypeId: data.prototypeId,
         shareId: data.shareId,
-        remaining: data.remaining,
       });
       setBuildsRemaining(data.remaining);
       setShowPromptReview(false);
+
+      // Inject post-build message into Sidekick chat
+      setMessages((prev) => [...prev, {
+        role: "assistant" as const,
+        content: "You'll see your demo prototype below! Share this with neighbors or collaborators to get their feedback. Then bring the prompt into an AI builder to build a fully-functional tool."
+      }]);
     } catch (error) {
       console.error("Prototype generation error:", error);
       toast({
@@ -81,46 +86,6 @@ const Home = () => {
 
   const handleConfirmBuild = async (editedPrompt: string) => {
     await generatePrototype(editedPrompt);
-  };
-
-  const handleRefine = async (refinement: string) => {
-    if (!prototype) return;
-    setIsRefining(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const { data, error } = await supabase.functions.invoke("generate-prototype", {
-        body: {
-          prompt: refinement,
-          refinementOf: prototype.prototypeId,
-          currentCode: prototype.code,
-        },
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : undefined,
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      setPrototype({
-        code: data.code,
-        prompt: refinement,
-        prototypeId: data.prototypeId,
-        shareId: data.shareId,
-        remaining: data.remaining,
-      });
-      setBuildsRemaining(data.remaining);
-    } catch (error) {
-      console.error("Refine error:", error);
-      toast({
-        title: "Refine failed",
-        description: error instanceof Error ? error.message : "Something went wrong.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefining(false);
-    }
   };
 
   const tabs: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
@@ -159,14 +124,10 @@ const Home = () => {
           <div className="w-full">
             {activeTab === "sidekick" && (
               <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
-                {prototype && (
-                  <PrototypePreview
-                    {...prototype}
-                    onRefine={handleRefine}
-                    isRefining={isRefining}
-                  />
-                )}
                 <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} />
+                {prototype && (
+                  <PrototypePreview {...prototype} />
+                )}
               </div>
             )}
             {activeTab === "events" && (
@@ -184,14 +145,10 @@ const Home = () => {
           <div className="max-w-[1400px] mx-auto flex gap-0">
             {/* Sidekick column */}
             <div className="flex-1 min-w-0 px-4 py-8 space-y-4">
-              {prototype && (
-                <PrototypePreview
-                  {...prototype}
-                  onRefine={handleRefine}
-                  isRefining={isRefining}
-                />
-              )}
               <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} />
+              {prototype && (
+                <PrototypePreview {...prototype} />
+              )}
             </div>
 
             {/* Sidebar toggle + sidebar */}
