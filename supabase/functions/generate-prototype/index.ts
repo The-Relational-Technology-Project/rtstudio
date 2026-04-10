@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // Model config — using Claude Opus 4.6
 const CLAUDE_MODEL = 'claude-opus-4-6';
-const MAX_TOKENS = 12000;
+const MAX_TOKENS = 16000;
 const DAILY_LIMIT = 10;
 
 const SYSTEM_PROMPT = `You are a frontend prototype builder for neighborhood community tools. You build for the Relational Tech Studio, an open commons where people in neighborhoods across the country are building small, local, open-source tools with their neighbors.
@@ -29,6 +29,7 @@ Requirements:
 - CRITICAL: Use tab-based or section-based navigation within a single page. All navigation MUST use JavaScript to show/hide sections — NEVER use separate HTML pages or links that navigate away from the current document.
 - The entire app must work within a single HTML document displayed in a sandboxed iframe. Hash-based routing (showing/hiding divs) is the correct pattern for multi-section prototypes.
 - Make the prototype rich, detailed, and polished. Include thoughtful micro-interactions, hover states, transitions, and visual polish. This should feel like a real product, not a wireframe.
+- IMPORTANT: Keep your CSS concise and avoid excessive visual polish that inflates token count. The JavaScript functionality (tab switching, button handlers, form interactions) is MORE important than pixel-perfect CSS. If you must choose, cut CSS details before cutting JS functionality.
 
 The prototype should help a builder imagine what their tool could become, and help their neighbors react to something concrete rather than an abstract idea. This is a conversation starter, not a final product.
 
@@ -174,6 +175,13 @@ serve(async (req) => {
 
     if (!generatedCode.startsWith('<!DOCTYPE') && !generatedCode.startsWith('<html')) {
       throw new Error('Generated code does not appear to be valid HTML');
+    }
+
+    if (!generatedCode.trimEnd().endsWith('</html>')) {
+      return new Response(
+        JSON.stringify({ error: 'The prototype was too complex and got cut off. Try simplifying your prompt or breaking it into smaller pieces.' }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Generate a share ID
