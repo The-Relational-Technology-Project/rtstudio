@@ -124,10 +124,7 @@ const Home = () => {
           <div className="w-full">
             {activeTab === "sidekick" && (
               <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
-                <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} />
-                {prototype && (
-                  <PrototypePreview {...prototype} />
-                )}
+                <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} prototypeSlot={prototype ? <PrototypePreview {...prototype} /> : null} />
               </div>
             )}
             {activeTab === "events" && (
@@ -145,10 +142,7 @@ const Home = () => {
           <div className="max-w-[1400px] mx-auto flex gap-0">
             {/* Sidekick column */}
             <div className="flex-1 min-w-0 px-4 py-8 space-y-4">
-              <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} />
-              {prototype && (
-                <PrototypePreview {...prototype} />
-              )}
+              <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} prototypeSlot={prototype ? <PrototypePreview {...prototype} /> : null} />
             </div>
 
             {/* Sidebar toggle + sidebar */}

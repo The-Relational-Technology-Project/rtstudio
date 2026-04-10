@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// Model config — switch to claude-sonnet-4-20250514 when volume grows
-const CLAUDE_MODEL = 'claude-opus-4-20250514';
+// Model config — using Claude Opus 4.6
+const CLAUDE_MODEL = 'claude-opus-4-20250625';
 const MAX_TOKENS = 12000;
 const DAILY_LIMIT = 10;
 
