@@ -1,34 +1,36 @@
 
 
-# Update "What's Inside the Studio" Section
+# Deploy LLM Proxy Edge Function
 
-**File:** `src/pages/Landing.tsx`
+## What This Does
+Creates and deploys a new backend function (`llm-proxy`) that proxies LLM API requests, eliminating CORS issues and keeping API keys server-side. It supports three providers: Anthropic, OpenAI, and an RTP community model.
 
-Replace the 3-column grid with a 2×2 grid (`md:grid-cols-2`) showing four feature cards:
+## Steps
 
-### 1. Sidekick (updated)
-- Mockup: chat bubble + "Build a prototype" action button
-- Description: "Chat with an AI partner that knows your neighborhood context, surfaces relevant tools and stories, and helps you move from idea to action."
+### 1. Create the edge function file
+**File:** `supabase/functions/llm-proxy/index.ts`
 
-### 2. Prototype Builder (new)
-- Icon: `Hammer`
-- Mockup: mini browser frame with wireframe preview and "View and share" button
-- Description: "Describe what you want to build and get a clickable prototype in minutes. Share it with neighbors for feedback."
+Copy the uploaded code as-is. The function handles:
+- CORS preflight
+- Anthropic format translation (OpenAI ↔ Anthropic, including streaming)
+- OpenAI/OpenRouter pass-through
+- RTP community model (no key needed, uses `RTP_MODEL_URL` env var)
 
-### 3. Library (updated copy)
-- Keep 2×2 grid mockup
-- Description: "A growing commons of stories, tools, prompts, and patterns shared by builders across neighborhoods."
+### 2. Deploy the edge function
+Deploy `llm-proxy` to Lovable Cloud. It already uses `Deno.serve()` and handles its own CORS — no config.toml changes needed.
 
-### 4. Events & Network (replaces "Peer Network")
-- Icons: `Calendar` + `Users`
-- Mockup: mini calendar/event items + builder locations
-- Description: "Join live events, see what other builders are working on, and follow network updates in real time."
+### 3. Environment variable
+The `VITE_SUPABASE_URL` is already set in `.env`. The client can construct the proxy URL as:
+```
+${VITE_SUPABASE_URL}/functions/v1/llm-proxy
+```
+No additional env var is strictly needed, but if you'd like a dedicated `VITE_LLM_PROXY_URL` for clarity, I can add it.
 
-### Layout
-- Change grid from `md:grid-cols-3` to `md:grid-cols-2`
-- Add `Hammer, Calendar` to lucide-react imports
+## Notes
+- The `RTP_MODEL_URL` secret would need to be set if you want the RTP provider tier to work. Currently not in your secrets list.
+- `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` are already configured as secrets, but this proxy uses BYOK (client sends keys in the Authorization header), so they aren't used by the function itself.
 
 | File | Change |
 |------|--------|
-| `src/pages/Landing.tsx` | Replace "What's Inside" section with 4-card 2×2 grid, updated copy, no "powered by Claude" mention |
+| `supabase/functions/llm-proxy/index.ts` | Create new file with uploaded code |
 
