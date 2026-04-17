@@ -94,13 +94,42 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     // Parse request
-    const { prompt, toolName, refinementOf, currentCode } = await req.json();
+    const { prompt, toolName, refinementOf, currentCode, referenceImages } = await req.json();
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 10) {
       return new Response(
         JSON.stringify({ error: 'Please provide a more detailed prompt (at least 10 characters).' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Validate reference images
+    const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+    const MAX_IMAGES = 2;
+    const MAX_BASE64_LEN = 7 * 1024 * 1024; // ~5MB decoded
+    const imagesInput: Array<{ mediaType: string; base64: string }> = Array.isArray(referenceImages) ? referenceImages : [];
+    if (imagesInput.length > MAX_IMAGES) {
+      return new Response(
+        JSON.stringify({ error: `Too many reference images (max ${MAX_IMAGES}).` }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const validImages: Array<{ mediaType: string; base64: string }> = [];
+    for (const img of imagesInput) {
+      if (!img || typeof img.mediaType !== 'string' || typeof img.base64 !== 'string' || !img.base64) continue;
+      if (!ALLOWED_IMAGE_TYPES.has(img.mediaType)) {
+        return new Response(
+          JSON.stringify({ error: `Unsupported image type: ${img.mediaType}` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (img.base64.length > MAX_BASE64_LEN) {
+        return new Response(
+          JSON.stringify({ error: 'Reference image is too large after encoding. Try a smaller image.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      validImages.push({ mediaType: img.mediaType, base64: img.base64 });
     }
 
     // Rate limit check
@@ -134,7 +163,20 @@ serve(async (req) => {
       userPrompt = `Here is the current prototype code:\n\n${currentCode}\n\nPlease refine it with these changes:\n${prompt}\n\nReturn the complete updated HTML document.`;
     }
 
-    console.log(`Generating prototype for builder ${builderId} (${todayCount + 1}/${DAILY_LIMIT} today). Model: ${CLAUDE_MODEL}`);
+    console.log(`Generating prototype for builder ${builderId} (${todayCount + 1}/${DAILY_LIMIT} today). Model: ${CLAUDE_MODEL}. Images: ${validImages.length}`);
+
+    // Build message content: images first, then the text prompt
+    const imageBlocks = validImages.map((img) => ({
+      type: 'image' as const,
+      source: { type: 'base64' as const, media_type: img.mediaType, data: img.base64 },
+    }));
+    const userContent = imageBlocks.length > 0
+      ? [...imageBlocks, { type: 'text' as const, text: userPrompt }]
+      : userPrompt;
+
+    const systemPrompt = validImages.length > 0
+      ? SYSTEM_PROMPT + `\n\nThe user attached reference image(s) for visual/aesthetic direction. Use them to inform colors, typography feel, layout vibe, and overall mood — they're inspiration, not a literal spec. Don't try to recreate the images pixel-for-pixel.`
+      : SYSTEM_PROMPT;
 
     // Call Anthropic API
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
@@ -147,8 +189,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: CLAUDE_MODEL,
         max_tokens: MAX_TOKENS,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userPrompt }],
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userContent }],
       }),
     });
 
