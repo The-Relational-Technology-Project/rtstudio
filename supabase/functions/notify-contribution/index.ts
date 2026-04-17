@@ -137,6 +137,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Contribution notification sent:", emailResponse);
 
+    // Persist contribution to DB (best-effort; email already sent)
+    const { error: insertErr } = await admin.from("contributions").insert({
+      user_id: user.id,
+      contributor_name,
+      contributor_email,
+      title,
+      description,
+      links,
+      image_paths: imagePaths,
+    });
+    if (insertErr) {
+      console.error("Failed to persist contribution:", insertErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
