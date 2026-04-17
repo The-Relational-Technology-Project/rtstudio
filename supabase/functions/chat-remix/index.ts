@@ -325,20 +325,23 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
 
       console.log('Keyword search (hybrid):', keywords);
 
-      if (keywords.length > 0) {
-        const promptSearchConditions = keywords.map((keyword: string) => {
-          const sanitized = keyword.replace(/[%_]/g, '');
-          return `title.ilike.%${sanitized}%,category.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
+      // Whitelist alphanumeric + spaces + hyphens; cap length to defend against PostgREST operator injection
+      const sanitizeKeyword = (k: string) =>
+        k.replace(/[^a-zA-Z0-9\s-]/g, '').trim().slice(0, 50);
+
+      const safeKeywords = keywords.map(sanitizeKeyword).filter((k: string) => k.length >= 2);
+
+      if (safeKeywords.length > 0) {
+        const promptSearchConditions = safeKeywords.map((keyword: string) => {
+          return `title.ilike.%${keyword}%,category.ilike.%${keyword}%,description.ilike.%${keyword}%`;
         }).join(',');
 
-        const storySearchConditions = keywords.map((keyword: string) => {
-          const sanitized = keyword.replace(/[%_]/g, '');
-          return `title.ilike.%${sanitized}%,story_text.ilike.%${sanitized}%,attribution.ilike.%${sanitized}%`;
+        const storySearchConditions = safeKeywords.map((keyword: string) => {
+          return `title.ilike.%${keyword}%,story_text.ilike.%${keyword}%,attribution.ilike.%${keyword}%`;
         }).join(',');
 
-        const toolSearchConditions = keywords.map((keyword: string) => {
-          const sanitized = keyword.replace(/[%_]/g, '');
-          return `name.ilike.%${sanitized}%,description.ilike.%${sanitized}%`;
+        const toolSearchConditions = safeKeywords.map((keyword: string) => {
+          return `name.ilike.%${keyword}%,description.ilike.%${keyword}%`;
         }).join(',');
 
         const [promptsResult, storiesResult, toolsResult] = await Promise.all([
