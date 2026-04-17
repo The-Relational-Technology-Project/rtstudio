@@ -9,7 +9,7 @@ import { LibraryCard } from "@/components/LibraryCard";
 import { ContributionDialog } from "@/components/ContributionDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Search, BookOpen, Star, User } from "lucide-react";
+import { Search, BookOpen, Star, User, Plus } from "lucide-react";
 import type { LibraryItem, ItemType } from "@/types/library";
 
 type ViewTab = "browse" | "my-items" | "bookmarks";
