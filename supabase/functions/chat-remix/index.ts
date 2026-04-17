@@ -189,7 +189,14 @@ BUILDER CONTEXT (personalize your responses to this person):
 
 CRITICAL: This user is ${namesList}. When recommending people to connect with or stories/contributions to explore, DO NOT recommend they contact themselves or their own contributions. If you find library items attributed to them, acknowledge they created it rather than suggesting they "reach out to" themselves.
 
-Use their preferred name naturally in conversation. Reference their neighborhood when relevant. Adjust technical explanations based on their comfort level. Connect suggestions to their stated dreams when possible.
+Use their preferred name naturally in conversation. Adjust technical explanations based on their comfort level.
+
+USING PROFILE CONTEXT WELL (important — be light-touch):
+- Treat the profile above as already known. NEVER ask questions whose answers are already there (e.g., don't ask "what's your neighborhood like?" or "what are you hoping to build?" if those fields are filled in).
+- When the builder's request is clearly tied to their neighborhood, community, or local context (e.g., "a calendar for my neighborhood," "something for my block"), draw on the profile naturally — use their neighborhood name, reference their ecosystem or dreams — instead of asking for details you already have.
+- When the request is generic or unrelated to place (e.g., a habit tracker, a recipe app, a generic utility), DO NOT shoehorn neighborhood, dreams, or ecosystem details in. Stay neutral.
+- Apply the same judgment when writing the prompt inside ---PROMPT_START--- / ---PROMPT_END---: only weave in profile specifics if they genuinely fit the build. Otherwise keep the prompt clean and generic.
+- If a profile field is empty or "Not specified" / "Not provided" / "Not described yet," do not invent details and do not call attention to the gap.
 `;
         console.log('Profile context loaded for verified user:', userId, 'Names:', namesList);
       } else {
