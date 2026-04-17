@@ -4,7 +4,7 @@ import { Footer } from "@/components/Footer";
 import { Sidekick } from "@/components/Sidekick";
 import { HomeSidebar } from "@/components/HomeSidebar";
 import { PrototypePreview } from "@/components/PrototypePreview";
-import { PromptReviewModal } from "@/components/PromptReviewModal";
+import { PromptReviewModal, type ReferenceImage } from "@/components/PromptReviewModal";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSidekick } from "@/contexts/SidekickContext";
@@ -43,13 +43,13 @@ const Home = () => {
     setShowPromptReview(true);
   };
 
-  const generatePrototype = async (prompt: string) => {
+  const generatePrototype = async (prompt: string, referenceImages: ReferenceImage[] = []) => {
     setIsGenerating(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
       const { data, error } = await supabase.functions.invoke("generate-prototype", {
-        body: { prompt },
+        body: { prompt, referenceImages },
         headers: session?.access_token
           ? { Authorization: `Bearer ${session.access_token}` }
           : undefined,
@@ -84,8 +84,8 @@ const Home = () => {
     }
   };
 
-  const handleConfirmBuild = async (editedPrompt: string) => {
-    await generatePrototype(editedPrompt);
+  const handleConfirmBuild = async (editedPrompt: string, referenceImages: ReferenceImage[]) => {
+    await generatePrototype(editedPrompt, referenceImages);
   };
 
   const tabs: { id: MobileTab; label: string; icon: React.ReactNode }[] = [

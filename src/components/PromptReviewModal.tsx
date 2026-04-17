@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import {
@@ -9,14 +9,21 @@ import {
   DialogDescription,
   DialogFooter,
 } from "./ui/dialog";
-import { Hammer } from "lucide-react";
+import { Hammer, ImagePlus, X, Loader2 } from "lucide-react";
+import { resizeImageToBase64, type ResizedImage } from "@/lib/image";
+import { useToast } from "@/hooks/use-toast";
+
+export interface ReferenceImage {
+  mediaType: string;
+  base64: string;
+}
 
 interface PromptReviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   prompt: string;
   remaining: number;
-  onConfirm: (editedPrompt: string) => void;
+  onConfirm: (editedPrompt: string, referenceImages: ReferenceImage[]) => void;
   isGenerating: boolean;
 }
 
@@ -28,16 +35,24 @@ const BUILD_STEPS = [
   "Almost there…",
 ];
 
+const MAX_IMAGES = 2;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 export const PromptReviewModal = ({
   open, onOpenChange, prompt, remaining, onConfirm, isGenerating
 }: PromptReviewModalProps) => {
   const [editedPrompt, setEditedPrompt] = useState(prompt);
   const [buildStep, setBuildStep] = useState(0);
+  const [images, setImages] = useState<ResizedImage[]>([]);
+  const [isResizing, setIsResizing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       setEditedPrompt(prompt);
       setBuildStep(0);
+      setImages([]);
     }
   }, [open, prompt]);
 
@@ -51,6 +66,51 @@ export const PromptReviewModal = ({
     }, 8000);
     return () => clearInterval(interval);
   }, [isGenerating]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // reset so same file can be re-selected
+    if (!files.length) return;
+
+    const slotsLeft = MAX_IMAGES - images.length;
+    const toProcess = files.slice(0, slotsLeft);
+
+    setIsResizing(true);
+    try {
+      const newImages: ResizedImage[] = [];
+      for (const file of toProcess) {
+        if (!file.type.startsWith("image/")) {
+          toast({ title: "Not an image", description: `${file.name} isn't an image file.`, variant: "destructive" });
+          continue;
+        }
+        if (file.size > MAX_FILE_SIZE) {
+          toast({ title: "Image too large", description: `${file.name} is over 10MB. Try a smaller one.`, variant: "destructive" });
+          continue;
+        }
+        try {
+          const resized = await resizeImageToBase64(file, 1000, 0.8);
+          newImages.push(resized);
+        } catch (err) {
+          console.error("Resize error:", err);
+          toast({ title: "Couldn't process image", description: `${file.name} failed to load.`, variant: "destructive" });
+        }
+      }
+      if (newImages.length) setImages((prev) => [...prev, ...newImages].slice(0, MAX_IMAGES));
+    } finally {
+      setIsResizing(false);
+    }
+  };
+
+  const removeImage = (idx: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleConfirm = () => {
+    onConfirm(
+      editedPrompt,
+      images.map(({ mediaType, base64 }) => ({ mediaType, base64 }))
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={isGenerating ? undefined : onOpenChange}>
@@ -99,6 +159,66 @@ export const PromptReviewModal = ({
                 className="min-h-[200px] text-sm font-mono resize-y"
                 placeholder="Describe the prototype you want to build..."
               />
+
+              {/* Reference images */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium text-foreground">
+                    Visual references <span className="text-muted-foreground font-normal">(optional, up to {MAX_IMAGES})</span>
+                  </p>
+                  {isResizing && (
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Loader2 className="w-3 h-3 animate-spin" /> Resizing…
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {images.map((img, idx) => (
+                    <div key={idx} className="relative group">
+                      <img
+                        src={img.dataUrl}
+                        alt={`Reference ${idx + 1}`}
+                        className="w-20 h-20 object-cover rounded-md border border-border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute -top-1.5 -right-1.5 bg-background border border-border rounded-full p-0.5 shadow-sm hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                        aria-label="Remove image"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {images.length < MAX_IMAGES && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isResizing}
+                      className="w-20 h-20 rounded-md border-2 border-dashed border-border hover:border-primary hover:bg-accent/30 flex flex-col items-center justify-center text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      <ImagePlus className="w-5 h-5" />
+                      <span className="text-[10px] mt-0.5">Add</span>
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileSelect}
+                />
+
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Reference images help shape the look & feel — colors, mood, layout vibe. Not used as literal specs.
+                </p>
+              </div>
+
               <p className="text-xs text-muted-foreground">
                 {remaining} build{remaining !== 1 ? "s" : ""} remaining today
               </p>
@@ -109,8 +229,8 @@ export const PromptReviewModal = ({
                 Cancel
               </Button>
               <Button
-                onClick={() => onConfirm(editedPrompt)}
-                disabled={!editedPrompt.trim()}
+                onClick={handleConfirm}
+                disabled={!editedPrompt.trim() || isResizing}
                 className="bg-primary hover:bg-primary/90"
               >
                 <Hammer className="w-4 h-4 mr-2" />
