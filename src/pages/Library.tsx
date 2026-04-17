@@ -183,6 +183,12 @@ const Library = () => {
                 Browse stories, tools, and tech from the community
               </p>
             </div>
+            {user && (
+              <Button onClick={() => setIsContributeOpen(true)} className="gap-2 self-start">
+                <Plus className="w-4 h-4" />
+                Contribute
+              </Button>
+            )}
             <ContributionDialog 
               open={isContributeOpen} 
               onOpenChange={setIsContributeOpen}
