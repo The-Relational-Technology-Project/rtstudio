@@ -1,36 +1,23 @@
 
 
-# Deploy LLM Proxy Edge Function
+## Goal
+Make Sidekick smarter about *when* to use the builder's profile context — pull from it naturally when relevant (e.g., neighborhood-specific builds), but don't force it into every conversation or every generated prompt.
 
-## What This Does
-Creates and deploys a new backend function (`llm-proxy`) that proxies LLM API requests, eliminating CORS issues and keeping API keys server-side. It supports three providers: Anthropic, OpenAI, and an RTP community model.
+## Current state
+`chat-remix` already loads the full profile (neighborhood, neighborhood_description, dreams, tech_familiarity, ai_coding_experience, local_tech_ecosystem) and injects it into the system prompt. So the data is there — Sidekick just isn't being told *how* to use it well.
 
-## Steps
+## The fix
+Update only the **guidance** in the system prompt in `supabase/functions/chat-remix/index.ts` so Sidekick:
 
-### 1. Create the edge function file
-**File:** `supabase/functions/llm-proxy/index.ts`
+1. **Treats the profile as known context** — never asks questions whose answers are already in the profile (e.g., "What's your neighborhood like?" when `neighborhood_description` exists).
+2. **Pulls from it when relevant** — if the builder's request is tied to their neighborhood, community, or local context, draw on the profile naturally (street/neighborhood name, ecosystem details, dreams) instead of asking.
+3. **Doesn't force it when irrelevant** — if the build is generic (e.g., "a habit tracker," "a recipe app"), don't shoehorn neighborhood details in. Stay light-touch.
+4. **Carries the same judgment into generated prompts** — when writing the `---PROMPT_START---` block, only weave in profile specifics if they actually fit the build. Otherwise, keep the prompt clean and generic.
 
-Copy the uploaded code as-is. The function handles:
-- CORS preflight
-- Anthropic format translation (OpenAI ↔ Anthropic, including streaming)
-- OpenAI/OpenRouter pass-through
-- RTP community model (no key needed, uses `RTP_MODEL_URL` env var)
+No changes to `generate-prototype`. No DB or UI changes. No new fields loaded — the profile is already in the system prompt.
 
-### 2. Deploy the edge function
-Deploy `llm-proxy` to Lovable Cloud. It already uses `Deno.serve()` and handles its own CORS — no config.toml changes needed.
-
-### 3. Environment variable
-The `VITE_SUPABASE_URL` is already set in `.env`. The client can construct the proxy URL as:
-```
-${VITE_SUPABASE_URL}/functions/v1/llm-proxy
-```
-No additional env var is strictly needed, but if you'd like a dedicated `VITE_LLM_PROXY_URL` for clarity, I can add it.
-
-## Notes
-- The `RTP_MODEL_URL` secret would need to be set if you want the RTP provider tier to work. Currently not in your secrets list.
-- `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` are already configured as secrets, but this proxy uses BYOK (client sends keys in the Authorization header), so they aren't used by the function itself.
-
+## Files to change
 | File | Change |
 |------|--------|
-| `supabase/functions/llm-proxy/index.ts` | Create new file with uploaded code |
+| `supabase/functions/chat-remix/index.ts` | Add brief guidance to the system prompt: use profile context when relevant, never re-ask what's already in it, don't force it when off-topic |
 
