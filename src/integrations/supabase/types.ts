@@ -124,6 +124,45 @@ export type Database = {
           },
         ]
       }
+      contributions: {
+        Row: {
+          contributor_email: string
+          contributor_name: string
+          created_at: string
+          description: string
+          id: string
+          image_paths: string[]
+          links: string[]
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          contributor_email: string
+          contributor_name: string
+          created_at?: string
+          description: string
+          id?: string
+          image_paths?: string[]
+          links?: string[]
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          contributor_email?: string
+          contributor_name?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_paths?: string[]
+          links?: string[]
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       gift_build_requests: {
         Row: {
           builder_email: string | null
