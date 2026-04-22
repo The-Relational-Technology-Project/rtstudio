@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileOnboarding } from "@/components/ProfileOnboarding";
 import { VisionBoard } from "@/components/VisionBoard";
+import { MyPrototypes } from "@/components/MyPrototypes";
 import { CommitmentsList } from "@/components/CommitmentsList";
 import { ServiceberriesCounter } from "@/components/ServiceberriesCounter";
 import { Button } from "@/components/ui/button";
@@ -268,7 +269,10 @@ const Profile = () => {
           <VisionBoard />
         </div>
 
-        {/* 5. Serviceberries */}
+        {/* 5. My Prototypes */}
+        <MyPrototypes />
+
+        {/* 6. Serviceberries */}
         <div className="mb-8 p-6 rounded-lg border border-border">
           <ServiceberriesCounter variant="profile" />
         </div>
