@@ -1,49 +1,44 @@
 ## Goal
 
-Fix two Sidekick behaviors by updating the system prompt in `supabase/functions/chat-remix/index.ts` (no UI or schema changes needed).
+Fix Sidekick so it visibly demonstrates it knows the builder's profile (especially their neighborhood name) before asking follow-up questions. Today, when a builder says "build a connector site for my neighborhood," Sidekick correctly loads the profile but asks generic questions like "What's the vibe of your neighborhood?" — making it feel like it has no context at all.
 
-## Issue 1: Library items treated as out-of-scope
+## Why this happens
 
-When a builder clicks "Discuss in Sidekick" on the South Australia Citizens' Jury story, Sidekick deflects ("a bit outside my main focus") even though that story is intentionally curated in the Studio library. Anything we've decided to include in the library should be fair game.
+`supabase/functions/chat-remix/index.ts` already loads the full profile (lines 148–200) and tells the model not to re-ask things that are filled in. But:
 
-**Fix:** Add an explicit "IN-SCOPE" rule near the top of `YOUR CAPABILITIES` (around line 491):
+- Many profiles have `neighborhood` populated but `neighborhood_description`, `dreams`, and `local_tech_ecosystem` empty.
+- The current rules tell the model not to *re-ask* known facts but don't tell it to *acknowledge* what it does know.
+- So the model jumps straight to "tell me about your neighborhood" — which is reasonable (description is empty) but feels disembodied because it never named the place it does know.
 
-> **Library items are always in-scope.** Every story, prompt, and tool in the Studio library has been intentionally curated by the stewards — even examples from larger civic, cooperative, or international contexts. Never tell a builder a library item is "outside your focus" or redirect them away from it. Engage with it directly: explain what's interesting about it, surface the underlying patterns, and then help the builder translate those patterns into something neighborhood-scale if they want to go in that direction.
+## Fix (system prompt only)
 
-Also soften the existing "Celebrate the small-scale, hyperlocal nature" line (line 532) so it reads as a translation lens, not a gatekeeping filter:
+Edit the `USING PROFILE CONTEXT WELL` block in `supabase/functions/chat-remix/index.ts` (around lines 194–199) to add two rules:
 
-> Help builders see how patterns from any scale — including larger civic examples in the library — can be translated into small, hyperlocal, neighbor-scale tools.
+1. **Acknowledge known profile fields explicitly.** When a builder asks for help with something tied to their neighborhood/community, name their neighborhood (and any other populated fields that fit) in the response *before* asking for more — e.g., "For Five Points in Denver, here are a few directions…" rather than "Tell me about your neighborhood."
 
-## Issue 2: Sidekick jumps to a single solution
+2. **Scope follow-up questions to actual gaps.** If `neighborhood` is set but `neighborhood_description` is empty, don't ask the broad "what's it like?" — ask the specific missing piece ("I know you're in Five Points — what's one thing about the block or building you'd want this site to reflect?"). If `dreams` is empty, ask about goals specifically. Never ask a question that pretends the whole profile is unknown.
 
-Today the prompt-remix flow goes straight from "gather context" → "deliver one prompt." Builders don't get to weigh alternatives.
+3. **Quick reference template.** Add a short example pair showing good vs. bad first responses so the model has a concrete pattern to follow.
 
-**Fix:** Insert a new step in the `REMIX PROMPTS` / build flow (around lines 497–502 and again before the `---PROMPT_START---` delivery on line 554):
-
-> **Before remixing or building, surface 2–3 solution paths.** Once you understand the builder's neighborhood and what they're trying to do, briefly describe 2–3 distinct directions they could take — for example, different tools from the library, different scopes (one block vs. a whole neighborhood), or different formats (digital bulletin board vs. event series vs. directory). Reference relevant library items inline using the `[LIBRARY_ITEM:...]` markers. Then ask which direction resonates before drafting a remixed prompt or offering to build a prototype. Keep this lightweight — a short paragraph or 3 bulleted options, not a long menu.
-
-Add a matching reminder under `IMPORTANT FOR PROMPT REMIXING` (around line 547):
-
-> Never deliver a `---PROMPT_START---` block on the first turn after the builder picks an item. Always offer a small set of paths first and confirm the direction.
+Also tighten the existing rule at line 195 to read: *"Treat the profile above as already known. Reference populated fields by name in your first substantive response so the builder can tell you have their context. Only ask follow-up questions about fields that are genuinely empty — and frame those questions narrowly around the missing piece, not as if you know nothing."*
 
 ## What stays the same
 
-- No changes to the chat UI, prototype builder, library deep-linking, or Gift Build flow.
-- Tone rules (no flattery, "prompt" not "template", collaborator-not-cheerleader) are unchanged.
-- The single-prompt delivery format with `---PROMPT_START---` / `---PROMPT_END---` delimiters is preserved — it just happens one turn later, after the builder confirms a direction.
+- Profile loading logic, schema, and field selection are unchanged.
+- The 2–3 solution paths rule and library-items-always-in-scope rule from the previous update stay intact.
+- No UI changes, no schema changes, no new fields.
 
 ## Files touched
 
-- `supabase/functions/chat-remix/index.ts` — system prompt edits only (lines ~490–560).
+- `supabase/functions/chat-remix/index.ts` — system prompt edits in the `USING PROFILE CONTEXT WELL` section only.
 
 ## How we'll verify
 
-After deploy, re-run the South Australia Citizens' Jury "Discuss in Sidekick" flow and a fresh remix flow:
-1. Sidekick should engage with the citizens' jury story directly, surface the deliberation pattern, and offer 2–3 neighborhood-scale translations rather than deflecting.
-2. On any "help me build X" request, Sidekick should propose 2–3 paths with library references first, then wait for the builder to pick before producing a `---PROMPT_START---` block.
+After deploy, sign in as a user whose profile has only `neighborhood` populated and ask "help me build a connector site for my neighborhood." Sidekick should:
+1. Name the neighborhood in its first response.
+2. Offer 2–3 directions (existing behavior).
+3. Ask only about specifically missing context (e.g., what to highlight, who the audience is) rather than the generic "what's the vibe."
 
-## Memory updates
+## Memory update
 
-Add a short core rule to `mem://index.ts` capturing both behaviors so future edits don't regress them:
-
-> Library items are always in-scope for Sidekick. Before remixing/building, surface 2–3 solution paths and let the builder pick.
+Add to `mem://index.md` Core: *"Sidekick must name known profile fields (especially neighborhood) in its first substantive reply and scope follow-ups to actually-empty fields."*
