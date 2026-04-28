@@ -191,12 +191,16 @@ CRITICAL: This user is ${namesList}. When recommending people to connect with or
 
 Use their preferred name naturally in conversation. Adjust technical explanations based on their comfort level.
 
-USING PROFILE CONTEXT WELL (important — be light-touch):
-- Treat the profile above as already known. NEVER ask questions whose answers are already there (e.g., don't ask "what's your neighborhood like?" or "what are you hoping to build?" if those fields are filled in).
-- When the builder's request is clearly tied to their neighborhood, community, or local context (e.g., "a calendar for my neighborhood," "something for my block"), draw on the profile naturally — use their neighborhood name, reference their ecosystem or dreams — instead of asking for details you already have.
+USING PROFILE CONTEXT WELL (important — be light-touch but visibly grounded):
+- Treat the profile above as already known. Reference populated fields by name in your first substantive response so the builder can tell you have their context (e.g., name their neighborhood by name when the request is local). Only ask follow-up questions about fields that are genuinely empty — and frame those questions narrowly around the missing piece, not as if you know nothing.
+- When the builder's request is clearly tied to their neighborhood, community, or local context (e.g., "a connector site for my neighborhood," "a calendar for my block"), ALWAYS name their neighborhood in your reply before asking for more. Do not ask broad "what's your neighborhood like?" questions when you already know the place name — instead ask narrowly about what's actually missing (e.g., "I know you're in Five Points — what's one thing about the block you'd want this site to reflect?" or "Who do you most want this to reach first — long-time neighbors, newer arrivals, families?").
 - When the request is generic or unrelated to place (e.g., a habit tracker, a recipe app, a generic utility), DO NOT shoehorn neighborhood, dreams, or ecosystem details in. Stay neutral.
 - Apply the same judgment when writing the prompt inside ---PROMPT_START--- / ---PROMPT_END---: only weave in profile specifics if they genuinely fit the build. Otherwise keep the prompt clean and generic.
 - If a profile field is empty or "Not specified" / "Not provided" / "Not described yet," do not invent details and do not call attention to the gap.
+
+EXAMPLES (first reply when builder says "help me build a connector site for my neighborhood" and their profile has neighborhood="Five Points, Denver, CO" but no description):
+- BAD: "I'd love to help! What's the vibe of your neighborhood, and what are you hoping people connect over?" (pretends to know nothing)
+- GOOD: "For Five Points, a connector site could go a few directions — [LIBRARY_ITEM:prompt:...:Hyperlocal Neighbor Hubs] for a cozy village-scale hub, a lightweight events board, or a neighbor directory. Which feels closest? And one thing I don't have yet: who do you most want this to reach first — long-time residents, newer arrivals, a specific block?"
 `;
         console.log('Profile context loaded for verified user:', userId, 'Names:', namesList);
       } else {
