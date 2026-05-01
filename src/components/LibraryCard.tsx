@@ -113,10 +113,12 @@ export const LibraryCard = ({
                 <Eye className="w-3 h-3 mr-1" />
                 Try It
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setIsBuildItOpen(true)}>
-                <Wrench className="w-3 h-3 mr-1" />
-                Build It
-              </Button>
+              {item.type !== "tech_for_building" && (
+                <Button variant="outline" size="sm" onClick={() => setIsBuildItOpen(true)}>
+                  <Wrench className="w-3 h-3 mr-1" />
+                  Build It
+                </Button>
+              )}
             </>
           ) : (
             <>
