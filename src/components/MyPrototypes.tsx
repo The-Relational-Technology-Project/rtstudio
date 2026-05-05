@@ -156,6 +156,14 @@ export const MyPrototypes = () => {
                 <Button
                   size="sm"
                   variant="ghost"
+                  onClick={() => handleCopyPrompt(p)}
+                  title="Copy prompt"
+                >
+                  {copiedPromptId === p.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={() => handleShare(p)}
                   disabled={busyId === p.id}
                   title="Copy share link"
