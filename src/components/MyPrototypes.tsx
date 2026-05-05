@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Hammer, ExternalLink, Share2, Check, Loader2 } from "lucide-react";
+import { Hammer, ExternalLink, Share2, Check, Loader2, Copy } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface PrototypeRow {
@@ -22,6 +22,7 @@ export const MyPrototypes = () => {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedPromptId, setCopiedPromptId] = useState<string | null>(null);
 
   const load = async () => {
     if (!user) return;
@@ -93,6 +94,17 @@ export const MyPrototypes = () => {
     }
   };
 
+  const handleCopyPrompt = async (p: PrototypeRow) => {
+    try {
+      await navigator.clipboard.writeText(p.prompt || "");
+      setCopiedPromptId(p.id);
+      toast({ title: "Prompt copied" });
+      setTimeout(() => setCopiedPromptId((c) => (c === p.id ? null : c)), 2000);
+    } catch {
+      toast({ title: "Copy failed", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="mb-8 p-6 rounded-lg border border-border">
       <div className="flex items-center justify-between mb-4">
@@ -140,6 +152,14 @@ export const MyPrototypes = () => {
                     <ExternalLink className="h-3 w-3" />
                   )}
                   Open
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleCopyPrompt(p)}
+                  title="Copy prompt"
+                >
+                  {copiedPromptId === p.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                 </Button>
                 <Button
                   size="sm"
