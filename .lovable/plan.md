@@ -1,44 +1,53 @@
-## Goal
+# Design Contributor Guide
 
-Fix Sidekick so it visibly demonstrates it knows the builder's profile (especially their neighborhood name) before asking follow-up questions. Today, when a builder says "build a connector site for my neighborhood," Sidekick correctly loads the profile but asks generic questions like "What's the vibe of your neighborhood?" — making it feel like it has no context at all.
+Create a single new file, `DESIGN.md`, at the repo root. It's the onboarding doc for Ryan (and any future design collaborator) covering the design system, file map, and how to ship changes to production. No code changes, no token changes — documentation only.
 
-## Why this happens
+## Why
 
-`supabase/functions/chat-remix/index.ts` already loads the full profile (lines 148–200) and tells the model not to re-ask things that are filled in. But:
+Ryan needs a single source of truth for: where to edit visuals, how the token system works, what's off-limits, and how a design tweak gets from preview to `studio.relationaltechproject.org`.
 
-- Many profiles have `neighborhood` populated but `neighborhood_description`, `dreams`, and `local_tech_ecosystem` empty.
-- The current rules tell the model not to *re-ask* known facts but don't tell it to *acknowledge* what it does know.
-- So the model jumps straight to "tell me about your neighborhood" — which is reasonable (description is empty) but feels disembodied because it never named the place it does know.
+## File to create
 
-## Fix (system prompt only)
+`DESIGN.md` (repo root, alongside `README.md` and `HACKATHON.md`)
 
-Edit the `USING PROFILE CONTEXT WELL` block in `supabase/functions/chat-remix/index.ts` (around lines 194–199) to add two rules:
+## Sections
 
-1. **Acknowledge known profile fields explicitly.** When a builder asks for help with something tied to their neighborhood/community, name their neighborhood (and any other populated fields that fit) in the response *before* asking for more — e.g., "For Five Points in Denver, here are a few directions…" rather than "Tell me about your neighborhood."
+1. **Overview** — One-paragraph framing: warm-craft aesthetic, Fraunces + Inter, terracotta/cream palette, no generic AI look.
+2. **Design system map**
+   - `src/index.css` — HSL tokens, gradients, shadows, font-face
+   - `tailwind.config.ts` — token → utility mapping, font families
+   - `src/components/ui/*` — shadcn primitives; restyle via CVA variants, don't fork
+   - Page surfaces most likely to be redesigned: `Landing.tsx`, `Home.tsx`, `Library.tsx`, `Profile.tsx`, `SidekickPage.tsx`, `TopNav.tsx`, `Footer.tsx`
+   - Card surfaces: `LibraryCard.tsx`, `ToolGalleryCard.tsx`, `StoryCard.tsx`, `PromptCard.tsx`
+3. **Token rules** (the non-negotiables)
+   - All colors HSL, defined in `index.css`, surfaced through `tailwind.config.ts`
+   - Never use raw Tailwind colors (`text-white`, `bg-black`) in components — always semantic tokens (`bg-background`, `text-foreground`, `bg-primary`, etc.)
+   - Adding a new color = add token first, then use it
+4. **Typography & motion**
+   - Fraunces for display/headings, Inter for body — no substitutions
+   - framer-motion for any meaningful animation; prefer one strong moment over scattered micro-interactions
+5. **Assets**
+   - Static (fonts, PDFs, favicons) → `public/`
+   - Imagery imported by components → `src/assets/`, imported as ES modules
+   - Custom fonts: drop file → `@font-face` in `index.css` → expose in `tailwind.config.ts`
+6. **Guardrails / what not to touch**
+   - No new dashboards or orientation tours
+   - Sidekick stays a collaborator (no flattery copy)
+   - Don't edit `src/integrations/supabase/client.ts` or `types.ts`
+   - Frontend redesign work shouldn't touch `supabase/functions/*` or migrations
+7. **Workflow: preview → production**
+   - **Lane A (in Lovable):** prompt → auto-commits to GitHub → preview updates instantly → click **Publish → Update** to push frontend live
+   - **Lane B (local IDE):** clone repo → `npm i` → `npm run dev` → branch → push → preview reflects → publish from Lovable
+   - Backend (edge functions, migrations) deploys automatically; frontend requires the Publish click
+   - Preview URL, published URL, and custom domain listed for reference
+8. **Working with Sidekick (the AI builder)**
+   - How to phrase design prompts (reference tokens, not hex values; reference component files by path)
+   - Use plan mode for larger redesigns
+9. **Open question: marketing site**
+   - `relationaltechproject.org` is a separate codebase. Two options noted: (a) bring it into Lovable as a sibling project sharing tokens, or (b) sync visual language manually. Decision deferred.
 
-2. **Scope follow-up questions to actual gaps.** If `neighborhood` is set but `neighborhood_description` is empty, don't ask the broad "what's it like?" — ask the specific missing piece ("I know you're in Five Points — what's one thing about the block or building you'd want this site to reflect?"). If `dreams` is empty, ask about goals specifically. Never ask a question that pretends the whole profile is unknown.
+## Out of scope
 
-3. **Quick reference template.** Add a short example pair showing good vs. bad first responses so the model has a concrete pattern to follow.
-
-Also tighten the existing rule at line 195 to read: *"Treat the profile above as already known. Reference populated fields by name in your first substantive response so the builder can tell you have their context. Only ask follow-up questions about fields that are genuinely empty — and frame those questions narrowly around the missing piece, not as if you know nothing."*
-
-## What stays the same
-
-- Profile loading logic, schema, and field selection are unchanged.
-- The 2–3 solution paths rule and library-items-always-in-scope rule from the previous update stay intact.
-- No UI changes, no schema changes, no new fields.
-
-## Files touched
-
-- `supabase/functions/chat-remix/index.ts` — system prompt edits in the `USING PROFILE CONTEXT WELL` section only.
-
-## How we'll verify
-
-After deploy, sign in as a user whose profile has only `neighborhood` populated and ask "help me build a connector site for my neighborhood." Sidekick should:
-1. Name the neighborhood in its first response.
-2. Offer 2–3 directions (existing behavior).
-3. Ask only about specifically missing context (e.g., what to highlight, who the audience is) rather than the generic "what's the vibe."
-
-## Memory update
-
-Add to `mem://index.md` Core: *"Sidekick must name known profile fields (especially neighborhood) in its first substantive reply and scope follow-ups to actually-empty fields."*
+- No changes to tokens, components, or copy
+- No changes to the marketing site
+- No new tooling (Storybook, Figma sync, etc.) — can be a follow-up if Ryan wants it
