@@ -94,6 +94,17 @@ export const MyPrototypes = () => {
     }
   };
 
+  const handleCopyPrompt = async (p: PrototypeRow) => {
+    try {
+      await navigator.clipboard.writeText(p.prompt || "");
+      setCopiedPromptId(p.id);
+      toast({ title: "Prompt copied" });
+      setTimeout(() => setCopiedPromptId((c) => (c === p.id ? null : c)), 2000);
+    } catch {
+      toast({ title: "Copy failed", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="mb-8 p-6 rounded-lg border border-border">
       <div className="flex items-center justify-between mb-4">
