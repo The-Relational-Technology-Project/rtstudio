@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Hammer, ExternalLink, Share2, Check, Loader2 } from "lucide-react";
+import { Hammer, ExternalLink, Share2, Check, Loader2, Copy } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface PrototypeRow {
