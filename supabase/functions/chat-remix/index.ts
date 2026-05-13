@@ -68,19 +68,21 @@ serve(async (req) => {
 
     // Get authenticated user from JWT token - don't trust client-provided userId
     let userId: string | null = null;
+    let userEmail: string | null = null;
     let userSupabase: ReturnType<typeof createClient> | null = null;
     const authHeader = req.headers.get('Authorization');
-    
+
     if (authHeader?.startsWith('Bearer ')) {
       // Create a client with the user's JWT to verify identity and for user-context operations
       userSupabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
         global: { headers: { Authorization: authHeader } }
       });
-      
+
       const { data: { user }, error: authError } = await userSupabase.auth.getUser();
-      
+
       if (!authError && user?.id) {
         userId = user.id;
+        userEmail = user.email || null;
         console.log('Verified user ID from JWT:', userId);
       }
     }
@@ -656,11 +658,13 @@ Begin by understanding what they're looking for - whether that's exploring the l
       if (functionName === 'submit_contribution_interest') {
         // Handle contribution interest - send email to Deb
         console.log('Contribution interest:', args);
-        
-        let contributorEmail = '';
+
+        let contributorEmail = userEmail || '';
+        let contributorUsername = '';
         if (userId) {
-          const { data: profile } = await supabase.from('profiles').select('email').eq('id', userId).maybeSingle();
-          contributorEmail = profile?.email || '';
+          const { data: profile } = await supabase.from('profiles').select('email, display_name, full_name').eq('id', userId).maybeSingle();
+          contributorEmail = contributorEmail || profile?.email || '';
+          contributorUsername = profile?.display_name || profile?.full_name || '';
         }
 
         const recentMessages = messages.slice(-6).map((m: any) => `${m.role}: ${m.content}`).join('\n');
@@ -671,7 +675,7 @@ Begin by understanding what they're looking for - whether that's exploring the l
             const { Resend } = await import('https://esm.sh/resend@2.0.0');
             const resendClient = new Resend(RESEND_API_KEY);
             const timestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" });
-            
+
             await resendClient.emails.send({
               from: "Relational Tech Studio <notifications@relationaltechproject.org>",
               to: ["deborah@relationaltechproject.org"],
@@ -683,6 +687,7 @@ Begin by understanding what they're looking for - whether that's exploring the l
                   <div style="background: #f7f0e8; padding: 16px; border-radius: 8px; margin: 20px 0;">
                     <p style="margin: 0 0 8px 0;"><strong>Name:</strong> ${args.contributor_name}</p>
                     ${contributorEmail ? `<p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${contributorEmail}</p>` : ''}
+                    ${contributorUsername ? `<p style="margin: 0 0 8px 0;"><strong>Username:</strong> ${contributorUsername}</p>` : ''}
                     ${args.neighborhood ? `<p style="margin: 0 0 8px 0;"><strong>Neighborhood:</strong> ${args.neighborhood}</p>` : ''}
                     <p style="margin: 0 0 8px 0;"><strong>Type:</strong> ${args.contribution_type}</p>
                     <p style="margin: 0 0 8px 0;"><strong>Summary:</strong></p>
