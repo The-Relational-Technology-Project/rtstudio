@@ -54,8 +54,8 @@ export const LibraryAdminTab = () => {
   const fetchAll = async () => {
     setLoading(true);
     const [s, p, t, prof] = await Promise.all([
-      supabase.from("stories").select("*").order("created_at", { ascending: false }),
-      supabase.from("prompts").select("*").order("created_at", { ascending: false }),
+      supabase.from("stories").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+      supabase.from("prompts").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       supabase.from("tools").select("*").order("sort_order", { ascending: true }),
       supabase.from("profiles").select("id, display_name, email"),
     ]);
@@ -64,12 +64,13 @@ export const LibraryAdminTab = () => {
       ...(s.data || []).map((r: any) => ({
         id: r.id, type: "story" as ItemType, title: r.title || "Untitled",
         summary: r.story_text || "", author: r.attribution, fullContent: r.full_story_text,
-        userId: r.user_id, createdAt: r.created_at,
+        userId: r.user_id, createdAt: r.created_at, sortOrder: r.sort_order,
       })),
       ...(p.data || []).map((r: any) => ({
         id: r.id, type: "prompt" as ItemType, title: r.title,
         summary: r.description || "No description", category: r.category,
         examplePrompt: r.example_prompt, userId: r.user_id, createdAt: r.created_at,
+        sortOrder: r.sort_order,
       })),
       ...(t.data || []).map((r: any) => ({
         id: r.id, type: "tool" as ItemType, title: r.name,
