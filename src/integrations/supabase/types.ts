@@ -35,6 +35,21 @@ export type Database = {
         }
         Relationships: []
       }
+      admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chat_usage: {
         Row: {
           created_at: string
@@ -133,6 +148,8 @@ export type Database = {
           id: string
           image_paths: string[]
           links: string[]
+          promoted_item_id: string | null
+          promoted_item_type: string | null
           status: string
           title: string
           user_id: string
@@ -145,6 +162,8 @@ export type Database = {
           id?: string
           image_paths?: string[]
           links?: string[]
+          promoted_item_id?: string | null
+          promoted_item_type?: string | null
           status?: string
           title: string
           user_id: string
@@ -157,6 +176,8 @@ export type Database = {
           id?: string
           image_paths?: string[]
           links?: string[]
+          promoted_item_id?: string | null
+          promoted_item_type?: string | null
           status?: string
           title?: string
           user_id?: string
@@ -688,6 +709,7 @@ export type Database = {
           github_url: string | null
           id: string
           image_url: string | null
+          is_featured: boolean
           is_joinable: boolean
           lovable_url: string | null
           name: string
@@ -704,6 +726,7 @@ export type Database = {
           github_url?: string | null
           id?: string
           image_url?: string | null
+          is_featured?: boolean
           is_joinable?: boolean
           lovable_url?: string | null
           name: string
@@ -720,6 +743,7 @@ export type Database = {
           github_url?: string | null
           id?: string
           image_url?: string | null
+          is_featured?: boolean
           is_joinable?: boolean
           lovable_url?: string | null
           name?: string
@@ -767,6 +791,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_builders_overview: {
+        Args: never
+        Returns: {
+          commitments_count: number
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          last_active: string
+          neighborhood: string
+          prototypes_count: number
+          serviceberries_total: number
+        }[]
+      }
       award_serviceberries: {
         Args: {
           p_amount: number
@@ -777,6 +815,7 @@ export type Database = {
         Returns: undefined
       }
       increment_prototype_counter: { Args: never; Returns: undefined }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       match_library_items: {
         Args: {
           match_count?: number
