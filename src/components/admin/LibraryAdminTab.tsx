@@ -54,8 +54,8 @@ export const LibraryAdminTab = () => {
   const fetchAll = async () => {
     setLoading(true);
     const [s, p, t, prof] = await Promise.all([
-      supabase.from("stories").select("*").order("created_at", { ascending: false }),
-      supabase.from("prompts").select("*").order("created_at", { ascending: false }),
+      supabase.from("stories").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+      supabase.from("prompts").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       supabase.from("tools").select("*").order("sort_order", { ascending: true }),
       supabase.from("profiles").select("id, display_name, email"),
     ]);
@@ -64,12 +64,13 @@ export const LibraryAdminTab = () => {
       ...(s.data || []).map((r: any) => ({
         id: r.id, type: "story" as ItemType, title: r.title || "Untitled",
         summary: r.story_text || "", author: r.attribution, fullContent: r.full_story_text,
-        userId: r.user_id, createdAt: r.created_at,
+        userId: r.user_id, createdAt: r.created_at, sortOrder: r.sort_order,
       })),
       ...(p.data || []).map((r: any) => ({
         id: r.id, type: "prompt" as ItemType, title: r.title,
         summary: r.description || "No description", category: r.category,
         examplePrompt: r.example_prompt, userId: r.user_id, createdAt: r.created_at,
+        sortOrder: r.sort_order,
       })),
       ...(t.data || []).map((r: any) => ({
         id: r.id, type: "tool" as ItemType, title: r.name,
@@ -97,8 +98,13 @@ export const LibraryAdminTab = () => {
         (x.author || "").toLowerCase().includes(q)
       );
     }
-    if (filter !== "tool") {
+    if (filter === "all") {
       r = [...r].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    } else {
+      r = [...r].sort((a, b) =>
+        (a.sortOrder ?? 50) - (b.sortOrder ?? 50) ||
+        b.createdAt.localeCompare(a.createdAt)
+      );
     }
     return r;
   }, [rows, filter, search]);
@@ -168,22 +174,24 @@ export const LibraryAdminTab = () => {
     }
   };
 
-  // Drag-to-reorder for tools (only when filter is "tool")
+  // Drag-to-reorder enabled when filter targets a single type
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const handleDragEnd = async (e: DragEndEvent) => {
     if (!e.over || e.active.id === e.over.id) return;
-    const tools = filtered.filter(r => r.type === "tool");
-    const oldIdx = tools.findIndex(t => t.id === e.active.id);
-    const newIdx = tools.findIndex(t => t.id === e.over!.id);
-    const reordered = arrayMove(tools, oldIdx, newIdx);
-    // Reassign sort_order in steps of 10
+    if (filter === "all") return;
+    const items = filtered.filter(r => r.type === filter);
+    const oldIdx = items.findIndex(t => t.id === e.active.id);
+    const newIdx = items.findIndex(t => t.id === e.over!.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const reordered = arrayMove(items, oldIdx, newIdx);
     const updates = reordered.map((t, i) => ({ id: t.id, sort_order: (i + 1) * 10 }));
     setRows(rs => {
       const map = new Map(updates.map(u => [u.id, u.sort_order]));
       return rs.map(r => map.has(r.id) ? { ...r, sortOrder: map.get(r.id) } : r);
     });
+    const table = filter === "story" ? "stories" : filter === "prompt" ? "prompts" : "tools";
     await Promise.all(updates.map(u =>
-      supabase.from("tools").update({ sort_order: u.sort_order }).eq("id", u.id)
+      supabase.from(table).update({ sort_order: u.sort_order }).eq("id", u.id)
     ));
     toast({ title: "Order saved" });
   };
@@ -224,7 +232,7 @@ export const LibraryAdminTab = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8"></TableHead>
-                  {filter === "tool" && <TableHead className="w-8"></TableHead>}
+                  {filter !== "all" && <TableHead className="w-8"></TableHead>}
                   <TableHead className="w-20">Type</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Author</TableHead>
@@ -235,7 +243,7 @@ export const LibraryAdminTab = () => {
               </TableHeader>
               <TableBody>
                 <SortableContext
-                  items={filtered.filter(r => r.type === "tool").map(r => r.id)}
+                  items={filter === "all" ? [] : filtered.filter(r => r.type === filter).map(r => r.id)}
                   strategy={verticalListSortingStrategy}>
                   {filtered.map(row => (
                     <AdminRow
@@ -332,8 +340,8 @@ const AdminRow = ({
   onToggle: () => void; onEdit: () => void; onDelete: () => void;
   onToggleFeatured: () => void; authorLabel: string;
 }) => {
-  const isTool = row.type === "tool";
-  const sortable = useSortable({ id: row.id, disabled: !isTool || filter !== "tool" });
+  const canDrag = filter !== "all" && row.type === filter;
+  const sortable = useSortable({ id: row.id, disabled: !canDrag });
   const style = {
     transform: CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
@@ -341,11 +349,13 @@ const AdminRow = ({
   return (
     <TableRow ref={sortable.setNodeRef} style={style}>
       <TableCell><Checkbox checked={selected} onCheckedChange={onToggle} /></TableCell>
-      {filter === "tool" && (
+      {filter !== "all" && (
         <TableCell>
-          <span {...sortable.attributes} {...sortable.listeners} className="cursor-grab text-muted-foreground">
-            <GripVertical className="h-4 w-4" />
-          </span>
+          {canDrag && (
+            <span {...sortable.attributes} {...sortable.listeners} className="cursor-grab text-muted-foreground">
+              <GripVertical className="h-4 w-4" />
+            </span>
+          )}
         </TableCell>
       )}
       <TableCell className="text-xs uppercase text-muted-foreground">{row.type}</TableCell>
