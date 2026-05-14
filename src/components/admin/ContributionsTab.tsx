@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,8 +66,8 @@ export const ContributionsTab = () => {
             </TableHeader>
             <TableBody>
               {items.map(c => (
-                <>
-                  <TableRow key={c.id} className="cursor-pointer"
+                <Fragment key={c.id}>
+                  <TableRow className="cursor-pointer"
                     onClick={() => setExpanded(expanded === c.id ? null : c.id)}>
                     <TableCell>
                       <Badge variant={c.status === "new" ? "default" : "outline"}>{c.status}</Badge>
