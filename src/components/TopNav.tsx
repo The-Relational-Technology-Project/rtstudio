@@ -48,7 +48,7 @@ export const TopNav = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <div className="flex gap-8">
-              {navItems.map((item) => (
+              {allNavItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
