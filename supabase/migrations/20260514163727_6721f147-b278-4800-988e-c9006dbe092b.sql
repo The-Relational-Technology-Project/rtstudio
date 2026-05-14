@@ -1,0 +1,1 @@
+DELETE FROM public.studio_log WHERE title = 'Designer collaboration kickoff';
