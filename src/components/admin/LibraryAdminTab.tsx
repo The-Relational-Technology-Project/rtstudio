@@ -269,6 +269,8 @@ export const LibraryAdminTab = () => {
         />
       )}
 
+      <NewLibraryItemDialog open={newOpen} onOpenChange={setNewOpen} onSuccess={fetchAll} />
+
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
