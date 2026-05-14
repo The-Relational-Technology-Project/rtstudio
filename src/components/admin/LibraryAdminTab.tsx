@@ -98,8 +98,13 @@ export const LibraryAdminTab = () => {
         (x.author || "").toLowerCase().includes(q)
       );
     }
-    if (filter !== "tool") {
+    if (filter === "all") {
       r = [...r].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    } else {
+      r = [...r].sort((a, b) =>
+        (a.sortOrder ?? 50) - (b.sortOrder ?? 50) ||
+        b.createdAt.localeCompare(a.createdAt)
+      );
     }
     return r;
   }, [rows, filter, search]);
