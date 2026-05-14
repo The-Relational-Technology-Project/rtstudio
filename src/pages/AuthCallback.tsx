@@ -43,16 +43,11 @@ const AuthCallback = () => {
 
       // Check if user has added anything to their profile (fast, and never block sign-in indefinitely)
       try {
-        type ProfileCheck = {
-          display_name: string | null;
-          neighborhood: string | null;
-          neighborhood_description: string | null;
-          dreams: string | null;
-        };
+        type ProfileCheck = { profile_completed: boolean | null };
 
         const query = supabase
           .from("profiles")
-          .select("display_name, neighborhood, neighborhood_description, dreams")
+          .select("profile_completed")
           .eq("id", userId)
           .maybeSingle();
 
@@ -64,23 +59,16 @@ const AuthCallback = () => {
 
         if (result.error) {
           console.error("Profile check error:", result.error);
-          navigate("/sidekick", { replace: true });
+          navigate("/home", { replace: true });
           return;
         }
 
-        const profile = result.data;
-        const hasProfileContent = !!profile &&
-          (Boolean(profile.display_name) ||
-            Boolean(profile.neighborhood) ||
-            Boolean(profile.neighborhood_description) ||
-            Boolean(profile.dreams));
-
-        // Signup notification is now sent after onboarding completes (in ProfileOnboarding)
-        navigate(hasProfileContent ? "/sidekick" : "/profile", { replace: true });
+        // Signup notification is sent after onboarding completes (in ProfileOnboarding)
+        navigate(result.data?.profile_completed ? "/home" : "/profile", { replace: true });
       } catch (e) {
         console.error("Profile lookup failed:", e);
         // If anything goes wrong, do not trap the user on a spinner.
-        navigate("/sidekick", { replace: true });
+        navigate("/home", { replace: true });
       }
     };
 
