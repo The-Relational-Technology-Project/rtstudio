@@ -340,8 +340,8 @@ const AdminRow = ({
   onToggle: () => void; onEdit: () => void; onDelete: () => void;
   onToggleFeatured: () => void; authorLabel: string;
 }) => {
-  const isTool = row.type === "tool";
-  const sortable = useSortable({ id: row.id, disabled: !isTool || filter !== "tool" });
+  const canDrag = filter !== "all" && row.type === filter;
+  const sortable = useSortable({ id: row.id, disabled: !canDrag });
   const style = {
     transform: CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
@@ -349,11 +349,13 @@ const AdminRow = ({
   return (
     <TableRow ref={sortable.setNodeRef} style={style}>
       <TableCell><Checkbox checked={selected} onCheckedChange={onToggle} /></TableCell>
-      {filter === "tool" && (
+      {filter !== "all" && (
         <TableCell>
-          <span {...sortable.attributes} {...sortable.listeners} className="cursor-grab text-muted-foreground">
-            <GripVertical className="h-4 w-4" />
-          </span>
+          {canDrag && (
+            <span {...sortable.attributes} {...sortable.listeners} className="cursor-grab text-muted-foreground">
+              <GripVertical className="h-4 w-4" />
+            </span>
+          )}
         </TableCell>
       )}
       <TableCell className="text-xs uppercase text-muted-foreground">{row.type}</TableCell>
