@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { EditLibraryItemDialog } from "@/components/EditLibraryItemDialog";
+import { NewLibraryItemDialog } from "@/components/admin/NewLibraryItemDialog";
 import type { LibraryItem, ItemType } from "@/types/library";
-import { Pencil, Trash2, GripVertical, Star } from "lucide-react";
+import { Pencil, Trash2, GripVertical, Star, Plus } from "lucide-react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   DragEndEvent,
@@ -48,6 +49,7 @@ export const LibraryAdminTab = () => {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignTo, setReassignTo] = useState<string>("");
   const [profiles, setProfiles] = useState<{ id: string; label: string }[]>([]);
+  const [newOpen, setNewOpen] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -207,6 +209,9 @@ export const LibraryAdminTab = () => {
               <Button size="sm" variant="destructive" onClick={() => setConfirmBulkDelete(true)}>Delete</Button>
             </>
           )}
+          <Button size="sm" onClick={() => setNewOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> New item
+          </Button>
         </div>
       </div>
 
@@ -263,6 +268,8 @@ export const LibraryAdminTab = () => {
           onSuccess={fetchAll}
         />
       )}
+
+      <NewLibraryItemDialog open={newOpen} onOpenChange={setNewOpen} onSuccess={fetchAll} />
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
