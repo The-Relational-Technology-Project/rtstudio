@@ -16,8 +16,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { EditLibraryItemDialog } from "@/components/EditLibraryItemDialog";
+import { NewLibraryItemDialog } from "@/components/admin/NewLibraryItemDialog";
 import type { LibraryItem, ItemType } from "@/types/library";
-import { Pencil, Trash2, GripVertical, Star } from "lucide-react";
+import { Pencil, Trash2, GripVertical, Star, Plus } from "lucide-react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   DragEndEvent,
