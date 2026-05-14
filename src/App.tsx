@@ -15,6 +15,8 @@ import Profile from "./pages/Profile";
 import Support from "./pages/Support";
 import PrototypeShare from "./pages/PrototypeShare";
 import PrototypeEmbed from "./pages/PrototypeEmbed";
+import Admin from "./pages/Admin";
+import { AdminRoute } from "./components/admin/AdminRoute";
 import { TourProvider } from "./contexts/TourContext";
 import { SidekickProvider } from "./contexts/SidekickContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -67,6 +69,16 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Support />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <AdminRoute>
+                        <Admin />
+                      </AdminRoute>
                     </ProtectedRoute>
                   }
                 />
