@@ -209,6 +209,9 @@ export const LibraryAdminTab = () => {
               <Button size="sm" variant="destructive" onClick={() => setConfirmBulkDelete(true)}>Delete</Button>
             </>
           )}
+          <Button size="sm" onClick={() => setNewOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> New item
+          </Button>
         </div>
       </div>
 
