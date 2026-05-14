@@ -396,6 +396,7 @@ export type Database = {
           example_prompt: string
           id: string
           parent_tool_id: string | null
+          sort_order: number
           title: string
           user_id: string | null
         }
@@ -406,6 +407,7 @@ export type Database = {
           example_prompt: string
           id?: string
           parent_tool_id?: string | null
+          sort_order?: number
           title: string
           user_id?: string | null
         }
@@ -416,6 +418,7 @@ export type Database = {
           example_prompt?: string
           id?: string
           parent_tool_id?: string | null
+          sort_order?: number
           title?: string
           user_id?: string | null
         }
@@ -555,6 +558,7 @@ export type Database = {
           full_story_text: string | null
           id: string
           image_urls: string[] | null
+          sort_order: number
           story_text: string
           title: string | null
           user_id: string | null
@@ -565,6 +569,7 @@ export type Database = {
           full_story_text?: string | null
           id?: string
           image_urls?: string[] | null
+          sort_order?: number
           story_text: string
           title?: string | null
           user_id?: string | null
@@ -575,6 +580,7 @@ export type Database = {
           full_story_text?: string | null
           id?: string
           image_urls?: string[] | null
+          sort_order?: number
           story_text?: string
           title?: string | null
           user_id?: string | null
