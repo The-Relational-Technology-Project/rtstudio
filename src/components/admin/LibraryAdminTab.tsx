@@ -49,6 +49,7 @@ export const LibraryAdminTab = () => {
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignTo, setReassignTo] = useState<string>("");
   const [profiles, setProfiles] = useState<{ id: string; label: string }[]>([]);
+  const [newOpen, setNewOpen] = useState(false);
 
   const fetchAll = async () => {
     setLoading(true);
