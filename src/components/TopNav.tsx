@@ -2,7 +2,8 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { Menu, X, User, LogOut } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { Menu, X, User, LogOut, Shield } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { 
   DropdownMenu, 
@@ -23,9 +24,13 @@ const navItems = [
 export const TopNav = () => {
   const location = useLocation();
   const { profile, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const [isOpen, setIsOpen] = useState(false);
 
-  const mobileNavItems = navItems;
+  const allNavItems = isAdmin
+    ? [...navItems, { name: "Admin", path: "/admin" }]
+    : navItems;
+  const mobileNavItems = allNavItems;
 
   const handleSignOut = async () => {
     await signOut();
@@ -43,7 +48,7 @@ export const TopNav = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <div className="flex gap-8">
-              {navItems.map((item) => (
+              {allNavItems.map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
