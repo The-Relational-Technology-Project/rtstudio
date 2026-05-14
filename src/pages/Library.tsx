@@ -31,9 +31,9 @@ const Library = () => {
   const fetchLibraryItems = useCallback(async () => {
     try {
       const [storiesData, toolsData, promptsData] = await Promise.all([
-        supabase.from("stories").select("*").order("created_at", { ascending: false }),
-        supabase.from("tools").select("*").order("created_at", { ascending: false }),
-        supabase.from("prompts").select("*"),
+        supabase.from("stories").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+        supabase.from("tools").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
+        supabase.from("prompts").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       ]);
 
       const promptsByTool = new Map<string, any[]>();
