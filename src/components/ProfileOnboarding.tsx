@@ -87,7 +87,7 @@ export const ProfileOnboarding = () => {
         description: "You gathered your first serviceberry — welcome!",
       });
 
-      navigate("/");
+      navigate("/home", { replace: true });
     } catch (error) {
       console.error("Error completing profile:", error);
       toast({

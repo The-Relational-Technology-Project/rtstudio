@@ -25,13 +25,10 @@ const Landing = () => {
 
   useEffect(() => {
     if (user) {
-      const hasProfileContent = profile && (
-        profile.display_name || profile.neighborhood || profile.neighborhood_description || profile.dreams
-      );
-      if (!hasProfileContent) {
-        navigate("/profile", { replace: true });
-      } else {
+      if (profile?.profile_completed) {
         navigate("/home", { replace: true });
+      } else {
+        navigate("/profile", { replace: true });
       }
     }
   }, [user, profile, navigate]);
