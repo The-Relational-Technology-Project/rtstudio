@@ -174,22 +174,24 @@ export const LibraryAdminTab = () => {
     }
   };
 
-  // Drag-to-reorder for tools (only when filter is "tool")
+  // Drag-to-reorder enabled when filter targets a single type
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const handleDragEnd = async (e: DragEndEvent) => {
     if (!e.over || e.active.id === e.over.id) return;
-    const tools = filtered.filter(r => r.type === "tool");
-    const oldIdx = tools.findIndex(t => t.id === e.active.id);
-    const newIdx = tools.findIndex(t => t.id === e.over!.id);
-    const reordered = arrayMove(tools, oldIdx, newIdx);
-    // Reassign sort_order in steps of 10
+    if (filter === "all") return;
+    const items = filtered.filter(r => r.type === filter);
+    const oldIdx = items.findIndex(t => t.id === e.active.id);
+    const newIdx = items.findIndex(t => t.id === e.over!.id);
+    if (oldIdx < 0 || newIdx < 0) return;
+    const reordered = arrayMove(items, oldIdx, newIdx);
     const updates = reordered.map((t, i) => ({ id: t.id, sort_order: (i + 1) * 10 }));
     setRows(rs => {
       const map = new Map(updates.map(u => [u.id, u.sort_order]));
       return rs.map(r => map.has(r.id) ? { ...r, sortOrder: map.get(r.id) } : r);
     });
+    const table = filter === "story" ? "stories" : filter === "prompt" ? "prompts" : "tools";
     await Promise.all(updates.map(u =>
-      supabase.from("tools").update({ sort_order: u.sort_order }).eq("id", u.id)
+      supabase.from(table).update({ sort_order: u.sort_order }).eq("id", u.id)
     ));
     toast({ title: "Order saved" });
   };
