@@ -111,7 +111,7 @@ export const ContributionsTab = () => {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               ))}
               {items.length === 0 && (
                 <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-6">No contributions yet</TableCell></TableRow>
