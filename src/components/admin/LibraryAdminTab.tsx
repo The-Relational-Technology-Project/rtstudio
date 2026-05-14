@@ -232,7 +232,7 @@ export const LibraryAdminTab = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-8"></TableHead>
-                  {filter === "tool" && <TableHead className="w-8"></TableHead>}
+                  {filter !== "all" && <TableHead className="w-8"></TableHead>}
                   <TableHead className="w-20">Type</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Author</TableHead>
@@ -243,7 +243,7 @@ export const LibraryAdminTab = () => {
               </TableHeader>
               <TableBody>
                 <SortableContext
-                  items={filtered.filter(r => r.type === "tool").map(r => r.id)}
+                  items={filter === "all" ? [] : filtered.filter(r => r.type === filter).map(r => r.id)}
                   strategy={verticalListSortingStrategy}>
                   {filtered.map(row => (
                     <AdminRow
