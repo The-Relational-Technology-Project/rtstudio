@@ -1,53 +1,39 @@
-# Design Contributor Guide
+# Land on /home after login, refresh Studio Updates
 
-Create a single new file, `DESIGN.md`, at the repo root. It's the onboarding doc for Ryan (and any future design collaborator) covering the design system, file map, and how to ship changes to production. No code changes, no token changes — documentation only.
+## Problem
 
-## Why
+Two related issues:
 
-Ryan needs a single source of truth for: where to edit visuals, how the token system works, what's off-limits, and how a design tweak gets from preview to `studio.relationaltechproject.org`.
+1. **Routing.** After magic-link sign-in or finishing onboarding, builders sometimes land on `/profile` instead of `/home`. The current logic in `AuthCallback.tsx` and `Landing.tsx` infers "is onboarded?" by checking whether `display_name`, `neighborhood`, `neighborhood_description`, or `dreams` are non-empty. A builder who completed onboarding but later cleared one of those fields (or whose onboarding only set fields we don't check) gets bounced back to `/profile` every time. We already have a canonical signal — `profiles.profile_completed` — set by `ProfileOnboarding` on submit. We should use it.
 
-## File to create
+2. **Studio Updates feed is stale.** The newest entry is from April 17, before the recent batch of improvements (prompt persistence for past prototypes, copyable prompt cards, designer collaboration / `DESIGN.md`, library scope rule for Sidekick, neighborhood naming, My Prototypes section, contribution interest email upgrade, README/CLAUDE.md contributor docs).
 
-`DESIGN.md` (repo root, alongside `README.md` and `HACKATHON.md`)
+## Changes
 
-## Sections
+### 1. Routing
 
-1. **Overview** — One-paragraph framing: warm-craft aesthetic, Fraunces + Inter, terracotta/cream palette, no generic AI look.
-2. **Design system map**
-   - `src/index.css` — HSL tokens, gradients, shadows, font-face
-   - `tailwind.config.ts` — token → utility mapping, font families
-   - `src/components/ui/*` — shadcn primitives; restyle via CVA variants, don't fork
-   - Page surfaces most likely to be redesigned: `Landing.tsx`, `Home.tsx`, `Library.tsx`, `Profile.tsx`, `SidekickPage.tsx`, `TopNav.tsx`, `Footer.tsx`
-   - Card surfaces: `LibraryCard.tsx`, `ToolGalleryCard.tsx`, `StoryCard.tsx`, `PromptCard.tsx`
-3. **Token rules** (the non-negotiables)
-   - All colors HSL, defined in `index.css`, surfaced through `tailwind.config.ts`
-   - Never use raw Tailwind colors (`text-white`, `bg-black`) in components — always semantic tokens (`bg-background`, `text-foreground`, `bg-primary`, etc.)
-   - Adding a new color = add token first, then use it
-4. **Typography & motion**
-   - Fraunces for display/headings, Inter for body — no substitutions
-   - framer-motion for any meaningful animation; prefer one strong moment over scattered micro-interactions
-5. **Assets**
-   - Static (fonts, PDFs, favicons) → `public/`
-   - Imagery imported by components → `src/assets/`, imported as ES modules
-   - Custom fonts: drop file → `@font-face` in `index.css` → expose in `tailwind.config.ts`
-6. **Guardrails / what not to touch**
-   - No new dashboards or orientation tours
-   - Sidekick stays a collaborator (no flattery copy)
-   - Don't edit `src/integrations/supabase/client.ts` or `types.ts`
-   - Frontend redesign work shouldn't touch `supabase/functions/*` or migrations
-7. **Workflow: preview → production**
-   - **Lane A (in Lovable):** prompt → auto-commits to GitHub → preview updates instantly → click **Publish → Update** to push frontend live
-   - **Lane B (local IDE):** clone repo → `npm i` → `npm run dev` → branch → push → preview reflects → publish from Lovable
-   - Backend (edge functions, migrations) deploys automatically; frontend requires the Publish click
-   - Preview URL, published URL, and custom domain listed for reference
-8. **Working with Sidekick (the AI builder)**
-   - How to phrase design prompts (reference tokens, not hex values; reference component files by path)
-   - Use plan mode for larger redesigns
-9. **Open question: marketing site**
-   - `relationaltechproject.org` is a separate codebase. Two options noted: (a) bring it into Lovable as a sibling project sharing tokens, or (b) sync visual language manually. Decision deferred.
+- **`src/pages/AuthCallback.tsx`** — replace the field-presence check with `profile_completed`. Route `true` → `/home`, `false` (or missing) → `/profile`. Keep the timeout/fallback behavior; on error, fall back to `/home` (logged-in users shouldn't be dumped into onboarding by a transient query failure).
+- **`src/pages/Landing.tsx`** — same swap. If `user && profile?.profile_completed` → `/home`, else `/profile`. (Confirm `AuthContext` exposes `profile_completed` on the profile object; if not, include it in the select.)
+- **`src/components/ProfileOnboarding.tsx`** — change the post-submit `navigate("/")` to `navigate("/home", { replace: true })` so finishing onboarding goes straight to the chat without a Landing-page flicker.
+- **`src/pages/AuthCallback.tsx` profile select** — narrow the select to just `profile_completed` (drop the four content fields we no longer read).
+
+### 2. Studio Updates
+
+Insert new `studio_log` rows (type `update`) for the recent work, dated to land at the top of the feed. Proposed entries (4 — the sidebar shows the latest 4):
+
+- **Past prototype prompts unlocked** — Prompts for any prototype you've built are now visible from your profile, not just new ones.
+- **Copy Prompt button** — Every Sidekick-delivered prompt now ships with a one-click copy action.
+- **Designer collaboration kickoff** — Ryan Conlan joined to refine the storytelling and visual craft of Studio.
+- **Sidekick names your neighborhood** — Sidekick now references known profile fields (especially neighborhood) in its first substantive reply.
+
+If you'd rather highlight different milestones (or want different copy), say so before I run the migration — these are easy to swap.
+
+## Technical notes
+
+- `profiles.profile_completed` already exists and is set by `ProfileOnboarding` (line 46 of that file). No schema change needed for the routing fix.
+- `studio_log` insert is a simple migration (RLS already permits public read). Ordering uses `created_at DESC`, so we let `now()` handle timestamps.
+- No edge-function or backend logic changes; this is frontend + a single data migration.
 
 ## Out of scope
 
-- No changes to tokens, components, or copy
-- No changes to the marketing site
-- No new tooling (Storybook, Figma sync, etc.) — can be a follow-up if Ryan wants it
+- No changes to `chat-remix`, no migrations beyond the `studio_log` inserts, no design-system changes.
