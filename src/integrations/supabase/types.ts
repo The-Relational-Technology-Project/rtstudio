@@ -820,6 +820,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_app_config: { Args: { _key: string }; Returns: string }
       increment_prototype_counter: { Args: never; Returns: undefined }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       match_library_items: {
