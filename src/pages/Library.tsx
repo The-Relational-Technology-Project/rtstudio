@@ -27,6 +27,9 @@ const Library = () => {
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [promptParentMap, setPromptParentMap] = useState<Map<string, string>>(new Map());
+  const [autoOpenPromptByTool, setAutoOpenPromptByTool] = useState<Map<string, string>>(new Map());
+
 
   const fetchLibraryItems = useCallback(async () => {
     try {
