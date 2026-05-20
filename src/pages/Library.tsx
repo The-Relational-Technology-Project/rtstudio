@@ -40,13 +40,17 @@ const Library = () => {
       ]);
 
       const promptsByTool = new Map<string, any[]>();
+      const promptParents = new Map<string, string>();
       (promptsData.data || []).forEach((p: any) => {
         if (p.parent_tool_id) {
           const existing = promptsByTool.get(p.parent_tool_id) || [];
           existing.push({ id: p.id, title: p.title, description: p.description, examplePrompt: p.example_prompt, category: p.category });
           promptsByTool.set(p.parent_tool_id, existing);
+          promptParents.set(p.id, p.parent_tool_id);
         }
       });
+      setPromptParentMap(promptParents);
+
 
       const allItems: LibraryItem[] = [
         ...(storiesData.data || []).map((story) => ({
