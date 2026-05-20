@@ -6,31 +6,34 @@ const corsHeaders = {
 };
 
 async function getEmbeddings(texts: string[], apiKey: string): Promise<number[][]> {
-  const response = await fetch("https://api.openai.com/v1/embeddings", {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "text-embedding-3-small",
+      model: "google/gemini-embedding-001",
       input: texts,
+      dimensions: 1536,
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`OpenAI embeddings error: ${response.status} ${error}`);
+    throw new Error(`Lovable AI embeddings error: ${response.status} ${error}`);
   }
 
   const data = await response.json();
   return data.data.map((d: any) => d.embedding);
 }
 
+const EMBED_MODEL_VERSION = "gemini-001-1536";
 function contentHash(text: string): string {
+  const tagged = `${EMBED_MODEL_VERSION}|${text}`;
   let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
+  for (let i = 0; i < tagged.length; i++) {
+    const char = tagged.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
@@ -43,29 +46,36 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check: ADMIN_API_KEY
-    const authHeader = req.headers.get("Authorization");
+    // Auth: ADMIN_API_KEY (manual admin button) OR cron secret (scheduled job)
+    const authHeader = req.headers.get("Authorization") || "";
+    const cronHeader = req.headers.get("x-cron-secret") || "";
     const adminKey = Deno.env.get("ADMIN_API_KEY");
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    if (!adminKey || !openaiKey) {
+    if (!adminKey || !lovableKey) {
       return new Response(JSON.stringify({ error: "Server misconfigured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!authHeader || authHeader !== `Bearer ${adminKey}`) {
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    let authorized = authHeader === `Bearer ${adminKey}`;
+    if (!authorized && cronHeader) {
+      const { data: cfg } = await adminClient.rpc("get_app_config", { _key: "cron_secret" });
+      if (cfg && cfg === cronHeader) authorized = true;
+    }
+    if (!authorized) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabase = adminClient;
 
     // Fetch all library items
     const [storiesRes, promptsRes, toolsRes] = await Promise.all([
@@ -138,7 +148,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < toEmbed.length; i += BATCH_SIZE) {
       const batch = toEmbed.slice(i, i + BATCH_SIZE);
       const texts = batch.map((b) => b.text);
-      const embeddings = await getEmbeddings(texts, openaiKey);
+      const embeddings = await getEmbeddings(texts, lovableKey);
 
       // Upsert into library_embeddings
       const rows = batch.map((item, idx) => ({
