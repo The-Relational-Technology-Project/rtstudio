@@ -65,13 +65,8 @@ Deno.serve(async (req) => {
 
     let authorized = authHeader === `Bearer ${adminKey}`;
     if (!authorized && cronHeader) {
-      const { data: cfg } = await adminClient
-        .schema("private")
-        .from("app_config")
-        .select("value")
-        .eq("key", "cron_secret")
-        .maybeSingle();
-      if (cfg?.value && cfg.value === cronHeader) authorized = true;
+      const { data: cfg } = await adminClient.rpc("get_app_config", { _key: "cron_secret" });
+      if (cfg && cfg === cronHeader) authorized = true;
     }
     if (!authorized) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
