@@ -6,21 +6,22 @@ const corsHeaders = {
 };
 
 async function getEmbeddings(texts: string[], apiKey: string): Promise<number[][]> {
-  const response = await fetch("https://api.openai.com/v1/embeddings", {
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "text-embedding-3-small",
+      model: "google/gemini-embedding-001",
       input: texts,
+      dimensions: 1536,
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`OpenAI embeddings error: ${response.status} ${error}`);
+    throw new Error(`Lovable AI embeddings error: ${response.status} ${error}`);
   }
 
   const data = await response.json();
