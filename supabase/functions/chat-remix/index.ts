@@ -244,7 +244,7 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     const latestUserMessage = messages[messages.length - 1]?.content || '';
 
     // --- Hybrid search: always run both vector + keyword, merge results ---
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     let relevantPrompts: any[] = [];
     let relevantStories: any[] = [];
@@ -254,17 +254,18 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     const vectorMatchedIds = new Set<string>();
 
     // 1. Vector similarity search
-    if (OPENAI_API_KEY && latestUserMessage.trim()) {
+    if (LOVABLE_API_KEY && latestUserMessage.trim()) {
       try {
-        const embResponse = await fetch("https://api.openai.com/v1/embeddings", {
+        const embResponse = await fetch("https://ai.gateway.lovable.dev/v1/embeddings", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${OPENAI_API_KEY}`,
+            "Authorization": `Bearer ${LOVABLE_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "text-embedding-3-small",
+            model: "google/gemini-embedding-001",
             input: latestUserMessage,
+            dimensions: 1536,
           }),
         });
 
@@ -305,7 +306,7 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
             relevantTools = (tRes.data || []).slice(0, 3);
           }
         } else {
-          console.error('OpenAI embeddings API error:', embResponse.status);
+          console.error('Lovable AI embeddings error:', embResponse.status, await embResponse.text());
         }
       } catch (embError) {
         console.error('Vector search failed:', embError);
