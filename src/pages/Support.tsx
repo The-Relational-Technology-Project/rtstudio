@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, Calendar, Gift, Sparkles, CheckCircle } from "lucide-react";
+import { Download, Calendar, Gift, Sparkles, CheckCircle, Terminal, GitFork, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -58,7 +58,7 @@ const Support = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <TopNav />
       <div className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full">
-        <h1 className="text-3xl font-bold font-fraunces mb-3">Get Support</h1>
+        <h1 className="text-3xl font-bold font-fraunces mb-3">Resources</h1>
         <p className="text-muted-foreground mb-12">
           Resources and guidance for builders working at the intersection of technology and community.
         </p>
@@ -191,7 +191,7 @@ const Support = () => {
         </section>
 
         {/* 1:1 Jam Session */}
-        <section className="p-6 rounded-lg bg-muted/50 border border-border">
+        <section className="mb-10 p-6 rounded-lg bg-muted/50 border border-border">
           <h2 className="text-xl font-semibold font-fraunces mb-3">1:1 Jam Session</h2>
           <p className="text-sm text-foreground mb-4">
             Josh, one of the stewards of the Relational Tech Project, is available for 1:1
@@ -205,6 +205,105 @@ const Support = () => {
             </a>
           </Button>
         </section>
+
+        {/* Developer Resources */}
+        <div className="border-t border-border pt-10 mt-2">
+          <div className="flex items-center gap-2 mb-3">
+            <Terminal className="h-5 w-5 text-primary" />
+            <h2 className="text-2xl font-bold font-fraunces">Developer Resources</h2>
+          </div>
+          <p className="text-muted-foreground mb-8">
+            For builders who want to connect their own tools, fork the Studio, or contribute to the open-source codebase.
+          </p>
+
+          {/* Connect Your Tools */}
+          <section className="mb-8 p-6 rounded-lg bg-muted/50 border border-border">
+            <h3 className="text-xl font-semibold font-fraunces mb-3">Connect Your Tools</h3>
+            <p className="text-sm text-foreground mb-5">
+              The RT MCP Server gives your AI coding tools live access to the Studio library, neighborhood practice guides, and network updates. Connect it to Claude Code, Cursor, Windsurf, or any MCP-compatible tool.
+            </p>
+            <div className="mb-5 p-4 rounded-md bg-background border border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Add to your MCP settings:</p>
+              <pre className="text-xs text-foreground overflow-x-auto whitespace-pre font-mono leading-relaxed">{`{
+  "mcpServers": {
+    "relational-tech": {
+      "type": "streamable-http",
+      "url": "https://mcp.relationaltechproject.org/mcp"
+    }
+  }
+}`}</pre>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" size="sm" asChild>
+                <a href="https://mcp.relationaltechproject.org/" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                  MCP Server Docs
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <a href="https://github.com/The-Relational-Technology-Project/rt-mcp-server" target="_blank" rel="noopener noreferrer">
+                  <GitFork className="mr-2 h-3.5 w-3.5" />
+                  Self-Host the Server
+                </a>
+              </Button>
+            </div>
+          </section>
+
+          {/* How It Fits Together */}
+          <section className="mb-8 p-6 rounded-lg bg-muted/50 border border-border">
+            <h3 className="text-xl font-semibold font-fraunces mb-3">How It Fits Together</h3>
+            <p className="text-sm text-foreground mb-5">
+              The Relational Tech Studio is one surface for a broader open-source ecosystem. Here's how the pieces connect:
+            </p>
+            <div className="space-y-4 text-sm">
+              <div className="flex gap-3">
+                <div className="w-1 rounded-full bg-primary shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">The Studio</p>
+                  <p className="text-muted-foreground">Where builders explore the library, remix tools with Sidekick, and contribute stories and tools. Each community can run their own Studio with their own curated library.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1 rounded-full bg-primary shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">The MCP Server</p>
+                  <p className="text-muted-foreground">Exposes the full library, practice guides, and network updates to any AI-powered coding tool. The same knowledge that powers Sidekick, available in your own workflow.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1 rounded-full bg-primary shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">The Network Feed</p>
+                  <p className="text-muted-foreground">A live feed of what builders across the network are shipping, powered by the Watcher system that monitors open-source relational tech projects.</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1 rounded-full bg-primary shrink-0" />
+                <div>
+                  <p className="font-medium text-foreground">Neighboring Recipes</p>
+                  <p className="text-muted-foreground">A forkable cookbook of 74 neighborhood practices — from block parties to mutual aid to restorative circles — maintained as open Markdown in the commons.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Explore and Contribute */}
+          <section className="p-6 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-2 mb-3">
+              <GitFork className="h-5 w-5 text-primary" />
+              <h3 className="text-xl font-semibold font-fraunces">Explore and Contribute</h3>
+            </div>
+            <p className="text-sm text-foreground mb-4">
+              The Studio is open source. Browse the codebase, open issues, or contribute directly. Whether it's a bug fix, a new feature, or feedback on the architecture — the commons grows when builders share.
+            </p>
+            <Button asChild>
+              <a href="https://github.com/The-Relational-Technology-Project/rtstudio" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" />
+                View on GitHub
+              </a>
+            </Button>
+          </section>
+        </div>
       </div>
       <Footer />
     </div>

@@ -18,7 +18,7 @@ const navItems = [
   { name: "Home", path: "/home" },
   { name: "Library", path: "/library" },
   { name: "Profile", path: "/profile" },
-  { name: "Get Support", path: "/support" },
+  { name: "Resources", path: "/support" },
 ];
 
 export const TopNav = () => {
