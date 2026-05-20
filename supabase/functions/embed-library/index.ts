@@ -46,11 +46,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check: ADMIN_API_KEY OR service_role (for scheduled cron)
-    const authHeader = req.headers.get("Authorization");
+    // Auth: ADMIN_API_KEY (manual admin button) OR cron secret (scheduled job)
+    const authHeader = req.headers.get("Authorization") || "";
+    const cronHeader = req.headers.get("x-cron-secret") || "";
     const adminKey = Deno.env.get("ADMIN_API_KEY");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     if (!adminKey || !lovableKey) {
       return new Response(JSON.stringify({ error: "Server misconfigured" }), {
@@ -59,9 +61,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const expectedAdmin = `Bearer ${adminKey}`;
-    const expectedService = `Bearer ${serviceRoleKey}`;
-    if (!authHeader || (authHeader !== expectedAdmin && authHeader !== expectedService)) {
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    let authorized = authHeader === `Bearer ${adminKey}`;
+    if (!authorized && cronHeader) {
+      const { data: cfg } = await adminClient
+        .schema("private")
+        .from("app_config")
+        .select("value")
+        .eq("key", "cron_secret")
+        .maybeSingle();
+      if (cfg?.value && cfg.value === cronHeader) authorized = true;
+    }
+    if (!authorized) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
