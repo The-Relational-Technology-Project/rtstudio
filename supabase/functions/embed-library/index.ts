@@ -44,19 +44,22 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check: ADMIN_API_KEY
+    // Auth check: ADMIN_API_KEY OR service_role (for scheduled cron)
     const authHeader = req.headers.get("Authorization");
     const adminKey = Deno.env.get("ADMIN_API_KEY");
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!adminKey || !openaiKey) {
+    if (!adminKey || !lovableKey) {
       return new Response(JSON.stringify({ error: "Server misconfigured" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (!authHeader || authHeader !== `Bearer ${adminKey}`) {
+    const expectedAdmin = `Bearer ${adminKey}`;
+    const expectedService = `Bearer ${serviceRoleKey}`;
+    if (!authHeader || (authHeader !== expectedAdmin && authHeader !== expectedService)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
