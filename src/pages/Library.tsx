@@ -293,6 +293,7 @@ const Library = () => {
                     isOwned={!!user && item.userId === user.id}
                     onEdit={fetchLibraryItems}
                     onDelete={() => handleDeleteItem(item)}
+                    autoOpenPromptId={autoOpenPromptByTool.get(item.id)}
                   />
                 </div>
               ))
