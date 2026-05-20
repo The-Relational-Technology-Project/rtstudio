@@ -244,7 +244,6 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     const latestUserMessage = messages[messages.length - 1]?.content || '';
 
     // --- Hybrid search: always run both vector + keyword, merge results ---
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     let relevantPrompts: any[] = [];
     let relevantStories: any[] = [];
