@@ -27,6 +27,9 @@ const Library = () => {
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [promptParentMap, setPromptParentMap] = useState<Map<string, string>>(new Map());
+  const [autoOpenPromptByTool, setAutoOpenPromptByTool] = useState<Map<string, string>>(new Map());
+
 
   const fetchLibraryItems = useCallback(async () => {
     try {
@@ -37,13 +40,17 @@ const Library = () => {
       ]);
 
       const promptsByTool = new Map<string, any[]>();
+      const promptParents = new Map<string, string>();
       (promptsData.data || []).forEach((p: any) => {
         if (p.parent_tool_id) {
           const existing = promptsByTool.get(p.parent_tool_id) || [];
           existing.push({ id: p.id, title: p.title, description: p.description, examplePrompt: p.example_prompt, category: p.category });
           promptsByTool.set(p.parent_tool_id, existing);
+          promptParents.set(p.id, p.parent_tool_id);
         }
       });
+      setPromptParentMap(promptParents);
+
 
       const allItems: LibraryItem[] = [
         ...(storiesData.data || []).map((story) => ({
@@ -92,17 +99,39 @@ const Library = () => {
   useEffect(() => { fetchLibraryItems(); }, [fetchLibraryItems]);
   useEffect(() => { fetchBookmarks(); }, [fetchBookmarks]);
 
-  // Deep-link highlight
+  // Deep-link highlight (handles stories, tools, AND prompts via parent tool)
   useEffect(() => {
     const itemId = searchParams.get("item");
-    if (itemId && items.length > 0) {
+    if (!itemId || items.length === 0) return;
+
+    const itemExists = items.some((i) => i.id === itemId);
+    if (itemExists) {
       setHighlightedItemId(itemId);
+      setAutoOpenPromptByTool(new Map());
       setTimeout(() => {
         document.getElementById(`library-item-${itemId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
       }, 100);
       setTimeout(() => setHighlightedItemId(null), 3000);
+      return;
     }
-  }, [searchParams, items]);
+
+    // Maybe it's a prompt — resolve to parent tool
+    const parentToolId = promptParentMap.get(itemId);
+    if (parentToolId && items.some((i) => i.id === parentToolId)) {
+      setHighlightedItemId(parentToolId);
+      setAutoOpenPromptByTool(new Map([[parentToolId, itemId]]));
+      setTimeout(() => {
+        document.getElementById(`library-item-${parentToolId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 100);
+      setTimeout(() => setHighlightedItemId(null), 3000);
+      return;
+    }
+
+    if (promptParentMap.size > 0 || items.length > 0) {
+      toast({ title: "That item isn't available", description: "It may have been removed from the library.", variant: "destructive" });
+    }
+  }, [searchParams, items, promptParentMap, toast]);
+
 
   // Filtering
   useEffect(() => {
@@ -264,6 +293,7 @@ const Library = () => {
                     isOwned={!!user && item.userId === user.id}
                     onEdit={fetchLibraryItems}
                     onDelete={() => handleDeleteItem(item)}
+                    autoOpenPromptId={autoOpenPromptByTool.get(item.id)}
                   />
                 </div>
               ))

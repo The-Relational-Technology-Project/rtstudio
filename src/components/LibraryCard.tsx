@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DOMPurify from "dompurify";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "./ui/card";
 import { Button } from "./ui/button";
@@ -18,6 +18,7 @@ interface LibraryCardProps {
   isOwned?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  autoOpenPromptId?: string;
 }
 
 export const LibraryCard = ({
@@ -27,6 +28,7 @@ export const LibraryCard = ({
   isOwned = false,
   onEdit,
   onDelete,
+  autoOpenPromptId,
 }: LibraryCardProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isBuildItOpen, setIsBuildItOpen] = useState(false);
@@ -34,6 +36,16 @@ export const LibraryCard = ({
   const [expandedPromptId, setExpandedPromptId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { setMessages } = useSidekick();
+
+  useEffect(() => {
+    if (!autoOpenPromptId) return;
+    const match = item.childPrompts?.some((p) => p.id === autoOpenPromptId);
+    if (match) {
+      setIsBuildItOpen(true);
+      setExpandedPromptId(autoOpenPromptId);
+    }
+  }, [autoOpenPromptId, item.childPrompts]);
+
 
   const isToolType = item.type === "tool" || item.type === "tech_for_building";
 
