@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
     for (let i = 0; i < toEmbed.length; i += BATCH_SIZE) {
       const batch = toEmbed.slice(i, i + BATCH_SIZE);
       const texts = batch.map((b) => b.text);
-      const embeddings = await getEmbeddings(texts, openaiKey);
+      const embeddings = await getEmbeddings(texts, lovableKey);
 
       // Upsert into library_embeddings
       const rows = batch.map((item, idx) => ({
