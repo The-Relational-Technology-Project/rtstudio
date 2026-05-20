@@ -28,10 +28,12 @@ async function getEmbeddings(texts: string[], apiKey: string): Promise<number[][
   return data.data.map((d: any) => d.embedding);
 }
 
+const EMBED_MODEL_VERSION = "gemini-001-1536";
 function contentHash(text: string): string {
+  const tagged = `${EMBED_MODEL_VERSION}|${text}`;
   let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    const char = text.charCodeAt(i);
+  for (let i = 0; i < tagged.length; i++) {
+    const char = tagged.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
