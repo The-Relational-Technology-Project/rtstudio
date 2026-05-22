@@ -44,6 +44,24 @@ const contributionTools = [
         additionalProperties: false
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "request_organizer_intro",
+      description: "Ask the RTP stewards (Josh / Deb) to make a warm intro between the builder and the organizer of a library item. STRICT RULES: (1) Only call this when the library item's context says 'ORGANIZER_INTROS_AVAILABLE: yes'. (2) The builder must have shown sustained interest (asked about it across 2+ turns OR explicitly said they want to do/join/replicate it). (3) The builder must confirm in their most recent message that they want the intro. (4) NEVER share organizer contact info in chat — the stewards handle the intro. Reassure the builder that Josh or Deb will reach out shortly.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_type: { type: "string", enum: ["story", "prompt", "tool"], description: "The library item type" },
+          item_id: { type: "string", description: "The library item UUID" },
+          item_title: { type: "string", description: "The library item title" },
+          message: { type: "string", description: "A short note from the builder about why they want to connect (paraphrased from their messages)" }
+        },
+        required: ["item_type", "item_id", "item_title", "message"],
+        additionalProperties: false
+      }
+    }
   }
 ];
 
@@ -290,13 +308,13 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
 
             const [pRes, sRes, tRes] = await Promise.all([
               promptIds.length > 0
-                ? supabase.from('prompts').select('id, title, category, description, example_prompt').in('id', promptIds)
+                ? supabase.from('prompts').select('id, title, category, description, example_prompt, organizer_consent_to_contact').in('id', promptIds)
                 : Promise.resolve({ data: [] }),
               storyIds.length > 0
-                ? supabase.from('stories').select('id, title, story_text, attribution, full_story_text').in('id', storyIds)
+                ? supabase.from('stories').select('id, title, story_text, attribution, full_story_text, organizer_consent_to_contact').in('id', storyIds)
                 : Promise.resolve({ data: [] }),
               toolMatchIds.length > 0
-                ? supabase.from('tools').select('id, name, description, url').in('id', toolMatchIds)
+                ? supabase.from('tools').select('id, name, description, url, organizer_consent_to_contact').in('id', toolMatchIds)
                 : Promise.resolve({ data: [] }),
             ]);
 
@@ -351,9 +369,9 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
         }).join(',');
 
         const [promptsResult, storiesResult, toolsResult] = await Promise.all([
-          supabase.from('prompts').select('id, title, category, description, example_prompt').or(promptSearchConditions).limit(5),
-          supabase.from('stories').select('id, title, story_text, attribution, full_story_text').or(storySearchConditions).limit(5),
-          supabase.from('tools').select('id, name, description, url').or(toolSearchConditions).limit(5)
+          supabase.from('prompts').select('id, title, category, description, example_prompt, organizer_consent_to_contact').or(promptSearchConditions).limit(5),
+          supabase.from('stories').select('id, title, story_text, attribution, full_story_text, organizer_consent_to_contact').or(storySearchConditions).limit(5),
+          supabase.from('tools').select('id, name, description, url, organizer_consent_to_contact').or(toolSearchConditions).limit(5)
         ]);
 
         const kwPrompts = promptsResult.data || [];
@@ -390,8 +408,8 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     let libraryContext = '';
     
     if (relevantPrompts.length > 0) {
-      libraryContext += `\n\nRELEVANT PROMPTS FROM THE LIBRARY:\n${relevantPrompts.map(p => {
-        return `\n---\nID: ${p.id}\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nExample Prompt:\n${p.example_prompt}\n---`;
+      libraryContext += `\n\nRELEVANT PROMPTS FROM THE LIBRARY:\n${relevantPrompts.map((p: any) => {
+        return `\n---\nID: ${p.id}\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nORGANIZER_INTROS_AVAILABLE: ${p.organizer_consent_to_contact ? 'yes' : 'no'}\nExample Prompt:\n${p.example_prompt}\n---`;
       }).join('\n')}`;
     }
 
@@ -399,17 +417,20 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
       if (demoMode) {
         libraryContext += `\n\nNOTE: There are ${relevantStories.length} relevant community stories in the library that relate to this topic. Encourage the visitor to sign up to read the full stories from neighbors who've tried similar things.`;
       } else {
-        libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map(s => {
-          return `\n---\nID: ${s.id}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
+        libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map((s: any) => {
+          return `\n---\nID: ${s.id}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nORGANIZER_INTROS_AVAILABLE: ${s.organizer_consent_to_contact ? 'yes' : 'no'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
         }).join('\n')}`;
       }
     }
 
     if (relevantTools.length > 0) {
-      libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map(t => {
-        return `\n---\nID: ${t.id}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\n---`;
+      libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map((t: any) => {
+        return `\n---\nID: ${t.id}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\nORGANIZER_INTROS_AVAILABLE: ${t.organizer_consent_to_contact ? 'yes' : 'no'}\n---`;
       }).join('\n')}`;
     }
+
+    // Guidance: warm intros
+    libraryContext += `\n\nWARM INTROS: If a library item above has ORGANIZER_INTROS_AVAILABLE: yes AND the builder has shown sustained interest (2+ turns about it, or an explicit "I want to do/join/replicate this"), you may offer: "Want me to ask Josh or Deb to introduce you to the organizer?" If they say yes, call the request_organizer_intro tool. NEVER share organizer contact info directly in chat. If ORGANIZER_INTROS_AVAILABLE: no, do not offer intros for that item.`;
 
     // --- Relational Tech Network RSS feed (cached) ---
     let networkContext = '';
