@@ -40,12 +40,14 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
   const [url, setUrl] = useState("");
   const [toolCategory, setToolCategory] = useState("relational_tech");
   const [imageUrl, setImageUrl] = useState("");
+  const [organizerConsent, setOrganizerConsent] = useState(false);
 
   const reset = () => {
     setTitle(""); setStoryText(""); setAuthor("");
     setCategory(""); setDescription(""); setExamplePrompt("");
     setToolDescription(""); setToolSummary(""); setUrl("");
     setToolCategory("relational_tech"); setImageUrl("");
+    setOrganizerConsent(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
