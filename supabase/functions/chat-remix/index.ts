@@ -408,8 +408,8 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     let libraryContext = '';
     
     if (relevantPrompts.length > 0) {
-      libraryContext += `\n\nRELEVANT PROMPTS FROM THE LIBRARY:\n${relevantPrompts.map(p => {
-        return `\n---\nID: ${p.id}\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nExample Prompt:\n${p.example_prompt}\n---`;
+      libraryContext += `\n\nRELEVANT PROMPTS FROM THE LIBRARY:\n${relevantPrompts.map((p: any) => {
+        return `\n---\nID: ${p.id}\nTitle: ${p.title}\nCategory: ${p.category}\nDescription: ${p.description || 'N/A'}\nORGANIZER_INTROS_AVAILABLE: ${p.organizer_consent_to_contact ? 'yes' : 'no'}\nExample Prompt:\n${p.example_prompt}\n---`;
       }).join('\n')}`;
     }
 
@@ -417,17 +417,20 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
       if (demoMode) {
         libraryContext += `\n\nNOTE: There are ${relevantStories.length} relevant community stories in the library that relate to this topic. Encourage the visitor to sign up to read the full stories from neighbors who've tried similar things.`;
       } else {
-        libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map(s => {
-          return `\n---\nID: ${s.id}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
+        libraryContext += `\n\nRELEVANT STORIES FROM THE LIBRARY:\n${relevantStories.map((s: any) => {
+          return `\n---\nID: ${s.id}\nTitle: ${s.title || 'Untitled'}\nAttribution: ${s.attribution || 'Anonymous'}\nORGANIZER_INTROS_AVAILABLE: ${s.organizer_consent_to_contact ? 'yes' : 'no'}\nStory:\n${s.full_story_text || s.story_text}\n---`;
         }).join('\n')}`;
       }
     }
 
     if (relevantTools.length > 0) {
-      libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map(t => {
-        return `\n---\nID: ${t.id}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\n---`;
+      libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map((t: any) => {
+        return `\n---\nID: ${t.id}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\nORGANIZER_INTROS_AVAILABLE: ${t.organizer_consent_to_contact ? 'yes' : 'no'}\n---`;
       }).join('\n')}`;
     }
+
+    // Guidance: warm intros
+    libraryContext += `\n\nWARM INTROS: If a library item above has ORGANIZER_INTROS_AVAILABLE: yes AND the builder has shown sustained interest (2+ turns about it, or an explicit "I want to do/join/replicate this"), you may offer: "Want me to ask Josh or Deb to introduce you to the organizer?" If they say yes, call the request_organizer_intro tool. NEVER share organizer contact info directly in chat. If ORGANIZER_INTROS_AVAILABLE: no, do not offer intros for that item.`;
 
     // --- Relational Tech Network RSS feed (cached) ---
     let networkContext = '';
