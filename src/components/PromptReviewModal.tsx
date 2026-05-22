@@ -148,7 +148,7 @@ export const PromptReviewModal = ({
                 Review your build prompt
               </DialogTitle>
               <DialogDescription>
-                This prompt came from your Sidekick conversation. Make any tweaks you'd like before building your prototype.
+                This prompt came from your Sidekick conversation. Make any tweaks you'd like before building your prototype. The Studio preview shows one page with the main flow working and other sections stubbed — take the prompt to Claude Code or Lovable for the full multi-page version.
               </DialogDescription>
             </DialogHeader>
 
