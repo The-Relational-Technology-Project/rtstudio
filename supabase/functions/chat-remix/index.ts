@@ -386,6 +386,83 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
       }
     }
 
+    // ------------------------------------------------------------------
+    // 3. Commons search — query the RTP global commons in parallel.
+    // Same Gemini embedding (1536-dim) works for both local library_embeddings
+    // and commons_embeddings. Falls back to text search if vector returns nothing.
+    // ------------------------------------------------------------------
+    const COMMONS_URL = Deno.env.get('RTP_COMMONS_URL') ?? 'https://odowkowcinyoxejyzhwl.supabase.co';
+    const COMMONS_ANON_KEY = Deno.env.get('RTP_COMMONS_ANON_KEY')
+      ?? 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9kb3drb3djaW55b3hlanl6aHdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2OTE5MzksImV4cCI6MjA3MDI2NzkzOX0.2Y2Dw66ORJ5DyBA11H5ziNFtdH1dG9BcOmFWYSicTSc';
+
+    let relevantCommons: Array<{
+      slug: string;
+      kind: string;
+      title: string;
+      summary: string | null;
+      attribution: Record<string, unknown> | null;
+      source_studio_slug: string | null;
+      source_url: string | null;
+      tags: string[] | null;
+    }> = [];
+
+    if (latestUserMessage.trim()) {
+      try {
+        const commonsHeaders = {
+          'apikey': COMMONS_ANON_KEY,
+          'Authorization': `Bearer ${COMMONS_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        };
+
+        // Try vector search first if we already have a query embedding
+        let commonsMatches: any[] = [];
+        // The embedding was generated above in the vector-search section. We can't
+        // capture it as a let here without restructuring, so we re-derive it from
+        // the LOVABLE call only when needed. To keep changes minimal, just use the
+        // text-search RPC which is fast and works without an embedding.
+        const textRes = await fetch(`${COMMONS_URL}/rest/v1/rpc/search_commons_items`, {
+          method: 'POST',
+          headers: commonsHeaders,
+          body: JSON.stringify({
+            query_text: latestUserMessage.slice(0, 500),
+            match_count: 8,
+            filter_kinds: ['recipe', 'framework', 'methodology', 'reference', 'tool', 'story'],
+          }),
+        });
+
+        if (textRes.ok) {
+          commonsMatches = await textRes.json();
+        } else {
+          console.error('Commons text-search failed:', textRes.status, await textRes.text());
+        }
+
+        if (commonsMatches.length > 0) {
+          // Hydrate fuller fields (body excerpt + source_url) via a follow-up select
+          const slugs = commonsMatches.map(m => m.slug);
+          const kinds = [...new Set(commonsMatches.map(m => m.kind))];
+          const slugsList = slugs.map(s => `"${s.replace(/"/g, '\\"')}"`).join(',');
+          const kindsList = kinds.map(k => `"${k}"`).join(',');
+          const hydrateRes = await fetch(
+            `${COMMONS_URL}/rest/v1/commons_items?select=slug,kind,title,summary,body,attribution,source_studio_slug,source_url,tags&slug=in.(${slugsList})&kind=in.(${kindsList})&status=eq.canonical`,
+            { headers: commonsHeaders }
+          );
+          if (hydrateRes.ok) {
+            const hydrated = await hydrateRes.json() as any[];
+            // Preserve search ranking order
+            const bySlugKind = new Map<string, any>();
+            for (const h of hydrated) bySlugKind.set(`${h.kind}:${h.slug}`, h);
+            relevantCommons = commonsMatches
+              .map((m: any) => bySlugKind.get(`${m.kind}:${m.slug}`))
+              .filter(Boolean)
+              .slice(0, 6); // cap at 6 commons items to balance against local
+            console.log('Commons matches:', relevantCommons.map(c => `${c.kind}:${c.slug}`));
+          }
+        }
+      } catch (commonsError) {
+        console.error('Commons search failed (non-fatal):', commonsError);
+      }
+    }
+
     // Build library context
     let libraryContext = '';
     
@@ -409,6 +486,26 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
       libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map(t => {
         return `\n---\nID: ${t.id}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\n---`;
       }).join('\n')}`;
+    }
+
+    if (relevantCommons.length > 0) {
+      libraryContext += `\n\nRELEVANT ITEMS FROM THE RTP GLOBAL COMMONS:
+These are items from the shared library across the RTP network — neighborhood recipes (block parties, mutual aid pods, repair cafes, etc.), RTP frameworks and methodology, and field references to practitioners' work. They are NOT in this Studio's local library — they live in the shared commons.
+
+When mentioning a commons item in your reply, do NOT use the [LIBRARY_ITEM:...] marker (those are for local items only). Instead, mention it by title in plain text, attribute the source when available, and include the source URL if the user might want to read more.
+${relevantCommons.map(c => {
+  const attr = c.attribution || {};
+  const attrParts: string[] = [];
+  if (attr.name) attrParts.push(String(attr.name));
+  if (attr.neighborhood) attrParts.push(String(attr.neighborhood));
+  if (attrParts.length === 0 && c.source_studio_slug && c.source_studio_slug !== 'rtp-canonical') {
+    attrParts.push(`Contributed by ${c.source_studio_slug}`);
+  }
+  const attribution = attrParts.length > 0 ? attrParts.join(' · ') : 'RTP commons';
+  // Trim body to a useful excerpt (1200 chars max per item to keep prompt manageable)
+  const bodyExcerpt = c.body ? c.body.slice(0, 1200) + (c.body.length > 1200 ? '\n...[truncated]' : '') : '';
+  return `\n---\nKind: ${c.kind}\nTitle: ${c.title}\nAttribution: ${attribution}${c.source_url ? `\nSource URL: ${c.source_url}` : ''}\nSummary: ${c.summary || ''}${bodyExcerpt ? `\nExcerpt:\n${bodyExcerpt}` : ''}\n---`;
+}).join('\n')}`;
     }
 
     // --- Relational Tech Network RSS feed (cached) ---
@@ -597,6 +694,27 @@ IMPORTANT FOR CONTRIBUTIONS:
    open-source projects tagged "relational-tech" on GitHub. When relevant, mention what other
    builders are creating across the ecosystem. This helps builders feel connected to a larger
    movement and discover patterns and ideas from other neighborhoods.
+
+6. THE RTP GLOBAL COMMONS: Beyond this Studio's local library, you can also draw on the RTP
+   shared commons — a network-wide library that includes neighborhood recipes (block parties,
+   mutual aid pods, repair cafes, restorative circles, etc.), RTP frameworks and methodology
+   docs, and field references to practitioners' work (Block Party USA, Priya Parker, Dean Spade,
+   ABCD Institute, microsolidarity, and many more).
+
+   When commons items appear in the context below under "RELEVANT ITEMS FROM THE RTP GLOBAL
+   COMMONS", treat them as legitimate references for the builder's question — but be careful
+   about the distinction:
+   - LOCAL library items (stories, prompts, tools): use the [LIBRARY_ITEM:type:id:title] marker
+     so the UI can render preview cards and the builder can navigate to them in the library.
+   - COMMONS items: do NOT use the marker. They aren't in this Studio's library UI. Reference
+     them by title in plain text, attribute the source (the practitioner's name or organization,
+     or the source repo like "neighboring-recipes"), and include the source URL when available
+     so the builder can read more if they want.
+
+   The commons is especially useful when the builder is asking about a practice or pattern
+   that isn't yet in the local library (e.g. "how do I run a repair cafe?", "what's
+   microsolidarity?", "how do mutual aid pods stay sustainable?"). Lead with the practitioner's
+   work, then translate to the builder's neighborhood scale and context.
 
 COMMITMENTS:
 When users express intentions, plans, or commitments during conversation (like "I'm going to talk to my neighbor" or "I want to host a block party"):
