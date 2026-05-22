@@ -63,6 +63,7 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
         full_story_text: storyText,
         attribution: author,
         user_id: user?.id ?? null,
+        organizer_consent_to_contact: organizerConsent,
       });
       error = res.error;
     } else if (type === "prompt") {
@@ -72,6 +73,7 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
         description,
         example_prompt: examplePrompt,
         user_id: user?.id ?? null,
+        organizer_consent_to_contact: organizerConsent,
       });
       error = res.error;
     } else {
@@ -83,6 +85,7 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
         tool_category: toolCategory,
         image_url: imageUrl || null,
         user_id: user?.id ?? null,
+        organizer_consent_to_contact: organizerConsent,
       });
       error = res.error;
     }
