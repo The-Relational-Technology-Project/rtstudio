@@ -104,6 +104,42 @@ export type Database = {
         }
         Relationships: []
       }
+      connection_requests: {
+        Row: {
+          conversation_snippet: string | null
+          created_at: string
+          id: string
+          item_id: string
+          item_title: string
+          item_type: string
+          message: string
+          requester_user_id: string | null
+          status: string
+        }
+        Insert: {
+          conversation_snippet?: string | null
+          created_at?: string
+          id?: string
+          item_id: string
+          item_title: string
+          item_type: string
+          message?: string
+          requester_user_id?: string | null
+          status?: string
+        }
+        Update: {
+          conversation_snippet?: string | null
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_title?: string
+          item_type?: string
+          message?: string
+          requester_user_id?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       contact_submissions: {
         Row: {
           created_at: string
@@ -395,8 +431,10 @@ export type Database = {
           description: string | null
           example_prompt: string
           id: string
+          organizer_consent_to_contact: boolean
           parent_tool_id: string | null
           sort_order: number
+          tags: string[]
           title: string
           user_id: string | null
         }
@@ -406,8 +444,10 @@ export type Database = {
           description?: string | null
           example_prompt: string
           id?: string
+          organizer_consent_to_contact?: boolean
           parent_tool_id?: string | null
           sort_order?: number
+          tags?: string[]
           title: string
           user_id?: string | null
         }
@@ -417,8 +457,10 @@ export type Database = {
           description?: string | null
           example_prompt?: string
           id?: string
+          organizer_consent_to_contact?: boolean
           parent_tool_id?: string | null
           sort_order?: number
+          tags?: string[]
           title?: string
           user_id?: string | null
         }
@@ -558,8 +600,10 @@ export type Database = {
           full_story_text: string | null
           id: string
           image_urls: string[] | null
+          organizer_consent_to_contact: boolean
           sort_order: number
           story_text: string
+          tags: string[]
           title: string | null
           user_id: string | null
         }
@@ -569,8 +613,10 @@ export type Database = {
           full_story_text?: string | null
           id?: string
           image_urls?: string[] | null
+          organizer_consent_to_contact?: boolean
           sort_order?: number
           story_text: string
+          tags?: string[]
           title?: string | null
           user_id?: string | null
         }
@@ -580,8 +626,10 @@ export type Database = {
           full_story_text?: string | null
           id?: string
           image_urls?: string[] | null
+          organizer_consent_to_contact?: boolean
           sort_order?: number
           story_text?: string
+          tags?: string[]
           title?: string | null
           user_id?: string | null
         }
@@ -646,6 +694,30 @@ export type Database = {
           log_type?: string
           title?: string
           url?: string | null
+        }
+        Relationships: []
+      }
+      studio_tags: {
+        Row: {
+          color: string | null
+          created_at: string
+          label: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          label: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          label?: string
+          slug?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -719,9 +791,11 @@ export type Database = {
           is_joinable: boolean
           lovable_url: string | null
           name: string
+          organizer_consent_to_contact: boolean
           screenshot_urls: string[] | null
           sort_order: number
           summary: string | null
+          tags: string[]
           tool_category: string
           url: string | null
           user_id: string | null
@@ -736,9 +810,11 @@ export type Database = {
           is_joinable?: boolean
           lovable_url?: string | null
           name: string
+          organizer_consent_to_contact?: boolean
           screenshot_urls?: string[] | null
           sort_order?: number
           summary?: string | null
+          tags?: string[]
           tool_category?: string
           url?: string | null
           user_id?: string | null
@@ -753,9 +829,11 @@ export type Database = {
           is_joinable?: boolean
           lovable_url?: string | null
           name?: string
+          organizer_consent_to_contact?: boolean
           screenshot_urls?: string[] | null
           sort_order?: number
           summary?: string | null
+          tags?: string[]
           tool_category?: string
           url?: string | null
           user_id?: string | null
