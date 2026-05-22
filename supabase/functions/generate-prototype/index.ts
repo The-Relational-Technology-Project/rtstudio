@@ -26,10 +26,12 @@ Requirements:
 - Include 6-10 sample data items so the prototype feels populated and alive.
 - Use a cohesive color palette. Warm neutrals with one or two accent colors.
 - Good typography. Readable, friendly, not generic.
-- CRITICAL: Use tab-based or section-based navigation within a single page. All navigation MUST use JavaScript to show/hide sections — NEVER use separate HTML pages or links that navigate away from the current document.
-- The entire app must work within a single HTML document displayed in a sandboxed iframe. Hash-based routing (showing/hiding divs) is the correct pattern for multi-section prototypes.
-- Make the prototype rich, detailed, and polished. Include thoughtful micro-interactions, hover states, transitions, and visual polish. This should feel like a real product, not a wireframe.
-- IMPORTANT: Keep your CSS concise and avoid excessive visual polish that inflates token count. The JavaScript functionality (tab switching, button handlers, form interactions) is MORE important than pixel-perfect CSS. If you must choose, cut CSS details before cutting JS functionality.
+- CRITICAL (rendering constraint, not a design constraint): The output must be ONE HTML document rendered in a sandboxed iframe. All navigation MUST use JavaScript to show/hide sections — NEVER use separate HTML pages or links that navigate away from the current document. Hash-based routing (showing/hiding divs) is the correct pattern.
+- DO NOT shrink the design to fit one page. The prompt may describe a tool with many pages, roles, or flows — represent that full structure inside one document. Use a top-level nav (tabs, sidebar, or bottom bar) that reflects EVERY major section the prompt describes, even sections you won't fully build out this pass.
+- STUBS ARE ENCOURAGED for secondary sections. Pick the 1–2 sections most central to the builder's idea and build those well with real interactions and sample data. For the rest, render a clear stub: the section heading, a 1–2 sentence description of what would live there ("This is where neighbors would browse mutual-aid offers and filter by category"), and maybe 1–2 placeholder rows. Stubs should look intentional and labeled, never empty or broken — they're a preview of structure, not a failure to build.
+- If the prompt describes multiple user roles (neighbor / organizer / admin / steward), include a simple role switcher at the top so reviewers can see each role's view. Non-primary roles can be mostly stubbed.
+- Make the built-out sections rich, detailed, and polished. Include thoughtful micro-interactions, hover states, transitions, and visual polish. Those sections should feel like a real product, not a wireframe.
+- IMPORTANT: Keep your CSS concise and avoid excessive visual polish that inflates token count. The JavaScript functionality (tab switching, button handlers, form interactions) is MORE important than pixel-perfect CSS. If you must choose, cut CSS details before cutting JS functionality. Better to ship 2 strong sections + 4 clear stubs than 6 half-finished sections.
 
 The prototype should help a builder imagine what their tool could become, and help their neighbors react to something concrete rather than an abstract idea. This is a conversation starter, not a final product.
 
