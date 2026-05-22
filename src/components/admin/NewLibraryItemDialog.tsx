@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -40,14 +39,12 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
   const [url, setUrl] = useState("");
   const [toolCategory, setToolCategory] = useState("relational_tech");
   const [imageUrl, setImageUrl] = useState("");
-  const [organizerConsent, setOrganizerConsent] = useState(false);
 
   const reset = () => {
     setTitle(""); setStoryText(""); setAuthor("");
     setCategory(""); setDescription(""); setExamplePrompt("");
     setToolDescription(""); setToolSummary(""); setUrl("");
     setToolCategory("relational_tech"); setImageUrl("");
-    setOrganizerConsent(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,7 +60,6 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
         full_story_text: storyText,
         attribution: author,
         user_id: user?.id ?? null,
-        organizer_consent_to_contact: organizerConsent,
       });
       error = res.error;
     } else if (type === "prompt") {
@@ -73,7 +69,6 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
         description,
         example_prompt: examplePrompt,
         user_id: user?.id ?? null,
-        organizer_consent_to_contact: organizerConsent,
       });
       error = res.error;
     } else {
@@ -85,7 +80,6 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
         tool_category: toolCategory,
         image_url: imageUrl || null,
         user_id: user?.id ?? null,
-        organizer_consent_to_contact: organizerConsent,
       });
       error = res.error;
     }
@@ -189,21 +183,6 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
               </div>
             </>
           )}
-
-          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
-            <Checkbox
-              id="new-consent"
-              checked={organizerConsent}
-              onCheckedChange={(c) => setOrganizerConsent(c === true)}
-              className="mt-0.5"
-            />
-            <Label htmlFor="new-consent" className="text-sm font-normal cursor-pointer leading-snug">
-              Organizer has agreed to be introduced to interested builders
-              <span className="block text-xs text-muted-foreground mt-1">
-                When on, Sidekick may offer warm intros (handled by stewards — no contact info shown to builders).
-              </span>
-            </Label>
-          </div>
 
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">

@@ -5,7 +5,6 @@ import { ContributionsTab } from "@/components/admin/ContributionsTab";
 import { BuildersTab } from "@/components/admin/BuildersTab";
 import { StudioLogTab } from "@/components/admin/StudioLogTab";
 import { EmbeddingsTab } from "@/components/admin/EmbeddingsTab";
-import { ConnectionRequestsTab } from "@/components/admin/ConnectionRequestsTab";
 
 const Admin = () => {
   return (
@@ -17,14 +16,12 @@ const Admin = () => {
           <TabsList>
             <TabsTrigger value="library">Library</TabsTrigger>
             <TabsTrigger value="contributions">Contributions</TabsTrigger>
-            <TabsTrigger value="connections">Intros</TabsTrigger>
             <TabsTrigger value="builders">Builders</TabsTrigger>
             <TabsTrigger value="studio_log">Studio Log</TabsTrigger>
             <TabsTrigger value="embeddings">Embeddings</TabsTrigger>
           </TabsList>
           <TabsContent value="library" className="mt-6"><LibraryAdminTab /></TabsContent>
           <TabsContent value="contributions" className="mt-6"><ContributionsTab /></TabsContent>
-          <TabsContent value="connections" className="mt-6"><ConnectionRequestsTab /></TabsContent>
           <TabsContent value="builders" className="mt-6"><BuildersTab /></TabsContent>
           <TabsContent value="studio_log" className="mt-6"><StudioLogTab /></TabsContent>
           <TabsContent value="embeddings" className="mt-6"><EmbeddingsTab /></TabsContent>
