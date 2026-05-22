@@ -44,6 +44,24 @@ const contributionTools = [
         additionalProperties: false
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "request_organizer_intro",
+      description: "Ask the RTP stewards (Josh / Deb) to make a warm intro between the builder and the organizer of a library item. STRICT RULES: (1) Only call this when the library item's context says 'ORGANIZER_INTROS_AVAILABLE: yes'. (2) The builder must have shown sustained interest (asked about it across 2+ turns OR explicitly said they want to do/join/replicate it). (3) The builder must confirm in their most recent message that they want the intro. (4) NEVER share organizer contact info in chat — the stewards handle the intro. Reassure the builder that Josh or Deb will reach out shortly.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_type: { type: "string", enum: ["story", "prompt", "tool"], description: "The library item type" },
+          item_id: { type: "string", description: "The library item UUID" },
+          item_title: { type: "string", description: "The library item title" },
+          message: { type: "string", description: "A short note from the builder about why they want to connect (paraphrased from their messages)" }
+        },
+        required: ["item_type", "item_id", "item_title", "message"],
+        additionalProperties: false
+      }
+    }
   }
 ];
 
