@@ -308,13 +308,13 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
 
             const [pRes, sRes, tRes] = await Promise.all([
               promptIds.length > 0
-                ? supabase.from('prompts').select('id, title, category, description, example_prompt').in('id', promptIds)
+                ? supabase.from('prompts').select('id, title, category, description, example_prompt, organizer_consent_to_contact').in('id', promptIds)
                 : Promise.resolve({ data: [] }),
               storyIds.length > 0
-                ? supabase.from('stories').select('id, title, story_text, attribution, full_story_text').in('id', storyIds)
+                ? supabase.from('stories').select('id, title, story_text, attribution, full_story_text, organizer_consent_to_contact').in('id', storyIds)
                 : Promise.resolve({ data: [] }),
               toolMatchIds.length > 0
-                ? supabase.from('tools').select('id, name, description, url').in('id', toolMatchIds)
+                ? supabase.from('tools').select('id, name, description, url, organizer_consent_to_contact').in('id', toolMatchIds)
                 : Promise.resolve({ data: [] }),
             ]);
 
