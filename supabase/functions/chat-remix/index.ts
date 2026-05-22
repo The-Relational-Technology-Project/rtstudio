@@ -369,9 +369,9 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
         }).join(',');
 
         const [promptsResult, storiesResult, toolsResult] = await Promise.all([
-          supabase.from('prompts').select('id, title, category, description, example_prompt').or(promptSearchConditions).limit(5),
-          supabase.from('stories').select('id, title, story_text, attribution, full_story_text').or(storySearchConditions).limit(5),
-          supabase.from('tools').select('id, name, description, url').or(toolSearchConditions).limit(5)
+          supabase.from('prompts').select('id, title, category, description, example_prompt, organizer_consent_to_contact').or(promptSearchConditions).limit(5),
+          supabase.from('stories').select('id, title, story_text, attribution, full_story_text, organizer_consent_to_contact').or(storySearchConditions).limit(5),
+          supabase.from('tools').select('id, name, description, url, organizer_consent_to_contact').or(toolSearchConditions).limit(5)
         ]);
 
         const kwPrompts = promptsResult.data || [];
