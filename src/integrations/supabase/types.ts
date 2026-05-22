@@ -310,6 +310,38 @@ export type Database = {
         }
         Relationships: []
       }
+      library_studio_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          item_type: string
+          studio_slug: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          item_type: string
+          studio_slug: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          studio_slug?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_studio_assignments_studio_slug_fkey"
+            columns: ["studio_slug"]
+            isOneToOne: false
+            referencedRelation: "studios"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
       magic_link_tokens: {
         Row: {
           created_at: string
@@ -715,6 +747,33 @@ export type Database = {
         Update: {
           color?: string | null
           created_at?: string
+          label?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      studios: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          label: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          label: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
           label?: string
           slug?: string
           sort_order?: number
