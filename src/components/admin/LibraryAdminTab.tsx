@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -18,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EditLibraryItemDialog } from "@/components/EditLibraryItemDialog";
 import { NewLibraryItemDialog } from "@/components/admin/NewLibraryItemDialog";
 import type { LibraryItem, ItemType } from "@/types/library";
-import { Pencil, Trash2, GripVertical, Star, Plus } from "lucide-react";
+import { Pencil, Trash2, GripVertical, Star, Plus, Tag as TagIcon } from "lucide-react";
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors,
   DragEndEvent,
@@ -32,15 +34,23 @@ type Row = LibraryItem & {
   createdAt: string;
   isFeatured?: boolean;
   sortOrder?: number;
+  tags?: string[];
+  organizerConsent?: boolean;
 };
 
+type StudioTag = { slug: string; label: string; color: string | null };
+
 type FilterType = "all" | "story" | "prompt" | "tool";
+
+const tableFor = (t: ItemType | "tech_for_building") =>
+  t === "story" ? "stories" : t === "prompt" ? "prompts" : "tools";
 
 export const LibraryAdminTab = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [tagFilter, setTagFilter] = useState<string>("all"); // "all" | "untagged" | slug
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<LibraryItem | null>(null);
@@ -50,14 +60,18 @@ export const LibraryAdminTab = () => {
   const [reassignTo, setReassignTo] = useState<string>("");
   const [profiles, setProfiles] = useState<{ id: string; label: string }[]>([]);
   const [newOpen, setNewOpen] = useState(false);
+  const [studioTags, setStudioTags] = useState<StudioTag[]>([]);
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
+  const [bulkTagSelection, setBulkTagSelection] = useState<Set<string>>(new Set());
 
   const fetchAll = async () => {
     setLoading(true);
-    const [s, p, t, prof] = await Promise.all([
+    const [s, p, t, prof, tg] = await Promise.all([
       supabase.from("stories").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       supabase.from("prompts").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       supabase.from("tools").select("*").order("sort_order", { ascending: true }),
       supabase.from("profiles").select("id, display_name, email"),
+      supabase.from("studio_tags").select("slug, label, color").order("sort_order"),
     ]);
 
     const all: Row[] = [
@@ -65,24 +79,28 @@ export const LibraryAdminTab = () => {
         id: r.id, type: "story" as ItemType, title: r.title || "Untitled",
         summary: r.story_text || "", author: r.attribution, fullContent: r.full_story_text,
         userId: r.user_id, createdAt: r.created_at, sortOrder: r.sort_order,
+        tags: r.tags || [], organizerConsent: !!r.organizer_consent_to_contact,
       })),
       ...(p.data || []).map((r: any) => ({
         id: r.id, type: "prompt" as ItemType, title: r.title,
         summary: r.description || "No description", category: r.category,
         examplePrompt: r.example_prompt, userId: r.user_id, createdAt: r.created_at,
         sortOrder: r.sort_order,
+        tags: r.tags || [], organizerConsent: !!r.organizer_consent_to_contact,
       })),
       ...(t.data || []).map((r: any) => ({
         id: r.id, type: "tool" as ItemType, title: r.name,
         summary: r.description || "", url: r.url, userId: r.user_id,
         createdAt: r.created_at, isFeatured: r.is_featured, sortOrder: r.sort_order,
         toolCategory: r.tool_category,
+        tags: r.tags || [], organizerConsent: !!r.organizer_consent_to_contact,
       })),
     ];
     setRows(all);
     setProfiles((prof.data || []).map((p: any) => ({
       id: p.id, label: p.display_name || p.email || p.id.slice(0, 8),
     })));
+    setStudioTags((tg.data || []) as StudioTag[]);
     setLoading(false);
   };
 
@@ -91,6 +109,13 @@ export const LibraryAdminTab = () => {
   const filtered = useMemo(() => {
     let r = rows;
     if (filter !== "all") r = r.filter(x => x.type === filter);
+    if (tagFilter !== "all") {
+      if (tagFilter === "untagged") {
+        r = r.filter(x => !x.tags || x.tags.length === 0);
+      } else {
+        r = r.filter(x => (x.tags || []).includes(tagFilter));
+      }
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       r = r.filter(x =>
@@ -107,7 +132,7 @@ export const LibraryAdminTab = () => {
       );
     }
     return r;
-  }, [rows, filter, search]);
+  }, [rows, filter, tagFilter, search]);
 
   const authorLabel = (row: Row) => {
     if (row.author) return row.author;
@@ -122,8 +147,7 @@ export const LibraryAdminTab = () => {
   };
 
   const handleDelete = async (row: Row) => {
-    const table = row.type === "story" ? "stories" : row.type === "prompt" ? "prompts" : "tools";
-    const { error } = await supabase.from(table).delete().eq("id", row.id);
+    const { error } = await supabase.from(tableFor(row.type)).delete().eq("id", row.id);
     if (error) {
       toast({ title: "Delete failed", description: error.message, variant: "destructive" });
     } else {
@@ -174,6 +198,44 @@ export const LibraryAdminTab = () => {
     }
   };
 
+  const toggleConsent = async (row: Row) => {
+    const next = !row.organizerConsent;
+    const { error } = await supabase.from(tableFor(row.type))
+      .update({ organizer_consent_to_contact: next }).eq("id", row.id);
+    if (error) {
+      toast({ title: "Update failed", description: error.message, variant: "destructive" });
+    } else {
+      setRows(rs => rs.map(r => r.id === row.id ? { ...r, organizerConsent: next } : r));
+    }
+  };
+
+  const setRowTags = async (row: Row, tags: string[]) => {
+    const { error } = await supabase.from(tableFor(row.type))
+      .update({ tags }).eq("id", row.id);
+    if (error) {
+      toast({ title: "Tag update failed", description: error.message, variant: "destructive" });
+    } else {
+      setRows(rs => rs.map(r => r.id === row.id ? { ...r, tags } : r));
+    }
+  };
+
+  const applyBulkTags = async () => {
+    const ids = Array.from(selected);
+    const tagsArr = Array.from(bulkTagSelection);
+    const byType: Record<string, string[]> = { story: [], prompt: [], tool: [] };
+    rows.filter(r => ids.includes(r.id)).forEach(r => byType[r.type].push(r.id));
+    await Promise.all([
+      byType.story.length ? supabase.from("stories").update({ tags: tagsArr }).in("id", byType.story) : null,
+      byType.prompt.length ? supabase.from("prompts").update({ tags: tagsArr }).in("id", byType.prompt) : null,
+      byType.tool.length ? supabase.from("tools").update({ tags: tagsArr }).in("id", byType.tool) : null,
+    ]);
+    toast({ title: `Tagged ${ids.length} items` });
+    setBulkTagOpen(false);
+    setBulkTagSelection(new Set());
+    setSelected(new Set());
+    fetchAll();
+  };
+
   // Drag-to-reorder enabled when filter targets a single type
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const handleDragEnd = async (e: DragEndEvent) => {
@@ -189,9 +251,9 @@ export const LibraryAdminTab = () => {
       const map = new Map(updates.map(u => [u.id, u.sort_order]));
       return rs.map(r => map.has(r.id) ? { ...r, sortOrder: map.get(r.id) } : r);
     });
-    const table = filter === "story" ? "stories" : filter === "prompt" ? "prompts" : "tools";
+    const tbl = filter === "story" ? "stories" : filter === "prompt" ? "prompts" : "tools";
     await Promise.all(updates.map(u =>
-      supabase.from(table).update({ sort_order: u.sort_order }).eq("id", u.id)
+      supabase.from(tbl).update({ sort_order: u.sort_order }).eq("id", u.id)
     ));
     toast({ title: "Order saved" });
   };
@@ -213,6 +275,9 @@ export const LibraryAdminTab = () => {
           {selected.size > 0 && (
             <>
               <span className="text-sm self-center text-muted-foreground">{selected.size} selected</span>
+              <Button size="sm" variant="outline" onClick={() => { setBulkTagSelection(new Set()); setBulkTagOpen(true); }}>
+                <TagIcon className="h-3 w-3 mr-1" /> Set tags
+              </Button>
               <Button size="sm" variant="outline" onClick={() => setReassignOpen(true)}>Reassign owner</Button>
               <Button size="sm" variant="destructive" onClick={() => setConfirmBulkDelete(true)}>Delete</Button>
             </>
@@ -221,6 +286,23 @@ export const LibraryAdminTab = () => {
             <Plus className="h-4 w-4 mr-1" /> New item
           </Button>
         </div>
+      </div>
+
+      {/* Tag filter pills */}
+      <div className="flex flex-wrap gap-1 items-center">
+        <span className="text-xs text-muted-foreground mr-1">Studio:</span>
+        <Button size="sm" variant={tagFilter === "all" ? "default" : "outline"}
+          onClick={() => setTagFilter("all")}>All</Button>
+        {studioTags.map(t => (
+          <Button key={t.slug} size="sm"
+            variant={tagFilter === t.slug ? "default" : "outline"}
+            onClick={() => setTagFilter(t.slug)}
+            style={tagFilter === t.slug && t.color ? { backgroundColor: t.color, borderColor: t.color } : undefined}>
+            {t.label}
+          </Button>
+        ))}
+        <Button size="sm" variant={tagFilter === "untagged" ? "default" : "outline"}
+          onClick={() => setTagFilter("untagged")}>Untagged</Button>
       </div>
 
       {loading ? (
@@ -236,7 +318,9 @@ export const LibraryAdminTab = () => {
                   <TableHead className="w-20">Type</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Author</TableHead>
-                  <TableHead className="w-32">Created</TableHead>
+                  <TableHead className="w-44">Tags</TableHead>
+                  <TableHead className="w-24 text-center">Contact OK</TableHead>
+                  <TableHead className="w-28">Created</TableHead>
                   {filter === "tool" && <TableHead className="w-20">Featured</TableHead>}
                   <TableHead className="w-24 text-right">Actions</TableHead>
                 </TableRow>
@@ -250,17 +334,20 @@ export const LibraryAdminTab = () => {
                       key={row.id}
                       row={row}
                       filter={filter}
+                      studioTags={studioTags}
                       selected={selected.has(row.id)}
                       onToggle={() => toggleSelect(row.id)}
                       onEdit={() => setEditing(row)}
                       onDelete={() => setConfirmDelete(row)}
                       onToggleFeatured={() => toggleFeatured(row)}
+                      onToggleConsent={() => toggleConsent(row)}
+                      onSetTags={(tags) => setRowTags(row, tags)}
                       authorLabel={authorLabel(row)}
                     />
                   ))}
                 </SortableContext>
                 {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">No items</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-6">No items</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -329,16 +416,56 @@ export const LibraryAdminTab = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={bulkTagOpen} onOpenChange={setBulkTagOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Set tags on {selected.size} items</AlertDialogTitle>
+            <AlertDialogDescription>
+              Selected tags will replace the existing tags on each item.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-wrap gap-2 py-2">
+            {studioTags.map(t => {
+              const on = bulkTagSelection.has(t.slug);
+              return (
+                <button
+                  key={t.slug}
+                  type="button"
+                  onClick={() => {
+                    const next = new Set(bulkTagSelection);
+                    on ? next.delete(t.slug) : next.add(t.slug);
+                    setBulkTagSelection(next);
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                    on ? "text-primary-foreground" : "text-foreground bg-background"
+                  }`}
+                  style={on && t.color ? { backgroundColor: t.color, borderColor: t.color } : undefined}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={applyBulkTags}>Apply</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
 const AdminRow = ({
-  row, filter, selected, onToggle, onEdit, onDelete, onToggleFeatured, authorLabel,
+  row, filter, studioTags, selected, onToggle, onEdit, onDelete,
+  onToggleFeatured, onToggleConsent, onSetTags, authorLabel,
 }: {
-  row: Row; filter: FilterType; selected: boolean;
+  row: Row; filter: FilterType; studioTags: StudioTag[]; selected: boolean;
   onToggle: () => void; onEdit: () => void; onDelete: () => void;
-  onToggleFeatured: () => void; authorLabel: string;
+  onToggleFeatured: () => void; onToggleConsent: () => void;
+  onSetTags: (tags: string[]) => void;
+  authorLabel: string;
 }) => {
   const canDrag = filter !== "all" && row.type === filter;
   const sortable = useSortable({ id: row.id, disabled: !canDrag });
@@ -346,6 +473,7 @@ const AdminRow = ({
     transform: CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
   };
+  const currentTags = row.tags || [];
   return (
     <TableRow ref={sortable.setNodeRef} style={style}>
       <TableCell><Checkbox checked={selected} onCheckedChange={onToggle} /></TableCell>
@@ -361,6 +489,52 @@ const AdminRow = ({
       <TableCell className="text-xs uppercase text-muted-foreground">{row.type}</TableCell>
       <TableCell className="font-medium max-w-md truncate">{row.title}</TableCell>
       <TableCell className="text-sm">{authorLabel}</TableCell>
+      <TableCell>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex flex-wrap gap-1 min-w-[80px] min-h-[24px] hover:bg-muted/40 rounded px-1 py-0.5 transition-colors">
+              {currentTags.length === 0 ? (
+                <span className="text-xs text-muted-foreground italic">+ add</span>
+              ) : (
+                currentTags.map(slug => {
+                  const t = studioTags.find(s => s.slug === slug);
+                  return (
+                    <Badge key={slug} variant="secondary" className="text-xs"
+                      style={t?.color ? { backgroundColor: t.color, color: "white" } : undefined}>
+                      {t?.label || slug}
+                    </Badge>
+                  );
+                })
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2" align="start">
+            <div className="text-xs text-muted-foreground mb-2 px-1">Studio tags</div>
+            <div className="space-y-1">
+              {studioTags.map(t => {
+                const on = currentTags.includes(t.slug);
+                return (
+                  <label key={t.slug} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-muted cursor-pointer">
+                    <Checkbox checked={on} onCheckedChange={() => {
+                      const next = on
+                        ? currentTags.filter(x => x !== t.slug)
+                        : [...currentTags, t.slug];
+                      onSetTags(next);
+                    }} />
+                    <Badge variant="secondary" className="text-xs"
+                      style={t.color ? { backgroundColor: t.color, color: "white" } : undefined}>
+                      {t.label}
+                    </Badge>
+                  </label>
+                );
+              })}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </TableCell>
+      <TableCell className="text-center">
+        <Switch checked={!!row.organizerConsent} onCheckedChange={onToggleConsent} />
+      </TableCell>
       <TableCell className="text-xs text-muted-foreground">
         {new Date(row.createdAt).toLocaleDateString()}
       </TableCell>
