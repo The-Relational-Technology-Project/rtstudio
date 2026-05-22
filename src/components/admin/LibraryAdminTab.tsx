@@ -17,6 +17,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { EditLibraryItemDialog } from "@/components/EditLibraryItemDialog";
 import { NewLibraryItemDialog } from "@/components/admin/NewLibraryItemDialog";
+import { AssignStudiosDialog, type Studio } from "@/components/admin/AssignStudiosDialog";
+import { RowStudiosPopover } from "@/components/admin/RowStudiosPopover";
 import type { LibraryItem, ItemType } from "@/types/library";
 import { Pencil, Trash2, GripVertical, Star, Plus } from "lucide-react";
 import {
@@ -35,12 +37,14 @@ type Row = LibraryItem & {
 };
 
 type FilterType = "all" | "story" | "prompt" | "tool";
+type StudioFilter = "all" | "untagged" | string; // string = slug
 
 export const LibraryAdminTab = () => {
   const { toast } = useToast();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [studioFilter, setStudioFilter] = useState<StudioFilter>("all");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<LibraryItem | null>(null);
@@ -50,14 +54,21 @@ export const LibraryAdminTab = () => {
   const [reassignTo, setReassignTo] = useState<string>("");
   const [profiles, setProfiles] = useState<{ id: string; label: string }[]>([]);
   const [newOpen, setNewOpen] = useState(false);
+  const [studios, setStudios] = useState<Studio[]>([]);
+  const [assignments, setAssignments] = useState<Map<string, string[]>>(new Map());
+  const [assignOpen, setAssignOpen] = useState(false);
+
+  const assignmentKey = (type: string, id: string) => `${type}:${id}`;
 
   const fetchAll = async () => {
     setLoading(true);
-    const [s, p, t, prof] = await Promise.all([
+    const [s, p, t, prof, st, asg] = await Promise.all([
       supabase.from("stories").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       supabase.from("prompts").select("*").order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
       supabase.from("tools").select("*").order("sort_order", { ascending: true }),
       supabase.from("profiles").select("id, display_name, email"),
+      supabase.from("studios").select("slug, label, color").order("sort_order", { ascending: true }),
+      supabase.from("library_studio_assignments").select("studio_slug, item_type, item_id"),
     ]);
 
     const all: Row[] = [
@@ -83,6 +94,15 @@ export const LibraryAdminTab = () => {
     setProfiles((prof.data || []).map((p: any) => ({
       id: p.id, label: p.display_name || p.email || p.id.slice(0, 8),
     })));
+    setStudios((st.data || []) as Studio[]);
+    const map = new Map<string, string[]>();
+    (asg.data || []).forEach((a: any) => {
+      const k = assignmentKey(a.item_type, a.item_id);
+      const arr = map.get(k) || [];
+      arr.push(a.studio_slug);
+      map.set(k, arr);
+    });
+    setAssignments(map);
     setLoading(false);
   };
 
@@ -91,6 +111,12 @@ export const LibraryAdminTab = () => {
   const filtered = useMemo(() => {
     let r = rows;
     if (filter !== "all") r = r.filter(x => x.type === filter);
+    if (studioFilter !== "all") {
+      r = r.filter(x => {
+        const tags = assignments.get(assignmentKey(x.type, x.id)) || [];
+        return studioFilter === "untagged" ? tags.length === 0 : tags.includes(studioFilter);
+      });
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       r = r.filter(x =>
@@ -107,7 +133,7 @@ export const LibraryAdminTab = () => {
       );
     }
     return r;
-  }, [rows, filter, search]);
+  }, [rows, filter, studioFilter, search, assignments]);
 
   const authorLabel = (row: Row) => {
     if (row.author) return row.author;
@@ -174,6 +200,12 @@ export const LibraryAdminTab = () => {
     }
   };
 
+  const updateRowAssignments = (type: string, id: string, next: string[]) => {
+    const map = new Map(assignments);
+    map.set(assignmentKey(type, id), next);
+    setAssignments(map);
+  };
+
   // Drag-to-reorder enabled when filter targets a single type
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const handleDragEnd = async (e: DragEndEvent) => {
@@ -196,6 +228,11 @@ export const LibraryAdminTab = () => {
     toast({ title: "Order saved" });
   };
 
+  const selectedItems = useMemo(
+    () => rows.filter(r => selected.has(r.id)).map(r => ({ id: r.id, type: r.type as "story" | "prompt" | "tool" })),
+    [rows, selected]
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -213,6 +250,7 @@ export const LibraryAdminTab = () => {
           {selected.size > 0 && (
             <>
               <span className="text-sm self-center text-muted-foreground">{selected.size} selected</span>
+              <Button size="sm" variant="outline" onClick={() => setAssignOpen(true)}>Assign studios</Button>
               <Button size="sm" variant="outline" onClick={() => setReassignOpen(true)}>Reassign owner</Button>
               <Button size="sm" variant="destructive" onClick={() => setConfirmBulkDelete(true)}>Delete</Button>
             </>
@@ -221,6 +259,24 @@ export const LibraryAdminTab = () => {
             <Plus className="h-4 w-4 mr-1" /> New item
           </Button>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1 text-sm">
+        <span className="text-muted-foreground mr-2">Studio:</span>
+        <Button size="sm" variant={studioFilter === "all" ? "default" : "outline"}
+          onClick={() => setStudioFilter("all")}>All</Button>
+        {studios.map(s => (
+          <Button key={s.slug} size="sm" variant={studioFilter === s.slug ? "default" : "outline"}
+            onClick={() => setStudioFilter(s.slug)}>
+            <span
+              className="inline-block w-2 h-2 rounded-full mr-1.5 border border-border"
+              style={s.color ? { backgroundColor: s.color } : undefined}
+            />
+            {s.label}
+          </Button>
+        ))}
+        <Button size="sm" variant={studioFilter === "untagged" ? "default" : "outline"}
+          onClick={() => setStudioFilter("untagged")}>Untagged</Button>
       </div>
 
       {loading ? (
@@ -236,9 +292,10 @@ export const LibraryAdminTab = () => {
                   <TableHead className="w-20">Type</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Author</TableHead>
+                  <TableHead>Studios</TableHead>
                   <TableHead className="w-32">Created</TableHead>
                   {filter === "tool" && <TableHead className="w-20">Featured</TableHead>}
-                  <TableHead className="w-24 text-right">Actions</TableHead>
+                  <TableHead className="w-32 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -256,11 +313,14 @@ export const LibraryAdminTab = () => {
                       onDelete={() => setConfirmDelete(row)}
                       onToggleFeatured={() => toggleFeatured(row)}
                       authorLabel={authorLabel(row)}
+                      studios={studios}
+                      assignedSlugs={assignments.get(assignmentKey(row.type, row.id)) || []}
+                      onAssignmentsChange={(next) => updateRowAssignments(row.type, row.id, next)}
                     />
                   ))}
                 </SortableContext>
                 {filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">No items</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-6">No items</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -278,6 +338,14 @@ export const LibraryAdminTab = () => {
       )}
 
       <NewLibraryItemDialog open={newOpen} onOpenChange={setNewOpen} onSuccess={fetchAll} />
+
+      <AssignStudiosDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        studios={studios}
+        selected={selectedItems}
+        onSuccess={fetchAll}
+      />
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
@@ -335,10 +403,13 @@ export const LibraryAdminTab = () => {
 
 const AdminRow = ({
   row, filter, selected, onToggle, onEdit, onDelete, onToggleFeatured, authorLabel,
+  studios, assignedSlugs, onAssignmentsChange,
 }: {
   row: Row; filter: FilterType; selected: boolean;
   onToggle: () => void; onEdit: () => void; onDelete: () => void;
   onToggleFeatured: () => void; authorLabel: string;
+  studios: Studio[]; assignedSlugs: string[];
+  onAssignmentsChange: (next: string[]) => void;
 }) => {
   const canDrag = filter !== "all" && row.type === filter;
   const sortable = useSortable({ id: row.id, disabled: !canDrag });
@@ -361,6 +432,24 @@ const AdminRow = ({
       <TableCell className="text-xs uppercase text-muted-foreground">{row.type}</TableCell>
       <TableCell className="font-medium max-w-md truncate">{row.title}</TableCell>
       <TableCell className="text-sm">{authorLabel}</TableCell>
+      <TableCell>
+        <div className="flex flex-wrap gap-1">
+          {assignedSlugs.map(slug => {
+            const s = studios.find(x => x.slug === slug);
+            if (!s) return null;
+            return (
+              <span key={slug}
+                className="text-xs px-1.5 py-0.5 rounded border border-border"
+                style={s.color ? { backgroundColor: s.color, color: "white" } : undefined}>
+                {s.label.replace(" Studio", "")}
+              </span>
+            );
+          })}
+          {assignedSlugs.length === 0 && (
+            <span className="text-xs text-muted-foreground">—</span>
+          )}
+        </div>
+      </TableCell>
       <TableCell className="text-xs text-muted-foreground">
         {new Date(row.createdAt).toLocaleDateString()}
       </TableCell>
@@ -370,6 +459,13 @@ const AdminRow = ({
         </TableCell>
       )}
       <TableCell className="text-right">
+        <RowStudiosPopover
+          itemId={row.id}
+          itemType={row.type as "story" | "prompt" | "tool"}
+          current={assignedSlugs}
+          studios={studios}
+          onChange={onAssignmentsChange}
+        />
         <Button size="icon" variant="ghost" onClick={onEdit}><Pencil className="h-4 w-4" /></Button>
         <Button size="icon" variant="ghost" onClick={onDelete}><Trash2 className="h-4 w-4 text-destructive" /></Button>
       </TableCell>
