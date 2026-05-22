@@ -190,6 +190,21 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
             </>
           )}
 
+          <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
+            <Checkbox
+              id="new-consent"
+              checked={organizerConsent}
+              onCheckedChange={(c) => setOrganizerConsent(c === true)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="new-consent" className="text-sm font-normal cursor-pointer leading-snug">
+              Organizer has agreed to be introduced to interested builders
+              <span className="block text-xs text-muted-foreground mt-1">
+                When on, Sidekick may offer warm intros (handled by stewards — no contact info shown to builders).
+              </span>
+            </Label>
+          </div>
+
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
               <X className="h-3 w-3 mr-1" /> Cancel
