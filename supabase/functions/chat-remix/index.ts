@@ -252,6 +252,9 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     // Track vector-matched IDs for deduplication
     const vectorMatchedIds = new Set<string>();
 
+    // Hoisted so the commons search below can reuse the embedding without re-calling Lovable.
+    let queryEmbedding: number[] | null = null;
+
     // 1. Vector similarity search
     if (LOVABLE_API_KEY && latestUserMessage.trim()) {
       try {
@@ -270,7 +273,7 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
 
         if (embResponse.ok) {
           const embData = await embResponse.json();
-          const queryEmbedding = embData.data[0].embedding;
+          queryEmbedding = embData.data[0].embedding;
 
           const { data: matches, error: matchError } = await supabase.rpc('match_library_items', {
             query_embedding: JSON.stringify(queryEmbedding),
@@ -387,9 +390,10 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
     }
 
     // ------------------------------------------------------------------
-    // 3. Commons search — query the RTP global commons in parallel.
-    // Same Gemini embedding (1536-dim) works for both local library_embeddings
-    // and commons_embeddings. Falls back to text search if vector returns nothing.
+    // 3. Commons search — query the RTP global commons.
+    // Vector search is primary (semantic similarity finds Repair Cafe from
+    // "fix-it fair" — text search misses this since the tokens don't share
+    // stems). Falls back to text search if no embedding is available.
     // ------------------------------------------------------------------
     const COMMONS_URL = Deno.env.get('RTP_COMMONS_URL') ?? 'https://odowkowcinyoxejyzhwl.supabase.co';
     const COMMONS_ANON_KEY = Deno.env.get('RTP_COMMONS_ANON_KEY')
@@ -404,6 +408,7 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
       source_studio_slug: string | null;
       source_url: string | null;
       tags: string[] | null;
+      similarity?: number;
     }> = [];
 
     if (latestUserMessage.trim()) {
@@ -414,30 +419,55 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
           'Content-Type': 'application/json',
         };
 
-        // Try vector search first if we already have a query embedding
+        const ALL_KINDS = ['recipe', 'framework', 'methodology', 'reference', 'tool', 'story'];
         let commonsMatches: any[] = [];
-        // The embedding was generated above in the vector-search section. We can't
-        // capture it as a let here without restructuring, so we re-derive it from
-        // the LOVABLE call only when needed. To keep changes minimal, just use the
-        // text-search RPC which is fast and works without an embedding.
-        const textRes = await fetch(`${COMMONS_URL}/rest/v1/rpc/search_commons_items`, {
-          method: 'POST',
-          headers: commonsHeaders,
-          body: JSON.stringify({
-            query_text: latestUserMessage.slice(0, 500),
-            match_count: 8,
-            filter_kinds: ['recipe', 'framework', 'methodology', 'reference', 'tool', 'story'],
-          }),
-        });
 
-        if (textRes.ok) {
-          commonsMatches = await textRes.json();
-        } else {
-          console.error('Commons text-search failed:', textRes.status, await textRes.text());
+        // Vector search via match_commons_items() — preferred, semantic
+        if (queryEmbedding) {
+          try {
+            const vecRes = await fetch(`${COMMONS_URL}/rest/v1/rpc/match_commons_items`, {
+              method: 'POST',
+              headers: commonsHeaders,
+              body: JSON.stringify({
+                query_embedding: JSON.stringify(queryEmbedding),
+                match_threshold: 0.25,
+                match_count: 8,
+                filter_kinds: ALL_KINDS,
+              }),
+            });
+            if (vecRes.ok) {
+              commonsMatches = await vecRes.json();
+              console.log(`Commons vector search: ${commonsMatches.length} matches`,
+                commonsMatches.map((m: any) => `${m.kind}:${m.slug}(${m.similarity?.toFixed(3)})`).join(', '));
+            } else {
+              console.error('Commons vector search failed:', vecRes.status, await vecRes.text());
+            }
+          } catch (e) {
+            console.error('Commons vector search threw:', e);
+          }
+        }
+
+        // Fall back to text search if vector returned nothing (or no embedding)
+        if (commonsMatches.length === 0) {
+          const textRes = await fetch(`${COMMONS_URL}/rest/v1/rpc/search_commons_items`, {
+            method: 'POST',
+            headers: commonsHeaders,
+            body: JSON.stringify({
+              query_text: latestUserMessage.slice(0, 500),
+              match_count: 8,
+              filter_kinds: ALL_KINDS,
+            }),
+          });
+          if (textRes.ok) {
+            commonsMatches = await textRes.json();
+            console.log(`Commons text search (fallback): ${commonsMatches.length} matches`);
+          } else {
+            console.error('Commons text search failed:', textRes.status, await textRes.text());
+          }
         }
 
         if (commonsMatches.length > 0) {
-          // Hydrate fuller fields (body excerpt + source_url) via a follow-up select
+          // Hydrate body/source_url via a follow-up select
           const slugs = commonsMatches.map(m => m.slug);
           const kinds = [...new Set(commonsMatches.map(m => m.kind))];
           const slugsList = slugs.map(s => `"${s.replace(/"/g, '\\"')}"`).join(',');
@@ -448,14 +478,15 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
           );
           if (hydrateRes.ok) {
             const hydrated = await hydrateRes.json() as any[];
-            // Preserve search ranking order
             const bySlugKind = new Map<string, any>();
             for (const h of hydrated) bySlugKind.set(`${h.kind}:${h.slug}`, h);
             relevantCommons = commonsMatches
-              .map((m: any) => bySlugKind.get(`${m.kind}:${m.slug}`))
+              .map((m: any) => {
+                const item = bySlugKind.get(`${m.kind}:${m.slug}`);
+                return item ? { ...item, similarity: m.similarity } : null;
+              })
               .filter(Boolean)
               .slice(0, 6); // cap at 6 commons items to balance against local
-            console.log('Commons matches:', relevantCommons.map(c => `${c.kind}:${c.slug}`));
           }
         }
       } catch (commonsError) {
@@ -704,20 +735,32 @@ IMPORTANT FOR CONTRIBUTIONS:
    docs, and field references to practitioners' work (Block Party USA, Priya Parker, Dean Spade,
    ABCD Institute, microsolidarity, and many more).
 
-   When commons items appear in the context below under "RELEVANT ITEMS FROM THE RTP GLOBAL
-   COMMONS", treat them as legitimate references for the builder's question — but be careful
-   about the distinction:
+   IMPORTANT: When items appear in the context below under "RELEVANT ITEMS FROM THE RTP GLOBAL
+   COMMONS", they are AS RELEVANT as local library items — surface them in your response.
+   Do not silently ignore them just because they don't have UI cards. If a commons recipe,
+   framework, or reference matches the builder's question, mention it by title with attribution
+   and the source URL. The commons is often where the most directly applicable practitioner
+   work lives — especially for recipes (how-tos for specific practices like repair cafes,
+   skillshares, block parties) and references to organizations and practitioners.
+
+   FORMAT DISTINCTION:
    - LOCAL library items (stories, prompts, tools): use the [LIBRARY_ITEM:type:id:title] marker
      so the UI can render preview cards and the builder can navigate to them in the library.
-   - COMMONS items: do NOT use the marker. They aren't in this Studio's library UI. Reference
-     them by title in plain text, attribute the source (the practitioner's name or organization,
-     or the source repo like "neighboring-recipes"), and include the source URL when available
-     so the builder can read more if they want.
+   - COMMONS items: do NOT use the marker. Reference them in plain text by their title, with
+     the source attribution and the source URL on a separate line when available. The user can
+     click the URL to read more.
 
-   The commons is especially useful when the builder is asking about a practice or pattern
-   that isn't yet in the local library (e.g. "how do I run a repair cafe?", "what's
+   Example of mixing both well:
+     "For the day-of queue management, the [LIBRARY_ITEM:tool:abc-123:Skill Directory] tool
+     could work nicely. There's also a 'Repair Cafe' recipe in the broader commons that maps
+     directly to your fix-it fair — Martine Postma started the first one in Amsterdam in 2009,
+     and there's a starter kit from the Repair Cafe Foundation:
+     https://www.repaircafe.org/en/visit/"
+
+   The commons is especially useful when the builder asks about a practice or pattern that
+   isn't yet in this Studio's local library (e.g. "how do I run a repair cafe?", "what's
    microsolidarity?", "how do mutual aid pods stay sustainable?"). Lead with the practitioner's
-   work, then translate to the builder's neighborhood scale and context.
+   work, then translate to the builder's neighborhood scale.
 
 COMMITMENTS:
 When users express intentions, plans, or commitments during conversation (like "I'm going to talk to my neighbor" or "I want to host a block party"):
