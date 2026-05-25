@@ -180,7 +180,8 @@ serve(async (req) => {
       ? SYSTEM_PROMPT + `\n\nThe user attached reference image(s) for visual/aesthetic direction. Use them to inform colors, typography feel, layout vibe, and overall mood — they're inspiration, not a literal spec. Don't try to recreate the images pixel-for-pixel.`
       : SYSTEM_PROMPT;
 
-    // Call Anthropic API
+    // Call Anthropic API with streaming to keep the upstream socket warm
+    // on long-running generations (Opus 4.6 + ~14k tokens can take 90-180s).
     const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -193,18 +194,80 @@ serve(async (req) => {
         max_tokens: MAX_TOKENS,
         system: systemPrompt,
         messages: [{ role: 'user', content: userContent }],
+        stream: true,
       }),
     });
 
-    if (!anthropicResponse.ok) {
-      const errText = await anthropicResponse.text();
+    if (!anthropicResponse.ok || !anthropicResponse.body) {
+      const errText = await anthropicResponse.text().catch(() => '');
       console.error('Anthropic API error:', anthropicResponse.status, errText);
       throw new Error(`Anthropic API error: ${anthropicResponse.status}`);
     }
 
-    const anthropicData = await anthropicResponse.json();
-    let generatedCode = anthropicData.content?.[0]?.text || '';
-    const tokensUsed = (anthropicData.usage?.input_tokens || 0) + (anthropicData.usage?.output_tokens || 0);
+    // Accumulate the SSE stream into a single text body.
+    let generatedCode = '';
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let stopReason: string | null = null;
+    let sawMessageStop = false;
+
+    const reader = anthropicResponse.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        // SSE events are separated by blank lines.
+        let sepIdx;
+        while ((sepIdx = buffer.indexOf('\n\n')) !== -1) {
+          const rawEvent = buffer.slice(0, sepIdx);
+          buffer = buffer.slice(sepIdx + 2);
+          // Each event may contain multiple `data: ` lines; we only care about the JSON payload.
+          for (const line of rawEvent.split('\n')) {
+            if (!line.startsWith('data:')) continue;
+            const dataStr = line.slice(5).trim();
+            if (!dataStr || dataStr === '[DONE]') continue;
+            try {
+              const evt = JSON.parse(dataStr);
+              switch (evt.type) {
+                case 'message_start':
+                  inputTokens = evt.message?.usage?.input_tokens || 0;
+                  break;
+                case 'content_block_delta':
+                  if (evt.delta?.type === 'text_delta' && typeof evt.delta.text === 'string') {
+                    generatedCode += evt.delta.text;
+                  }
+                  break;
+                case 'message_delta':
+                  if (evt.usage?.output_tokens) outputTokens = evt.usage.output_tokens;
+                  if (evt.delta?.stop_reason) stopReason = evt.delta.stop_reason;
+                  break;
+                case 'message_stop':
+                  sawMessageStop = true;
+                  break;
+                case 'error':
+                  console.error('Anthropic stream error event:', evt);
+                  throw new Error(evt.error?.message || 'Anthropic stream error');
+              }
+            } catch (parseErr) {
+              // Don't throw on a single malformed event; log and continue.
+              console.error('SSE parse error (non-fatal):', parseErr);
+            }
+          }
+        }
+      }
+    } finally {
+      try { reader.releaseLock(); } catch (_) { /* noop */ }
+    }
+
+    if (!sawMessageStop) {
+      console.error('Anthropic stream ended without message_stop. Stop reason:', stopReason, 'chars so far:', generatedCode.length);
+      throw new Error('The model connection dropped before the prototype finished. Try again.');
+    }
+
+    const tokensUsed = inputTokens + outputTokens;
 
     // Clean up markdown fences if present
     if (generatedCode.startsWith('```html')) {
