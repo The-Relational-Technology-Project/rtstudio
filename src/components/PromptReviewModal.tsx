@@ -24,6 +24,7 @@ interface PromptReviewModalProps {
   prompt: string;
   remaining: number;
   onConfirm: (editedPrompt: string, referenceImages: ReferenceImage[]) => void;
+  onCancel?: () => void;
   isGenerating: boolean;
 }
 
