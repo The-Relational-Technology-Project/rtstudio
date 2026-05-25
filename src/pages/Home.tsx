@@ -37,26 +37,62 @@ const Home = () => {
   const [pendingPrompt, setPendingPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [buildsRemaining, setBuildsRemaining] = useState(10);
+  const buildAbortRef = useRef<AbortController | null>(null);
 
   const handleBuildIt = (summaryPrompt: string) => {
     setPendingPrompt(summaryPrompt);
     setShowPromptReview(true);
   };
 
+  // If the edge function call hangs or drops, the prototype row may still have
+  // been written. Look it up directly so we don't tell the user the build failed
+  // when it actually succeeded.
+  const findRecentPrototype = async (prompt: string, sinceISO: string) => {
+    if (!user?.id) return null;
+    const { data, error } = await supabase
+      .from("prototypes")
+      .select("id, share_id, generated_code, prompt, created_at")
+      .eq("builder_id", user.id)
+      .eq("prompt", prompt)
+      .gte("created_at", sinceISO)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error("Recovery lookup error:", error);
+      return null;
+    }
+    return data;
+  };
+
   const generatePrototype = async (prompt: string, referenceImages: ReferenceImage[] = []) => {
     setIsGenerating(true);
+    const startedAt = new Date().toISOString();
+    const controller = new AbortController();
+    buildAbortRef.current = controller;
+    // 4-minute client-side ceiling.
+    const timeoutId = window.setTimeout(() => controller.abort("timeout"), 4 * 60 * 1000);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const { data, error } = await supabase.functions.invoke("generate-prototype", {
-        body: { prompt, referenceImages },
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : undefined,
+      // Call the edge function via raw fetch so we can attach AbortSignal.
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const url = `https://${projectId}.supabase.co/functions/v1/generate-prototype`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ prompt, referenceImages }),
+        signal: controller.signal,
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await res.json().catch(() => ({} as any));
+      if (!res.ok || data?.error) {
+        throw new Error(data?.error || `Build failed (${res.status})`);
+      }
 
       setPrototype({
         code: data.code,
@@ -64,7 +100,7 @@ const Home = () => {
         prototypeId: data.prototypeId,
         shareId: data.shareId,
       });
-      setBuildsRemaining(data.remaining);
+      if (typeof data.remaining === "number") setBuildsRemaining(data.remaining);
       setShowPromptReview(false);
 
       // Inject post-build message into Sidekick chat
@@ -74,14 +110,45 @@ const Home = () => {
       }]);
     } catch (error) {
       console.error("Prototype generation error:", error);
-      toast({
-        title: "Build failed",
-        description: error instanceof Error ? error.message : "Something went wrong. Try again or simplify your prompt.",
-        variant: "destructive",
-      });
+      const aborted = (error as any)?.name === "AbortError" || controller.signal.aborted;
+
+      // Recovery: the build may have completed server-side even if the response
+      // never made it back to us. Check the DB before declaring failure.
+      const recovered = await findRecentPrototype(prompt, startedAt);
+      if (recovered) {
+        setPrototype({
+          code: recovered.generated_code,
+          prompt: recovered.prompt,
+          prototypeId: recovered.id,
+          shareId: recovered.share_id,
+        });
+        setShowPromptReview(false);
+        setMessages((prev) => [...prev, {
+          role: "assistant" as const,
+          content: "Your prototype finished building — it's below. (The connection dropped on the way back, but the build itself made it through.)"
+        }]);
+      } else if (aborted) {
+        toast({
+          title: "Build is taking longer than expected",
+          description: "It may still be running. Wait a minute and refresh — your build will appear if it finished. Otherwise, try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Build failed",
+          description: error instanceof Error ? error.message : "Something went wrong. Try again or simplify your prompt.",
+          variant: "destructive",
+        });
+      }
     } finally {
+      window.clearTimeout(timeoutId);
+      buildAbortRef.current = null;
       setIsGenerating(false);
     }
+  };
+
+  const handleCancelBuild = () => {
+    buildAbortRef.current?.abort("user-cancel");
   };
 
   const handleConfirmBuild = async (editedPrompt: string, referenceImages: ReferenceImage[]) => {
