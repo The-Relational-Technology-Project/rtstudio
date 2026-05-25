@@ -24,6 +24,7 @@ interface PromptReviewModalProps {
   prompt: string;
   remaining: number;
   onConfirm: (editedPrompt: string, referenceImages: ReferenceImage[]) => void;
+  onCancel?: () => void;
   isGenerating: boolean;
 }
 
@@ -39,12 +40,13 @@ const MAX_IMAGES = 2;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export const PromptReviewModal = ({
-  open, onOpenChange, prompt, remaining, onConfirm, isGenerating
+  open, onOpenChange, prompt, remaining, onConfirm, onCancel, isGenerating
 }: PromptReviewModalProps) => {
   const [editedPrompt, setEditedPrompt] = useState(prompt);
   const [buildStep, setBuildStep] = useState(0);
   const [images, setImages] = useState<ResizedImage[]>([]);
   const [isResizing, setIsResizing] = useState(false);
+  const [cancelAvailable, setCancelAvailable] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -59,12 +61,18 @@ export const PromptReviewModal = ({
   useEffect(() => {
     if (!isGenerating) {
       setBuildStep(0);
+      setCancelAvailable(false);
       return;
     }
     const interval = setInterval(() => {
       setBuildStep((s) => (s + 1) % BUILD_STEPS.length);
     }, 8000);
-    return () => clearInterval(interval);
+    // Show the cancel option after 60s so users have an exit if it hangs.
+    const cancelTimer = window.setTimeout(() => setCancelAvailable(true), 60_000);
+    return () => {
+      clearInterval(interval);
+      window.clearTimeout(cancelTimer);
+    };
   }, [isGenerating]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,12 +141,22 @@ export const PromptReviewModal = ({
                 {BUILD_STEPS[buildStep]}
               </p>
               <p className="text-xs text-muted-foreground mt-4">
-                This may take a few minutes
+                This usually takes 1–3 minutes. You can leave this tab open.
               </p>
               <p className="text-xs text-muted-foreground/70 mt-2 italic">
                 This is a good time to stretch, make tea, or text a neighbor 🙂
               </p>
             </div>
+            {onCancel && cancelAvailable && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancel}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Cancel build
+              </Button>
+            )}
           </div>
         ) : (
           <>

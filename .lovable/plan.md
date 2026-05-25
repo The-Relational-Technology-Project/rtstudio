@@ -1,48 +1,60 @@
-# Allow full-complexity prompts; render single-page previews with stub tabs
+# Fix: prototype build modal can hang silently
 
-## Problem
+## What's actually wrong
 
-The in-Studio prototype is technically a single HTML doc rendered in a sandboxed iframe. To fit that, our `generate-prototype` system prompt currently tells the model to use tab/section navigation within one page — which is correct for rendering, but it has bled into how Sidekick writes the *prompt itself*. Tools come out feeling small: one screen, a couple of tabs, everything functional but shallow. As tools grow (multi-role flows, admin views, onboarding, settings, detail pages), this flattens the UX builders are actually imagining for their neighbors.
+Evan's account has 3 successful builds today, so the function works. His stuck-modal report matches a known failure mode: a long Anthropic non-streaming call (Opus 4.6, ~14k output tokens, 90–180s wall time) gets dropped somewhere between Anthropic → Edge runtime → browser. The function may even succeed and insert the prototype, but the HTTP response never makes it back. The frontend has no timeout, no cancel, no retry, no recovery path — so `isGenerating` stays `true` forever and the modal sits there.
 
-We want to separate two things that have collapsed into one:
+## Goals
 
-1. **The prompt** (what the builder takes to Lovable / Claude Code / their own dev) — should describe the *full* UX, including multiple pages, roles, flows, and states. No artificial single-page ceiling.
-2. **The in-Studio preview** (rendered in the sandboxed iframe) — stays single HTML doc, but is allowed to *represent* multi-page structure via tabs/sections, and explicitly allowed to leave some tabs as visual stubs ("Coming soon", placeholder content, or just the nav item without a working panel).
+1. The modal can never hang silently — there's always an exit.
+2. Reduce the rate of dropped long responses.
+3. If the prototype was actually saved server-side, recover it instead of telling the user it failed.
+
+Out of scope: changing the prototype output, the system prompt, the rate limit, the modal copy/visuals beyond what's needed for the new states.
 
 ## Changes
 
-### 1. `supabase/functions/generate-prototype/index.ts` — `SYSTEM_PROMPT`
+### 1. `supabase/functions/generate-prototype/index.ts` — stream from Anthropic
 
-Reframe the single-page constraint as a *rendering* constraint, not a *design* constraint. Specifically:
+Switch the Anthropic call to `stream: true` and accumulate the SSE chunks server-side. This:
+- Keeps the upstream socket warm with continuous events (no idle-drop).
+- Lets us log progress + token count even on partial failures.
+- Lets us detect a clean `message_stop` vs. a mid-stream disconnect and return a clearer error.
 
-- Keep: single HTML document, no external nav, hash/JS section switching only (this is the iframe constraint, non-negotiable).
-- Add: "The prompt you're given may describe a tool with many pages, roles, or flows. Your job is to represent that structure within one document — not to shrink the design to fit. Use a top-level nav (tabs, sidebar, or bottom bar) that reflects every major section the prompt describes, even sections you won't fully build out."
-- Add explicit permission to stub: "It is fine — encouraged, even — to leave secondary sections as visual stubs: a panel with a heading, a short description of what would live there, and maybe one or two placeholder rows. Prioritize building out the 1–2 sections most central to the builder's idea. Don't try to fully implement 6 tabs in one pass; build 2 well and stub the rest."
-- Add: "If the prompt describes multiple user roles (e.g. neighbor vs. organizer vs. admin), include a simple role-switcher at the top so reviewers can see each role's view. Stubs are fine for non-primary roles."
-- Keep the existing CSS-vs-JS tradeoff guidance.
+We still return a single JSON response to the browser (no SSE to the client this round — keeps `Home.tsx` simple). The edge function will be more reliable; that alone should remove most hangs.
 
-### 2. `supabase/functions/chat-remix/index.ts` — Sidekick's prompt-writing guidance
+Also add: on successful insert, log the prototype id so we can audit recoveries.
 
-Currently Sidekick writes prompts that implicitly target a single screen. Update the relevant sections of the system prompt (around lines 567–574 and wherever prompt-shape guidance lives) so that when Sidekick drafts a "remixed prompt" for the builder:
+### 2. `src/pages/Home.tsx` + `PromptReviewModal.tsx` — client-side timeout and recovery
 
-- It describes the full UX the tool needs to do its job for neighbors — including multiple pages/views, roles, and key flows — without self-censoring to fit a single screen.
-- It explicitly notes (in the prompt's spec, not as meta-commentary) the primary screens and which are secondary, so any downstream builder (Lovable, Claude Code, the in-Studio prototype) knows what to prioritize.
-- Add a short note to Sidekick: "The in-Studio prototype renders as a single page and will stub out secondary sections — that's expected. The prompt itself should still describe the full tool, because builders take it to other AI builders that *can* produce a multi-page app."
+- Add a **4-minute client-side timeout** (`AbortController` + `setTimeout`) around `supabase.functions.invoke`. If it fires, we don't immediately fail — we call a new lightweight check (below) to see if the prototype landed in the DB.
+- New small helper `findRecentPrototype(builderId, promptHash, sinceISO)`: queries `prototypes` for the most recent row by this builder created after the build started, matching the prompt. If found, treat the build as successful, load it, close the modal.
+- If not found after timeout: show a clear error toast ("Build is taking longer than expected. It may still be running — refresh in a minute, or try again."), unblock the modal so the user can close/retry, and stop pretending the request is still in flight.
+- Add a **Cancel** button to the loading state (disabled for the first 60s to avoid premature cancels, then enabled). Cancel aborts the in-flight invoke and resets `isGenerating`.
 
-### 3. `PromptReviewModal.tsx` micro-copy (optional, small)
+### 3. `PromptReviewModal.tsx` — loading state copy update
 
-Add one line near the "Review your build prompt" subhead, something like:
-> "If you build it here, the preview will show one page with the main flow working and other sections stubbed. Take the prompt to Claude Code or Lovable for the full multi-page version."
+Tighten one line of microcopy so users know what to expect and that cancel is safe:
+- "This usually takes 1–3 minutes. You can leave this tab open."
+- Cancel button appears after 60s, labeled "Cancel build".
 
-This sets expectations so builders don't think the preview is the ceiling.
+No new design language, no new components beyond the cancel button (already have `Button`).
 
-## Out of scope
+## Out of scope / not doing
 
-- No DB changes, no new tables, no new edge functions.
-- No change to the iframe sandbox or `PrototypePreview.tsx` rendering.
-- No change to rate limits or model choice.
-- The contribution / story-nudge work from the prior thread is separate and not touched here.
+- Not switching models or shrinking `MAX_TOKENS` — Opus 4.6 is the right model and the prototypes that succeed are well-sized.
+- Not adding a queue / background job — overkill for 10 builds/day/user.
+- Not changing `prototypes` schema.
+- Not touching any other edge function, the Sidekick prompt, contributions UX, or the public/share views.
 
 ## Risk
 
-Stubs done poorly look like the model gave up. Mitigation: the prompt change tells the model to make stubs *intentional and labeled* ("This is where the directory of mutual-aid offers would live") rather than empty panels. We'll watch the next handful of generations and tighten the wording if stubs feel lazy.
+- Streaming code path on the edge function is new; a bug there could break builds for everyone. Mitigation: keep the request shape and response shape identical to today, so `Home.tsx` doesn't change its contract. Test once after deploy with a small prompt before declaring done.
+- The "look up prototype after timeout" recovery could surface a stale row if the user changed their prompt and resubmitted within seconds. Mitigation: match on exact prompt string + `created_at >= requestStartedAt`.
+
+## Verification
+
+- Trigger one short build → confirm normal happy path still works.
+- Trigger one large build (deliberately verbose prompt) → confirm streaming completes and prototype renders.
+- Simulate timeout by lowering the client timeout to 5s in dev → confirm recovery lookup finds the row and loads the prototype instead of erroring.
+- Confirm Cancel button aborts cleanly and leaves the UI in a usable state.
