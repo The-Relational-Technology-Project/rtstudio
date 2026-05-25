@@ -141,12 +141,22 @@ export const PromptReviewModal = ({
                 {BUILD_STEPS[buildStep]}
               </p>
               <p className="text-xs text-muted-foreground mt-4">
-                This may take a few minutes
+                This usually takes 1–3 minutes. You can leave this tab open.
               </p>
               <p className="text-xs text-muted-foreground/70 mt-2 italic">
                 This is a good time to stretch, make tea, or text a neighbor 🙂
               </p>
             </div>
+            {onCancel && cancelAvailable && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancel}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                Cancel build
+              </Button>
+            )}
           </div>
         ) : (
           <>
