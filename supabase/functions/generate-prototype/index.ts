@@ -323,7 +323,7 @@ serve(async (req) => {
       console.error('Counter increment exception (non-fatal):', counterEx);
     }
 
-    console.log(`Prototype generated: ${prototype.id}, tokens: ${tokensUsed}`);
+    console.log(`Prototype generated: id=${prototype.id} builder=${builderId} tokens=${tokensUsed} stop=${stopReason}`);
 
     return new Response(
       JSON.stringify({
