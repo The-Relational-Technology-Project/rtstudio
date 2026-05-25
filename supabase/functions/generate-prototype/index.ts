@@ -329,7 +329,7 @@ serve(async (req) => {
       JSON.stringify({
         code: generatedCode,
         model: CLAUDE_MODEL,
-        usage: anthropicData.usage,
+        usage: { input_tokens: inputTokens, output_tokens: outputTokens },
         prototypeId: prototype.id,
         shareId: prototype.share_id,
         remaining: DAILY_LIMIT - todayCount - 1,
