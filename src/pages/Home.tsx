@@ -245,6 +245,7 @@ const Home = () => {
         prompt={pendingPrompt}
         remaining={buildsRemaining}
         onConfirm={handleConfirmBuild}
+        onCancel={handleCancelBuild}
         isGenerating={isGenerating}
       />
     </div>
