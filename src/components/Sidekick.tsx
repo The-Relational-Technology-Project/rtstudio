@@ -168,6 +168,25 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     }
   }, [initialPrompt, onClearInitialPrompt]);
 
+  // Listen for external prefill requests (e.g. "Talk to an RTP steward" button
+  // on the build plan preview). Drop the suggested text into the chat box and
+  // focus it — never auto-send, so the builder can edit first.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ text?: string }>).detail;
+      if (!detail?.text) return;
+      setInput(detail.text);
+      window.setTimeout(() => {
+        const chat = document.getElementById("sidekick-chat");
+        const textarea = chat?.querySelector("textarea") as HTMLTextAreaElement | null;
+        textarea?.focus();
+        if (textarea) textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      }, 50);
+    };
+    window.addEventListener("sidekick:prefill", handler as EventListener);
+    return () => window.removeEventListener("sidekick:prefill", handler as EventListener);
+  }, []);
+
   // Extract library items from new assistant messages only
   useEffect(() => {
     messages.forEach((message, index) => {
