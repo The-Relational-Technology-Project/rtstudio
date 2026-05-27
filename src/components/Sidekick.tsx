@@ -5,7 +5,7 @@ import { Textarea } from "./ui/textarea";
 import { Card } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Send, Sparkles, Gift, RotateCcw, FileText } from "lucide-react";
+import { Copy, Send, Sparkles, Gift, RotateCcw, FileText, Check, Loader2 } from "lucide-react";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LibraryItemPreview } from "@/components/LibraryItemPreview";
@@ -22,6 +22,7 @@ interface SidekickProps {
   onCreateBuildPlan?: (libraryItemIds: string[]) => void;
   plansRemaining?: number;
   previewSlot?: React.ReactNode;
+  buildPlanState?: "idle" | "generating" | "ready";
 }
 
 interface LibraryItemData {
@@ -39,7 +40,7 @@ interface ContributionData {
   title: string;
 }
 
-export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot }: SidekickProps) => {
+export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot, buildPlanState = "idle" }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { messages, setMessages, clearMessages } = useSidekick();
@@ -92,17 +93,27 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
         ];
       }
       
-      const { data, error } = await supabase.functions.invoke("chat-remix", {
-        body: { 
-          messages: enrichedMessages
+      // Use raw fetch (not supabase.functions.invoke) so we can pass the JWT
+      // directly — invoke can drop the user's Authorization header, which makes
+      // chat-remix treat the request as a guest and breaks auth-gated tools
+      // like request_steward_connect.
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const url = `https://${projectId}.supabase.co/functions/v1/chat-remix`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
         },
-        headers: session?.access_token ? {
-          Authorization: `Bearer ${session.access_token}`
-        } : undefined
+        body: JSON.stringify({ messages: enrichedMessages }),
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await res.json().catch(() => ({} as any));
+      if (!res.ok || data?.error) {
+        throw new Error(data?.error || `Chat failed (${res.status})`);
+      }
 
       setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
       
@@ -156,6 +167,25 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
       onClearInitialPrompt?.();
     }
   }, [initialPrompt, onClearInitialPrompt]);
+
+  // Listen for external prefill requests (e.g. "Talk to an RTP steward" button
+  // on the build plan preview). Drop the suggested text into the chat box and
+  // focus it — never auto-send, so the builder can edit first.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ text?: string }>).detail;
+      if (!detail?.text) return;
+      setInput(detail.text);
+      window.setTimeout(() => {
+        const chat = document.getElementById("sidekick-chat");
+        const textarea = chat?.querySelector("textarea") as HTMLTextAreaElement | null;
+        textarea?.focus();
+        if (textarea) textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      }, 50);
+    };
+    window.addEventListener("sidekick:prefill", handler as EventListener);
+    return () => window.removeEventListener("sidekick:prefill", handler as EventListener);
+  }, []);
 
   // Extract library items from new assistant messages only
   useEffect(() => {
@@ -389,14 +419,36 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                       <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
                         <Button
                           onClick={() => onCreateBuildPlan(libraryItems.map((i) => i.id))}
-                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                          disabled={plansRemaining <= 0}
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-100"
+                          disabled={
+                            plansRemaining <= 0 ||
+                            buildPlanState === "generating" ||
+                            buildPlanState === "ready"
+                          }
                         >
-                          <FileText className="w-4 h-4 mr-2" />
-                          Create build plan
+                          {buildPlanState === "generating" ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Creating build plan…
+                            </>
+                          ) : buildPlanState === "ready" ? (
+                            <>
+                              <Check className="w-4 h-4 mr-2" />
+                              Build plan created
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="w-4 h-4 mr-2" />
+                              Create build plan
+                            </>
+                          )}
                         </Button>
                         <p className="text-xs text-muted-foreground text-center mt-2">
-                          Claude Opus will write a detailed prompt and a builder plan from this conversation.
+                          {buildPlanState === "generating"
+                            ? "Claude Opus is drafting your detailed prompt and plan — usually 20–40 seconds."
+                            : buildPlanState === "ready"
+                            ? "Your build plan is ready below."
+                            : "Claude Opus will write a detailed prompt and a builder plan from this conversation."}
                         </p>
                       </div>
                     )}
