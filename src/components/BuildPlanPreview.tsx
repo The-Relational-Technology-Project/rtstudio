@@ -96,7 +96,7 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
       return;
     }
     setSavingTitle(true);
-    const { error } = await (supabase as any).from("build_plans").update({ title: next }).eq("id", plan.id);
+    const { error } = await supabase.from("build_plans").update({ title: next }).eq("id", plan.id);
     setSavingTitle(false);
     if (error) {
       toast({ title: "Couldn't save title", description: error.message, variant: "destructive" });
