@@ -56,6 +56,9 @@ const Landing = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-fraunces text-foreground leading-tight mb-6">
               You can build what you need
             </h1>
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
+              Tap into a commons of relational tech. Remix a tool for your people and place. Leave with a plan — and a neighbor to build it with.
+            </p>
             <Link to="/auth">
               <Button
                 size="lg"
@@ -66,6 +69,7 @@ const Landing = () => {
               </Button>
             </Link>
           </div>
+
 
           {/* Gallery Grid */}
           {galleryTools.length > 0 && (
