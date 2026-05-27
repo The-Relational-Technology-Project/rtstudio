@@ -85,7 +85,7 @@ const Home = () => {
 
       setMessages((prev) => [...prev, {
         role: "assistant" as const,
-        content: "Your build plan is ready below. Copy the detailed prompt into your builder of choice, and walk through the plan when you're ready to share with a neighbor.",
+        content: "Your build plan is ready below. Copy the detailed prompt into your builder of choice, and walk through the plan when you're ready to share with a neighbor.\n\nWhen you're set with it: want me to introduce you to an RTP steward (Josh from the team), or to someone in the network building something adjacent? Either way I'd share your plan — and you can choose whether to include our chat.\n\nAnd if there are concrete next steps for you — \"show this to Maya by Saturday,\" \"sign up for Lovable\" — I can save those to your profile so you don't lose them.",
       }]);
     } catch (error) {
       console.error("Build plan generation error:", error);
@@ -96,7 +96,7 @@ const Home = () => {
         setBuildPlan(recovered);
         setMessages((prev) => [...prev, {
           role: "assistant" as const,
-          content: "Your build plan finished — it's below. (The connection dropped on the way back, but the plan itself made it through.)",
+          content: "Your build plan finished — it's below. (The connection dropped on the way back, but the plan itself made it through.)\n\nWhen you're set with it: want me to introduce you to an RTP steward, or someone in the network building something adjacent? I'd share your plan with them — your call on whether to share our chat. And if there are concrete next steps you want saved to your profile, just tell me.",
         }]);
       } else if (aborted) {
         toast({

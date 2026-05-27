@@ -141,6 +141,15 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
     await copyToClipboard(url, "share");
   };
 
+  const focusSidekickChat = () => {
+    const chat = document.getElementById("sidekick-chat");
+    if (!chat) return;
+    chat.scrollIntoView({ behavior: "smooth", block: "start" });
+    const textarea = chat.querySelector("textarea");
+    // Wait for scroll to begin, then focus so the cursor lands in the input.
+    window.setTimeout(() => (textarea as HTMLTextAreaElement | null)?.focus(), 250);
+  };
+
   return (
     <Card className="mt-4 border-2 border-primary/30 bg-gradient-to-b from-primary/5 to-background overflow-hidden">
       <div className="px-4 sm:px-6 pt-4 pb-3 border-b border-primary/15 flex items-start justify-between gap-3">
@@ -239,14 +248,12 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
       <div className="px-4 sm:px-6 py-3 border-t border-primary/15 flex flex-wrap gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
-            <span tabIndex={0}>
-              <Button variant="outline" size="sm" className="h-8 text-xs" disabled>
-                <HandshakeIcon className="h-3.5 w-3.5 mr-1" />
-                Talk to an RTP steward
-              </Button>
-            </span>
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={focusSidekickChat}>
+              <HandshakeIcon className="h-3.5 w-3.5 mr-1" />
+              Talk to an RTP steward
+            </Button>
           </TooltipTrigger>
-          <TooltipContent>Coming next — Sidekick will offer this once the plan is ready.</TooltipContent>
+          <TooltipContent>Tell Sidekick which kind of intro you'd like — RTP steward or adjacent builder.</TooltipContent>
         </Tooltip>
         <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleShare} disabled={sharing}>
           {copied === "share" ? (

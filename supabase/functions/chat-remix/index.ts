@@ -44,6 +44,33 @@ const contributionTools = [
         additionalProperties: false
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "request_steward_connect",
+      description: "Connect the builder with an RTP steward (Josh from the team) or with another builder in the network working on something adjacent. The builder's most recent build plan is shared automatically (this tool looks it up server-side). TIMING IS CRITICAL: Only call this AFTER a build plan has been generated (you'll see an assistant message saying 'Your build plan is ready below'), AND you've confirmed BOTH (a) which kind of connection the builder wants and (b) whether they want to share the chat history. Never assume share_chat_history — ask explicitly.",
+      parameters: {
+        type: "object",
+        properties: {
+          kind: {
+            type: "string",
+            enum: ["rtp_steward", "adjacent_builder"],
+            description: "Which kind of connection. 'rtp_steward' routes to Josh directly. 'adjacent_builder' asks Josh to find someone in the network building something similar."
+          },
+          share_chat_history: {
+            type: "boolean",
+            description: "Whether the builder explicitly agreed to share the chat history with the steward. Ask the builder before calling — never assume yes."
+          },
+          note: {
+            type: "string",
+            description: "Optional short note from the builder to include in the intro email."
+          }
+        },
+        required: ["kind", "share_chat_history"],
+        additionalProperties: false
+      }
+    }
   }
 ];
 
@@ -762,6 +789,27 @@ IMPORTANT FOR CONTRIBUTIONS:
    microsolidarity?", "how do mutual aid pods stay sustainable?"). Lead with the practitioner's
    work, then translate to the builder's neighborhood scale.
 
+7. STEWARD CONNECT (after a build plan has been generated):
+   When the conversation includes an assistant message saying "Your build plan is ready below" (or similar), the builder just finished generating a build plan. At that point, proactively offer the steward-connect path — this is a core part of what Studio is for.
+
+   THE FLOW (do not skip steps, do not collapse them):
+   - Step 1 (offer the choice): "Want me to introduce you to an RTP steward (Josh from the team), or to someone in the network building something adjacent? Either is optional."
+   - Step 2 (only after they pick): confirm shared content plainly — "I'll share the detailed prompt and plan with Josh."
+   - Step 3 (always ask, never assume): "Is it okay to share our chat history too? Totally fine if not."
+   - Step 4: once both the kind and the chat-history answer are confirmed, call request_steward_connect with the chosen kind, share_chat_history boolean, and (optional) a short note if the builder said anything they'd like included.
+   - Step 5: deliver the tool's response message verbatim. The tool returns warm copy already.
+
+   IMPORTANT:
+   - NEVER assume share_chat_history is true. Always ask. Builders may have private context in the chat.
+   - If the builder declines the intro entirely, that's fine — don't push. Move to the commitments invitation below.
+   - If the builder asks for the intro before a build plan has been generated, encourage them to create the build plan first so there's something to share.
+   - For 'adjacent_builder' kind, do not try to name a specific person — Josh hand-picks the match.
+
+8. COMMITMENTS AT PLAN TIME:
+   After the steward conversation (or if the builder declined the intro), invite them to lock in next steps:
+   "If there are concrete next steps for you — 'show this to Maya by Saturday,' 'sign up for Lovable,' 'paste the prompt into Claude Code tomorrow morning' — I can save those to your profile so you don't lose them."
+   Builders manage commitments manually on their profile (per the COMMITMENTS section below). Your job at this stage is to nudge, name a few concrete options that fit their plan, and acknowledge anything they share.
+
 COMMITMENTS:
 When users express intentions, plans, or commitments during conversation (like "I'm going to talk to my neighbor" or "I want to host a block party"):
 - Encourage them warmly and acknowledge the commitment
@@ -946,13 +994,93 @@ Begin by understanding what they're looking for - whether that's exploring the l
         }
 
         return new Response(
-          JSON.stringify({ 
+          JSON.stringify({
             response: `Your Gift Build request has been sent to Josh from the RTP team! He'll review your idea -- "${args.idea_title}" -- and prepare for your session.\n\nNext step: Book a jam session so Josh can walk you through an initial build and get you set up with the right tools. We recommend booking at least a week out so he has time to review your idea.\n\nSchedule here: https://cal.com/joshnesbit/\n\nThis is going to be great!`
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
+      } else if (functionName === 'request_steward_connect') {
+        console.log('Steward connect request:', args);
+
+        if (!userId || !authHeader) {
+          return new Response(
+            JSON.stringify({ response: "I'll need you to be signed in to send a steward intro. Could you sign in and we'll try again?" }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Find the most recent build plan for this builder
+        const sinceISO = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+        const { data: recentPlan } = await supabase
+          .from('build_plans')
+          .select('id, title')
+          .eq('builder_id', userId)
+          .gte('created_at', sinceISO)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!recentPlan) {
+          return new Response(
+            JSON.stringify({ response: "I don't see a recent build plan to share yet. Want to create one first? Once we land on a prompt, tap **Create build plan** and then we can loop a steward in." }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const kind: 'rtp_steward' | 'adjacent_builder' = args.kind === 'adjacent_builder' ? 'adjacent_builder' : 'rtp_steward';
+        const shareChat = args.share_chat_history === true;
+        const note = (args.note || '').toString().trim();
+
+        const chatExcerpt = shareChat
+          ? messages.slice(-12).map((m: any) => `${m.role === 'user' ? 'Builder' : 'Sidekick'}: ${m.content}`).join('\n\n')
+          : null;
+
+        try {
+          const notifyRes = await fetch(`${SUPABASE_URL}/functions/v1/notify-steward-connect`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': authHeader,
+            },
+            body: JSON.stringify({
+              build_plan_id: (recentPlan as any).id,
+              kind,
+              share_chat_history: shareChat,
+              chat_excerpt: chatExcerpt,
+              note: note || undefined,
+            }),
+          });
+
+          if (!notifyRes.ok) {
+            const errBody = await notifyRes.text().catch(() => '');
+            console.error('notify-steward-connect failed:', notifyRes.status, errBody);
+            return new Response(
+              JSON.stringify({ response: "I hit a snag sending the intro just now. Want to try again in a moment?" }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } catch (notifyErr) {
+          console.error('notify-steward-connect exception:', notifyErr);
+          return new Response(
+            JSON.stringify({ response: "I hit a snag sending the intro just now. Want to try again in a moment?" }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const chatLine = shareChat
+          ? "He has our conversation as context, too."
+          : "Our chat stayed between us — Josh will start fresh from the plan.";
+
+        const responseText = kind === 'rtp_steward'
+          ? `I've shared your plan with Josh from the RTP team. ${chatLine} He'll reach out by email soon — and if you want to grab a time directly, you can book here: https://cal.com/joshnesbit/`
+          : `I've sent your plan over to Josh, and he'll look for someone in the network building something adjacent and make the intro by email. ${chatLine}`;
+
+        return new Response(
+          JSON.stringify({ response: responseText }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-      
+
       // Unknown tool call
       return new Response(
         JSON.stringify({ response: choice.message.content || "I'm not sure how to handle that. Could you try again?" }),
