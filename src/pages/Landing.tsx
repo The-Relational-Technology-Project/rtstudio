@@ -57,7 +57,7 @@ const Landing = () => {
               You can build what you need
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-              Tap into a commons of relational tech. Remix a tool for your people and place. Leave with a plan — and a neighbor to build it with.
+              Tap into a commons of relational tech. Remix a tool for your people and place.
             </p>
             <Link to="/auth">
               <Button
