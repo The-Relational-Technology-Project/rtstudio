@@ -197,7 +197,7 @@ const Landing = () => {
                   <Hammer className="h-5 w-5 text-primary" /> Build Plan & Peer Support
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Turn your chat into a clear build plan you can take to Lovable — and get introduced to an RTP steward or a neighbor building something adjacent.
+                  Turn your chat into a clear build plan and get introduced to an RTP steward or a local builder creating something adjacent.
                 </p>
               </div>
             </div>
