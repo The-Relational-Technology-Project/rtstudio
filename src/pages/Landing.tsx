@@ -143,12 +143,12 @@ const Landing = () => {
                   </div>
                   <div className="flex items-start gap-2 justify-end">
                     <div className="bg-primary/10 rounded-lg px-3 py-2 text-xs text-foreground">
-                      Great idea! I found a similar tool in the library. Want me to build you a prototype?
+                      Here are two tools from neighbors doing something similar. Want to remix one for your block?
                     </div>
                   </div>
                   <div className="flex justify-end">
                     <div className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-[10px] font-medium">
-                      <Hammer className="h-3 w-3" /> Build a prototype
+                      <Hammer className="h-3 w-3" /> Create a build plan
                     </div>
                   </div>
                 </div>
@@ -158,52 +158,49 @@ const Landing = () => {
                   <Sparkles className="h-5 w-5 text-primary" /> Sidekick
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Chat with an AI partner that knows your neighborhood context, surfaces relevant tools and stories, and helps you move from idea to action.
+                  Chat with an AI partner who knows your neighborhood, surfaces relevant tools and stories from the commons, and helps you shape an idea worth building.
                 </p>
               </div>
             </div>
 
-            {/* Prototype Builder */}
+            {/* Build Plan & Peer Support */}
             <div className="space-y-4">
               <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 border-b border-border pb-2">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-destructive/50" />
-                      <div className="w-2 h-2 rounded-full bg-yellow-400/50" />
-                      <div className="w-2 h-2 rounded-full bg-green-500/50" />
-                    </div>
-                    <div className="text-[10px] text-muted-foreground font-mono">prototype preview</div>
+                    <Hammer className="h-3.5 w-3.5 text-primary" />
+                    <div className="text-[10px] text-muted-foreground font-medium">Your build plan</div>
                   </div>
                   <div className="space-y-1.5 py-1">
                     <div className="h-3 bg-muted rounded w-3/4" />
                     <div className="h-2 bg-muted/60 rounded w-full" />
                     <div className="h-2 bg-muted/60 rounded w-5/6" />
-                    <div className="flex gap-2 mt-2">
-                      <div className="h-6 bg-primary/20 rounded px-2 flex items-center">
-                        <span className="text-[9px] text-primary font-medium">Tab 1</span>
+                    <div className="flex gap-1.5 mt-2">
+                      <div className="h-6 bg-primary/15 rounded px-2 flex items-center">
+                        <span className="text-[9px] text-primary font-medium">Copy prompt</span>
                       </div>
                       <div className="h-6 bg-muted rounded px-2 flex items-center">
-                        <span className="text-[9px] text-muted-foreground">Tab 2</span>
+                        <span className="text-[9px] text-muted-foreground">Talk to a steward</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex justify-end pt-1">
                     <div className="inline-flex items-center gap-1 text-[10px] text-primary font-medium">
-                      <ExternalLink className="h-2.5 w-2.5" /> View and share
+                      <Users className="h-2.5 w-2.5" /> Shared with Josh from RTP
                     </div>
                   </div>
                 </div>
               </div>
               <div>
                 <h3 className="text-lg font-fraunces font-bold text-foreground mb-1 flex items-center gap-2">
-                  <Hammer className="h-5 w-5 text-primary" /> Prototype Builder
+                  <Hammer className="h-5 w-5 text-primary" /> Build Plan & Peer Support
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Describe what you want to build and get a clickable prototype in minutes. Share it with neighbors for feedback.
+                  Turn your chat into a clear build plan you can take to Lovable — and get introduced to an RTP steward or a neighbor building something adjacent.
                 </p>
               </div>
             </div>
+
 
             {/* Library */}
             <div className="space-y-4">
