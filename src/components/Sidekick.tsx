@@ -5,7 +5,7 @@ import { Textarea } from "./ui/textarea";
 import { Card } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Send, Sparkles, Gift, ExternalLink, RotateCcw, FileText } from "lucide-react";
+import { Copy, Send, Sparkles, Gift, RotateCcw, FileText } from "lucide-react";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LibraryItemPreview } from "@/components/LibraryItemPreview";
@@ -19,7 +19,7 @@ interface SidekickProps {
   initialPrompt?: string;
   onClearInitialPrompt?: () => void;
   fullPage?: boolean;
-  onCreateBuildPlan?: (draftPrompt: string, libraryItemIds: string[]) => void;
+  onCreateBuildPlan?: (libraryItemIds: string[]) => void;
   plansRemaining?: number;
   previewSlot?: React.ReactNode;
 }
@@ -215,23 +215,26 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     }
   };
 
-  const formatMessageContent = (content: string): { before: string; prompt: string | null; after: string } => {
-    const promptStartIdx = content.indexOf('---PROMPT_START---');
-    const promptEndIdx = content.indexOf('---PROMPT_END---');
-    
-    if (promptStartIdx !== -1 && promptEndIdx !== -1 && promptEndIdx > promptStartIdx) {
-      const before = content.substring(0, promptStartIdx)
-        .replace(/\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g, '[LIBRARY_LINK:$2:$3]')
-        .trim();
-      const prompt = content.substring(promptStartIdx + '---PROMPT_START---'.length, promptEndIdx).trim();
-      const after = content.substring(promptEndIdx + '---PROMPT_END---'.length)
-        .replace(/\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g, '[LIBRARY_LINK:$2:$3]')
-        .trim();
-      return { before, prompt, after };
+  const formatMessageContent = (content: string): { text: string; readyForBuildPlan: boolean } => {
+    // Strip any legacy ---PROMPT_START---/---PROMPT_END--- block (Gemini sometimes
+    // still emits one despite the system prompt; drop it on the floor — the chat is
+    // the brief now, Opus writes the prompt via Create build plan).
+    let cleaned = content;
+    const ps = cleaned.indexOf('---PROMPT_START---');
+    const pe = cleaned.indexOf('---PROMPT_END---');
+    if (ps !== -1 && pe !== -1 && pe > ps) {
+      cleaned = (cleaned.substring(0, ps) + cleaned.substring(pe + '---PROMPT_END---'.length)).trim();
     }
-    
-    const cleaned = content.replace(/\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g, '[LIBRARY_LINK:$2:$3]');
-    return { before: cleaned, prompt: null, after: '' };
+
+    // Detect and strip the ready-for-build-plan sentinel.
+    const readyMatch = /\[READY_FOR_BUILD_PLAN\]/.exec(cleaned);
+    const readyForBuildPlan = readyMatch !== null;
+    if (readyForBuildPlan) {
+      cleaned = cleaned.replace(/\[READY_FOR_BUILD_PLAN\]/g, '').trim();
+    }
+
+    const withLibraryLinks = cleaned.replace(/\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g, '[LIBRARY_LINK:$2:$3]');
+    return { text: withLibraryLinks, readyForBuildPlan };
   };
 
   const renderFormattedText = (text: string) => {
@@ -360,61 +363,27 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
               return (
                 <div key={idx} data-message-index={idx} className="flex justify-start">
                   <div className="max-w-[85%] space-y-3">
-                    {parsed.before && (
+                    {parsed.text && (
                       <div className="p-3 rounded-xl bg-secondary/50 border border-border">
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderFormattedText(parsed.before)}</p>
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderFormattedText(parsed.text)}</p>
                       </div>
                     )}
-                    {parsed.prompt && (
-                      <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed font-mono">{parsed.prompt}</p>
-                        <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/20">
-                          {onCreateBuildPlan && (
-                            <Button
-                              onClick={() => onCreateBuildPlan(parsed.prompt!, libraryItems.map((i) => i.id))}
-                              size="sm"
-                              className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
-                              disabled={plansRemaining <= 0}
-                            >
-                              <FileText className="w-3.5 h-3.5 mr-1" />
-                              Create build plan
-                            </Button>
-                          )}
-                          <Button
-                            onClick={() => copyToClipboard(parsed.prompt!)}
-                            variant="outline"
-                            size="sm"
-                            className="h-8 text-xs"
-                          >
-                            <Copy className="w-3 h-3 mr-1" />
-                            Copy
-                          </Button>
-                        </div>
-                        <div className="space-y-2 pt-1">
-                          <p className="text-xs text-muted-foreground">Or paste into:</p>
-                          <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://lovable.dev", "_blank")}>
-                              <ExternalLink className="w-3 h-3 mr-1" />
-                              Lovable
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://claude.ai/code", "_blank")}>
-                              <ExternalLink className="w-3 h-3 mr-1" />
-                              Claude Code
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => window.open("https://dyad.sh", "_blank")}>
-                              <ExternalLink className="w-3 h-3 mr-1" />
-                              Dyad
-                            </Button>
-                          </div>
-                        </div>
+                    {parsed.readyForBuildPlan && onCreateBuildPlan && (
+                      <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+                        <Button
+                          onClick={() => onCreateBuildPlan(libraryItems.map((i) => i.id))}
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                          disabled={plansRemaining <= 0}
+                        >
+                          <FileText className="w-4 h-4 mr-2" />
+                          Create build plan
+                        </Button>
+                        <p className="text-xs text-muted-foreground text-center mt-2">
+                          Claude Opus will write a detailed prompt and a builder plan from this conversation.
+                        </p>
                       </div>
                     )}
-                    {parsed.after && (
-                      <div className="p-3 rounded-xl bg-secondary/50 border border-border">
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderFormattedText(parsed.after)}</p>
-                      </div>
-                    )}
-                    {!parsed.prompt && (
+                    {!parsed.readyForBuildPlan && (
                       <Button
                         onClick={() => copyToClipboard(message.content)}
                         variant="ghost"

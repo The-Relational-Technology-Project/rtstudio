@@ -17,6 +17,7 @@ import {
   Map,
   HandshakeIcon,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 
 export interface BuildPlanData {
@@ -211,7 +212,7 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
         </div>
 
         <TabsContent value="prompt" className="px-4 sm:px-6 pb-4 pt-3 space-y-3 mt-0">
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -220,6 +221,48 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
             >
               {copied === "prompt" ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
               Copy detailed prompt
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Quick open:</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                navigator.clipboard.writeText(plan.detailed_prompt).catch(() => {});
+                window.open("https://lovable.dev", "_blank", "noopener,noreferrer");
+              }}
+              title="Copy prompt and open Lovable"
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              Lovable
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                navigator.clipboard.writeText(plan.detailed_prompt).catch(() => {});
+                window.open("https://claude.ai/code", "_blank", "noopener,noreferrer");
+              }}
+              title="Copy prompt and open Claude Code"
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              Claude Code
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                navigator.clipboard.writeText(plan.detailed_prompt).catch(() => {});
+                window.open("https://dyad.sh", "_blank", "noopener,noreferrer");
+              }}
+              title="Copy prompt and open Dyad"
+            >
+              <ExternalLink className="w-3 h-3 mr-1" />
+              Dyad
             </Button>
           </div>
           <div className="prose prose-sm max-w-none prose-headings:font-fraunces prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-foreground">

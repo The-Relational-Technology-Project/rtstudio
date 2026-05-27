@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.generate-prototype]
 verify_jwt = false
+
+[functions.generate-build-plan]
+verify_jwt = false
+
+[functions.notify-steward-connect]
+verify_jwt = false

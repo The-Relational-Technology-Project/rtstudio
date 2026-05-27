@@ -14,7 +14,15 @@ const DAILY_LIMIT = 10;
 // System prompt is large and stable, so it's prompt-cached on the Anthropic side.
 const SYSTEM_PROMPT = `You are the Relational Tech Studio's build-plan author. The Studio is an open commons where neighbors across many neighborhoods are building small, local tools with each other.
 
-A builder has just had a chat with Sidekick (the Studio's AI guide) and landed on a draft prompt for a tool they want to build for their neighborhood. Your job is to turn that draft into two artifacts — a polished, detailed prompt and a concrete plan — that the builder can copy, paste, and run with this afternoon.
+A builder has just had a chat with Sidekick (the Studio's AI guide) about a tool they want to build for their neighborhood. Your job is to turn that conversation into two artifacts — a polished, detailed prompt and a concrete plan — that the builder can copy, paste, and run with this afternoon.
+
+# YOUR INPUTS
+
+You receive:
+- The builder's profile (name, neighborhood, dreams, tech and AI-coding comfort, local tech ecosystem). Personalize when fields are populated; never invent details when they're empty.
+- A chat transcript between the builder and Sidekick — THIS IS THE BRIEF. Read it carefully. The builder's actual idea, the specific neighborhood texture they shared, the audience, the constraints — all of it lives in here. Do not skim. Sidekick deliberately doesn't write prompts in chat anymore; you write the prompt from the conversation itself.
+- Optionally, a draft prompt (only present if a legacy caller sent one). Treat it as a seed, but the chat transcript is still the authoritative brief — if they diverge, trust the chat.
+- Library item bodies — patterns Sidekick referenced in the conversation. Draw on these for structure and texture, but do NOT copy verbatim. The builder's tool is theirs, not a fork of a library item.
 
 Always return your answer by calling the deliver_build_plan tool. Never reply with plain prose.
 
@@ -147,13 +155,20 @@ interface ChatMessage {
   content: string;
 }
 
+interface LibraryItem {
+  kind: 'prompt' | 'tool' | 'story';
+  id: string;
+  title: string;
+  body: string;
+}
+
 function buildUserPrompt(args: {
-  draftPrompt: string;
+  draftPrompt: string | null;
   chatExcerpt: string;
-  libraryItemIds: string[];
+  libraryItems: LibraryItem[];
   profile: BuilderProfile | null;
 }): string {
-  const { draftPrompt, chatExcerpt, libraryItemIds, profile } = args;
+  const { draftPrompt, chatExcerpt, libraryItems, profile } = args;
 
   const profileBlock = profile
     ? `BUILDER PROFILE
@@ -166,16 +181,33 @@ function buildUserPrompt(args: {
     : `BUILDER PROFILE
 - Profile not available — treat the builder as a generic neighbor and keep the prompt place-agnostic.`;
 
-  return `${profileBlock}
+  // Library item bodies — Sidekick referenced these in the chat, so the builder
+  // may have anchored on patterns from them. Opus uses these as reference, not
+  // as something to copy verbatim.
+  const libraryBlock = libraryItems.length > 0
+    ? libraryItems
+        .map((item) => `--- ${item.kind.toUpperCase()}: ${item.title} ---\n${item.body}\n`)
+        .join('\n')
+    : '(no library items referenced)';
 
-DRAFT PROMPT FROM THE CHAT
+  // Draft-prompt block — only included when a legacy caller still supplies one.
+  // The new flow uses the chat-as-brief mode and omits this.
+  const draftBlock = draftPrompt && draftPrompt.trim().length >= 20
+    ? `DRAFT PROMPT FROM THE CHAT (Sidekick wrote this — use as a seed, but feel free to restructure):
 ${draftPrompt}
 
-CHAT EXCERPT (most recent messages that led to this prompt)
-${chatExcerpt || 'No chat excerpt available — work from the draft prompt alone.'}
+`
+    : `DRAFT PROMPT FROM THE CHAT: (none — chat-as-brief mode; derive the build from the conversation itself)
 
-LIBRARY ITEMS REFERENCED IN THE CHAT (IDs only — for context)
-${libraryItemIds.length > 0 ? libraryItemIds.map((id) => `- ${id}`).join('\n') : '(none)'}
+`;
+
+  return `${profileBlock}
+
+${draftBlock}CHAT TRANSCRIPT (this IS the brief — read carefully to understand what the builder wants)
+${chatExcerpt || '(no chat transcript provided)'}
+
+LIBRARY ITEMS REFERENCED IN THE CHAT (full bodies — patterns to draw on, not to copy verbatim)
+${libraryBlock}
 
 Now produce the title, detailed prompt, and plan, and call the deliver_build_plan tool.`;
 }
@@ -298,7 +330,9 @@ serve(async (req) => {
 
     // Parse request
     const body = await req.json().catch(() => ({}));
-    const draftPrompt: string = (body?.draft_prompt ?? '').toString();
+    // draft_prompt is OPTIONAL now (chat-as-brief mode). Legacy callers may still send it.
+    const draftPromptRaw: string = (body?.draft_prompt ?? '').toString();
+    const draftPrompt: string | null = draftPromptRaw.trim().length >= 20 ? draftPromptRaw : null;
     const ideaTitleHint: string = (body?.idea_title ?? '').toString();
     const libraryItemIds: string[] = Array.isArray(body?.library_item_ids)
       ? body.library_item_ids.filter((x: any) => typeof x === 'string').slice(0, 20)
@@ -306,12 +340,14 @@ serve(async (req) => {
     const chatMessages: ChatMessage[] = Array.isArray(body?.chat_messages)
       ? body.chat_messages
           .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
-          .slice(-12)
+          .slice(-20)
       : [];
 
-    if (!draftPrompt || draftPrompt.trim().length < 20) {
+    // Need either a draft prompt OR enough chat to derive a brief from.
+    const totalChatChars = chatMessages.reduce((n, m) => n + (m.content?.length || 0), 0);
+    if (!draftPrompt && totalChatChars < 200) {
       return new Response(
-        JSON.stringify({ error: 'Please provide a draft prompt (at least 20 characters).' }),
+        JSON.stringify({ error: 'Not enough conversation yet. Chat with Sidekick a bit more, then come back to create the plan.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -341,23 +377,59 @@ serve(async (req) => {
       );
     }
 
-    // Pull builder profile for personalization + track selection
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, display_name, neighborhood, neighborhood_description, dreams, tech_familiarity, ai_coding_experience, local_tech_ecosystem')
-      .eq('id', builderId)
-      .maybeSingle();
+    // Pull builder profile + library item bodies in parallel.
+    const [profileRes, promptsRes, toolsRes, storiesRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('full_name, display_name, neighborhood, neighborhood_description, dreams, tech_familiarity, ai_coding_experience, local_tech_ecosystem')
+        .eq('id', builderId)
+        .maybeSingle(),
+      libraryItemIds.length > 0
+        ? supabase.from('prompts').select('id, title, example_prompt, description').in('id', libraryItemIds)
+        : Promise.resolve({ data: [] as any[] }),
+      libraryItemIds.length > 0
+        ? supabase.from('tools').select('id, name, description, url').in('id', libraryItemIds)
+        : Promise.resolve({ data: [] as any[] }),
+      libraryItemIds.length > 0
+        ? supabase.from('stories').select('id, title, story_text, full_story_text').in('id', libraryItemIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const profile = profileRes.data ?? null;
+
+    // Coalesce library items across kinds. Cap each body to keep prompt size sane.
+    const BODY_CAP = 4000;
+    const libraryItems: LibraryItem[] = [
+      ...((promptsRes.data || []) as any[]).map((p: any) => ({
+        kind: 'prompt' as const,
+        id: p.id,
+        title: p.title,
+        body: (p.example_prompt || p.description || '').toString().slice(0, BODY_CAP),
+      })),
+      ...((toolsRes.data || []) as any[]).map((t: any) => ({
+        kind: 'tool' as const,
+        id: t.id,
+        title: t.name,
+        body: `${(t.description || '').toString()}\n\nURL: ${t.url || ''}`.slice(0, BODY_CAP),
+      })),
+      ...((storiesRes.data || []) as any[]).map((s: any) => ({
+        kind: 'story' as const,
+        id: s.id,
+        title: s.title || 'Story',
+        body: (s.full_story_text || s.story_text || '').toString().slice(0, BODY_CAP),
+      })),
+    ].filter((item) => item.body.trim().length > 0);
 
     // Build the chat excerpt (compact form)
     const chatExcerpt = chatMessages
       .map((m) => `${m.role === 'user' ? 'Builder' : 'Sidekick'}: ${m.content.trim()}`)
       .join('\n\n')
-      .slice(0, 8000); // cap to keep prompt sane
+      .slice(0, 12000); // cap to keep prompt sane
 
     const userPrompt = buildUserPrompt({
-      draftPrompt: draftPrompt.trim(),
+      draftPrompt,
       chatExcerpt,
-      libraryItemIds,
+      libraryItems,
       profile: (profile as BuilderProfile | null) ?? null,
     });
 
