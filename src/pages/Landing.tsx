@@ -78,8 +78,9 @@ const Landing = () => {
                 Remixable Tools
               </h2>
               <p className="text-muted-foreground text-center mb-8 text-sm">
-                Browse tools built by neighbors. Enter the Studio to remix any of them with your community.
+                Tools built by neighbors, ready to remix for your people and place. Enter the Studio to make one yours.
               </p>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {galleryTools.map((tool) => (
                   <ToolGalleryCard
