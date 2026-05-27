@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import Support from "./pages/Support";
 import PrototypeShare from "./pages/PrototypeShare";
 import PrototypeEmbed from "./pages/PrototypeEmbed";
+import BuildPlanShare from "./pages/BuildPlanShare";
 import Admin from "./pages/Admin";
 import { AdminRoute } from "./components/admin/AdminRoute";
 import { TourProvider } from "./contexts/TourContext";
@@ -86,6 +87,7 @@ const App = () => (
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/p/:shareId" element={<PrototypeShare />} />
                 <Route path="/p/:shareId/embed" element={<PrototypeEmbed />} />
+                <Route path="/plan/:shareId" element={<BuildPlanShare />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

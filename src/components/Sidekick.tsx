@@ -5,7 +5,7 @@ import { Textarea } from "./ui/textarea";
 import { Card } from "./ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, Send, Sparkles, Gift, ExternalLink, RotateCcw, Hammer } from "lucide-react";
+import { Copy, Send, Sparkles, Gift, ExternalLink, RotateCcw, FileText } from "lucide-react";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LibraryItemPreview } from "@/components/LibraryItemPreview";
@@ -19,9 +19,9 @@ interface SidekickProps {
   initialPrompt?: string;
   onClearInitialPrompt?: () => void;
   fullPage?: boolean;
-  onBuildIt?: (summaryPrompt: string) => void;
-  buildsRemaining?: number;
-  prototypeSlot?: React.ReactNode;
+  onCreateBuildPlan?: (draftPrompt: string, libraryItemIds: string[]) => void;
+  plansRemaining?: number;
+  previewSlot?: React.ReactNode;
 }
 
 interface LibraryItemData {
@@ -39,7 +39,7 @@ interface ContributionData {
   title: string;
 }
 
-export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onBuildIt, buildsRemaining = 10, prototypeSlot }: SidekickProps) => {
+export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { messages, setMessages, clearMessages } = useSidekick();
@@ -369,15 +369,15 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                       <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
                         <p className="text-sm whitespace-pre-wrap leading-relaxed font-mono">{parsed.prompt}</p>
                         <div className="flex flex-wrap gap-2 pt-2 border-t border-primary/20">
-                          {onBuildIt && (
+                          {onCreateBuildPlan && (
                             <Button
-                              onClick={() => onBuildIt(parsed.prompt!)}
+                              onClick={() => onCreateBuildPlan(parsed.prompt!, libraryItems.map((i) => i.id))}
                               size="sm"
                               className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground"
-                              disabled={buildsRemaining <= 0}
+                              disabled={plansRemaining <= 0}
                             >
-                              <Hammer className="w-3.5 h-3.5 mr-1" />
-                              Build a prototype
+                              <FileText className="w-3.5 h-3.5 mr-1" />
+                              Create build plan
                             </Button>
                           )}
                           <Button
@@ -480,7 +480,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
       )}
 
       {/* Prototype slot - renders between chat and library items */}
-      {prototypeSlot}
+      {previewSlot}
 
       {libraryItems.length > 0 && (
         <div className="space-y-3">

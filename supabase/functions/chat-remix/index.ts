@@ -702,7 +702,7 @@ IMPORTANT FOR PROMPT REMIXING:
   ---PROMPT_START---
   [the complete prompt goes here]
   ---PROMPT_END---
-  After the prompt block, include: "You can build a prototype here in Studio (it'll show the main flow working with other sections stubbed) or take this prompt to Claude Code or Lovable for the full multi-page version. A quick tip as you build: replace any AI-generated placeholder text with your own warm, plain-language voice. And once you start adding real data, use real photos of your neighbors rather than AI-generated images — real faces build trust."
+  After the prompt block, include: "When this feels close enough, tap **Create build plan** to turn it into a detailed prompt and a concrete plan you can run with — it picks the right builder tools for your level and walks you through sharing a first version with one neighbor. You can also copy the prompt above straight into Claude Code or Lovable. One thing to carry through: when you start adding copy and photos, write in your own voice and use real photos of your block rather than AI-generated ones — that's what makes the tool feel like yours."
 
 IMPORTANT FOR CONTRIBUTIONS:
 - Take a slow, relational approach — no direct database submissions
