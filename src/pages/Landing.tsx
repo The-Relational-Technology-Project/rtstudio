@@ -56,6 +56,9 @@ const Landing = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black font-fraunces text-foreground leading-tight mb-6">
               You can build what you need
             </h1>
+            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
+              Tap into a commons of relational tech. Remix a tool for your people and place. Leave with a plan — and a neighbor to build it with.
+            </p>
             <Link to="/auth">
               <Button
                 size="lg"
@@ -67,6 +70,7 @@ const Landing = () => {
             </Link>
           </div>
 
+
           {/* Gallery Grid */}
           {galleryTools.length > 0 && (
             <div className="mb-12 animate-fade-in" style={{ animationDelay: "0.1s" }}>
@@ -74,8 +78,9 @@ const Landing = () => {
                 Remixable Tools
               </h2>
               <p className="text-muted-foreground text-center mb-8 text-sm">
-                Browse tools built by neighbors. Enter the Studio to remix any of them with your community.
+                Tools built by neighbors, ready to remix for your people and place. Enter the Studio to make one yours.
               </p>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {galleryTools.map((tool) => (
                   <ToolGalleryCard
@@ -139,12 +144,12 @@ const Landing = () => {
                   </div>
                   <div className="flex items-start gap-2 justify-end">
                     <div className="bg-primary/10 rounded-lg px-3 py-2 text-xs text-foreground">
-                      Great idea! I found a similar tool in the library. Want me to build you a prototype?
+                      Here are two tools from neighbors doing something similar. Want to remix one for your block?
                     </div>
                   </div>
                   <div className="flex justify-end">
                     <div className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground rounded-lg px-3 py-1.5 text-[10px] font-medium">
-                      <Hammer className="h-3 w-3" /> Build a prototype
+                      <Hammer className="h-3 w-3" /> Create a build plan
                     </div>
                   </div>
                 </div>
@@ -154,52 +159,49 @@ const Landing = () => {
                   <Sparkles className="h-5 w-5 text-primary" /> Sidekick
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Chat with an AI partner that knows your neighborhood context, surfaces relevant tools and stories, and helps you move from idea to action.
+                  Chat with an AI partner who knows your neighborhood, surfaces relevant tools and stories from the commons, and helps you shape an idea worth building.
                 </p>
               </div>
             </div>
 
-            {/* Prototype Builder */}
+            {/* Build Plan & Peer Support */}
             <div className="space-y-4">
               <div className="bg-background rounded-2xl border border-border p-4 shadow-sm">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 border-b border-border pb-2">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 rounded-full bg-destructive/50" />
-                      <div className="w-2 h-2 rounded-full bg-yellow-400/50" />
-                      <div className="w-2 h-2 rounded-full bg-green-500/50" />
-                    </div>
-                    <div className="text-[10px] text-muted-foreground font-mono">prototype preview</div>
+                    <Hammer className="h-3.5 w-3.5 text-primary" />
+                    <div className="text-[10px] text-muted-foreground font-medium">Your build plan</div>
                   </div>
                   <div className="space-y-1.5 py-1">
                     <div className="h-3 bg-muted rounded w-3/4" />
                     <div className="h-2 bg-muted/60 rounded w-full" />
                     <div className="h-2 bg-muted/60 rounded w-5/6" />
-                    <div className="flex gap-2 mt-2">
-                      <div className="h-6 bg-primary/20 rounded px-2 flex items-center">
-                        <span className="text-[9px] text-primary font-medium">Tab 1</span>
+                    <div className="flex gap-1.5 mt-2">
+                      <div className="h-6 bg-primary/15 rounded px-2 flex items-center">
+                        <span className="text-[9px] text-primary font-medium">Copy prompt</span>
                       </div>
                       <div className="h-6 bg-muted rounded px-2 flex items-center">
-                        <span className="text-[9px] text-muted-foreground">Tab 2</span>
+                        <span className="text-[9px] text-muted-foreground">Talk to a steward</span>
                       </div>
                     </div>
                   </div>
                   <div className="flex justify-end pt-1">
                     <div className="inline-flex items-center gap-1 text-[10px] text-primary font-medium">
-                      <ExternalLink className="h-2.5 w-2.5" /> View and share
+                      <Users className="h-2.5 w-2.5" /> Shared with Josh from RTP
                     </div>
                   </div>
                 </div>
               </div>
               <div>
                 <h3 className="text-lg font-fraunces font-bold text-foreground mb-1 flex items-center gap-2">
-                  <Hammer className="h-5 w-5 text-primary" /> Prototype Builder
+                  <Hammer className="h-5 w-5 text-primary" /> Build Plan & Peer Support
                 </h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Describe what you want to build and get a clickable prototype in minutes. Share it with neighbors for feedback.
+                  Turn your chat into a clear build plan you can take to Lovable — and get introduced to an RTP steward or a neighbor building something adjacent.
                 </p>
               </div>
             </div>
+
 
             {/* Library */}
             <div className="space-y-4">
