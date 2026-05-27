@@ -32,7 +32,7 @@ const Home = () => {
   // still have been written. Find the most recent plan for this builder.
   const findRecentBuildPlan = async (sinceISO: string): Promise<BuildPlanData | null> => {
     if (!user?.id) return null;
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("build_plans")
       .select("id, title, detailed_prompt, plan_markdown, recommended_track, share_id, is_shared, created_at")
       .eq("builder_id", user.id)
