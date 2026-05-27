@@ -228,9 +228,26 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
 
     // Detect and strip the ready-for-build-plan sentinel.
     const readyMatch = /\[READY_FOR_BUILD_PLAN\]/.exec(cleaned);
-    const readyForBuildPlan = readyMatch !== null;
+    let readyForBuildPlan = readyMatch !== null;
     if (readyForBuildPlan) {
       cleaned = cleaned.replace(/\[READY_FOR_BUILD_PLAN\]/g, '').trim();
+    }
+
+    // Defensive fallback: if Gemini regresses to the old flow and writes a
+    // "Here is a prompt you can use to build this" line (or similar), treat it
+    // as a missed sentinel so the Create build plan button still appears and
+    // the builder isn't stuck. The chat IS the brief — Opus will write the
+    // actual prompt when they tap the button.
+    if (!readyForBuildPlan) {
+      const oldFlowSignals = [
+        /here\s+is\s+a\s+prompt\s+you\s+can\s+use/i,
+        /here'?s\s+a\s+prompt\s+(to|you can)/i,
+        /you\s+can\s+build\s+a\s+prototype\s+here\s+in\s+studio/i,
+        /take\s+this\s+prompt\s+to\s+(claude\s+code|lovable|dyad)/i,
+      ];
+      if (oldFlowSignals.some((re) => re.test(cleaned))) {
+        readyForBuildPlan = true;
+      }
     }
 
     const withLibraryLinks = cleaned.replace(/\[LIBRARY_ITEM:(\w+):([^:]+):([^\]]+)\]/g, '[LIBRARY_LINK:$2:$3]');
