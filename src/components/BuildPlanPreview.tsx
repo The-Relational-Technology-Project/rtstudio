@@ -285,7 +285,7 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
             </Button>
           </div>
           <div className="prose prose-sm max-w-none prose-headings:font-fraunces prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-foreground">
-            <ReactMarkdown>{plan.plan_markdown}</ReactMarkdown>
+            <ReactMarkdown>{plan.plan_markdown ?? ""}</ReactMarkdown>
           </div>
         </TabsContent>
       </Tabs>
