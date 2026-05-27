@@ -274,7 +274,7 @@ const Landing = () => {
             What is Relational Tech?
           </h2>
           <p className="text-muted-foreground leading-relaxed mb-6">
-            Technology that helps us reconnect and care for each other. Small software built by people for a place. Tools we can reuse and remix across our neighborhoods.
+            Technology that helps us connect with and care for each other. Small software built by people for a place. Tools we can reuse and remix across our neighborhoods.
           </p>
           <p className="text-sm text-muted-foreground/80">
             Part of the{" "}
