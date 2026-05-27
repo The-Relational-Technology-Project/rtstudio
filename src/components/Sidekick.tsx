@@ -22,6 +22,7 @@ interface SidekickProps {
   onCreateBuildPlan?: (libraryItemIds: string[]) => void;
   plansRemaining?: number;
   previewSlot?: React.ReactNode;
+  buildPlanState?: "idle" | "generating" | "ready";
 }
 
 interface LibraryItemData {
