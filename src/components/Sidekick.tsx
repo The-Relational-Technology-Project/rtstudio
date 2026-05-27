@@ -93,17 +93,27 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
         ];
       }
       
-      const { data, error } = await supabase.functions.invoke("chat-remix", {
-        body: { 
-          messages: enrichedMessages
+      // Use raw fetch (not supabase.functions.invoke) so we can pass the JWT
+      // directly — invoke can drop the user's Authorization header, which makes
+      // chat-remix treat the request as a guest and breaks auth-gated tools
+      // like request_steward_connect.
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const url = `https://${projectId}.supabase.co/functions/v1/chat-remix`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
         },
-        headers: session?.access_token ? {
-          Authorization: `Bearer ${session.access_token}`
-        } : undefined
+        body: JSON.stringify({ messages: enrichedMessages }),
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      const data = await res.json().catch(() => ({} as any));
+      if (!res.ok || data?.error) {
+        throw new Error(data?.error || `Chat failed (${res.status})`);
+      }
 
       setMessages((prev) => [...prev, { role: "assistant", content: data.response }]);
       
