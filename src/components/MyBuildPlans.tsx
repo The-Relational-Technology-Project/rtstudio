@@ -33,7 +33,7 @@ export const MyBuildPlans = () => {
   const load = async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("build_plans")
       .select("id, title, detailed_prompt, plan_markdown, recommended_track, share_id, is_shared, created_at")
       .eq("builder_id", user.id)
@@ -43,7 +43,7 @@ export const MyBuildPlans = () => {
       console.error("Error loading build plans:", error);
       return;
     }
-    setItems((data || []) as unknown as BuildPlanRow[]);
+    setItems((data || []) as BuildPlanRow[]);
   };
 
   useEffect(() => {
