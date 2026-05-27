@@ -3,8 +3,7 @@ import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Sidekick } from "@/components/Sidekick";
 import { HomeSidebar } from "@/components/HomeSidebar";
-import { PrototypePreview } from "@/components/PrototypePreview";
-import { PromptReviewModal, type ReferenceImage } from "@/components/PromptReviewModal";
+import { BuildPlanPreview, type BuildPlanData } from "@/components/BuildPlanPreview";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSidekick } from "@/contexts/SidekickContext";
@@ -13,47 +12,30 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { MessageSquare, Calendar, Bell, ChevronLeft, ChevronRight } from "lucide-react";
 
-interface PrototypeData {
-  code: string;
-  prompt: string;
-  prototypeId: string;
-  shareId: string;
-  toolName?: string;
-}
-
 type MobileTab = "sidekick" | "events" | "updates";
 
 const Home = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { setMessages } = useSidekick();
+  const { messages, setMessages } = useSidekick();
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<MobileTab>("sidekick");
 
-  // Prototype builder state
-  const [prototype, setPrototype] = useState<PrototypeData | null>(null);
-  const [showPromptReview, setShowPromptReview] = useState(false);
-  const [pendingPrompt, setPendingPrompt] = useState("");
+  // Build plan state
+  const [buildPlan, setBuildPlan] = useState<BuildPlanData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [buildsRemaining, setBuildsRemaining] = useState(10);
+  const [plansRemaining, setPlansRemaining] = useState(10);
   const buildAbortRef = useRef<AbortController | null>(null);
 
-  const handleBuildIt = (summaryPrompt: string) => {
-    setPendingPrompt(summaryPrompt);
-    setShowPromptReview(true);
-  };
-
-  // If the edge function call hangs or drops, the prototype row may still have
-  // been written. Look it up directly so we don't tell the user the build failed
-  // when it actually succeeded.
-  const findRecentPrototype = async (prompt: string, sinceISO: string) => {
+  // Recovery lookup: if the response never makes it back, the plan row may
+  // still have been written. Find the most recent plan for this builder.
+  const findRecentBuildPlan = async (sinceISO: string): Promise<BuildPlanData | null> => {
     if (!user?.id) return null;
     const { data, error } = await supabase
-      .from("prototypes")
-      .select("id, share_id, generated_code, prompt, created_at")
+      .from("build_plans")
+      .select("id, title, detailed_prompt, plan_markdown, recommended_track, share_id, is_shared, created_at")
       .eq("builder_id", user.id)
-      .eq("prompt", prompt)
       .gte("created_at", sinceISO)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -62,80 +44,69 @@ const Home = () => {
       console.error("Recovery lookup error:", error);
       return null;
     }
-    return data;
+    return (data as BuildPlanData) ?? null;
   };
 
-  const generatePrototype = async (prompt: string, referenceImages: ReferenceImage[] = []) => {
+  const handleCreateBuildPlan = async (draftPrompt: string, libraryItemIds: string[]) => {
+    if (isGenerating) return;
     setIsGenerating(true);
     const startedAt = new Date().toISOString();
     const controller = new AbortController();
     buildAbortRef.current = controller;
-    // 4-minute client-side ceiling.
+    // 4-minute ceiling — Opus 4.7 with caching should be much faster, but allow headroom.
     const timeoutId = window.setTimeout(() => controller.abort("timeout"), 4 * 60 * 1000);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-
-      // Call the edge function via raw fetch so we can attach AbortSignal.
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const url = `https://${projectId}.supabase.co/functions/v1/generate-prototype`;
+      const url = `https://${projectId}.supabase.co/functions/v1/generate-build-plan`;
+
       const res = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ prompt, referenceImages }),
+        body: JSON.stringify({
+          draft_prompt: draftPrompt,
+          chat_messages: messages.slice(-12),
+          library_item_ids: libraryItemIds,
+        }),
         signal: controller.signal,
       });
 
       const data = await res.json().catch(() => ({} as any));
       if (!res.ok || data?.error) {
-        throw new Error(data?.error || `Build failed (${res.status})`);
+        throw new Error(data?.error || `Build plan failed (${res.status})`);
       }
 
-      setPrototype({
-        code: data.code,
-        prompt,
-        prototypeId: data.prototypeId,
-        shareId: data.shareId,
-      });
-      if (typeof data.remaining === "number") setBuildsRemaining(data.remaining);
-      setShowPromptReview(false);
+      setBuildPlan(data.plan as BuildPlanData);
+      if (typeof data.remaining === "number") setPlansRemaining(data.remaining);
 
-      // Inject post-build message into Sidekick chat
       setMessages((prev) => [...prev, {
         role: "assistant" as const,
-        content: "You'll see your demo prototype below! Share this with neighbors or collaborators to get their feedback. Then bring the prompt into an AI builder to build a fully-functional tool."
+        content: "Your build plan is ready below. Copy the detailed prompt into your builder of choice, and walk through the plan when you're ready to share with a neighbor.",
       }]);
     } catch (error) {
-      console.error("Prototype generation error:", error);
+      console.error("Build plan generation error:", error);
       const aborted = (error as any)?.name === "AbortError" || controller.signal.aborted;
 
-      // Recovery: the build may have completed server-side even if the response
-      // never made it back to us. Check the DB before declaring failure.
-      const recovered = await findRecentPrototype(prompt, startedAt);
+      const recovered = await findRecentBuildPlan(startedAt);
       if (recovered) {
-        setPrototype({
-          code: recovered.generated_code,
-          prompt: recovered.prompt,
-          prototypeId: recovered.id,
-          shareId: recovered.share_id,
-        });
-        setShowPromptReview(false);
+        setBuildPlan(recovered);
         setMessages((prev) => [...prev, {
           role: "assistant" as const,
-          content: "Your prototype finished building — it's below. (The connection dropped on the way back, but the build itself made it through.)"
+          content: "Your build plan finished — it's below. (The connection dropped on the way back, but the plan itself made it through.)",
         }]);
       } else if (aborted) {
         toast({
-          title: "Build is taking longer than expected",
-          description: "It may still be running. Wait a minute and refresh — your build will appear if it finished. Otherwise, try again.",
+          title: "Plan generation is taking longer than expected",
+          description: "It may still be running. Wait a moment and check your profile — your build plan will appear if it finished. Otherwise, try again.",
           variant: "destructive",
         });
       } else {
         toast({
-          title: "Build failed",
+          title: "Couldn't create the build plan",
           description: error instanceof Error ? error.message : "Something went wrong. Try again or simplify your prompt.",
           variant: "destructive",
         });
@@ -147,12 +118,8 @@ const Home = () => {
     }
   };
 
-  const handleCancelBuild = () => {
-    buildAbortRef.current?.abort("user-cancel");
-  };
-
-  const handleConfirmBuild = async (editedPrompt: string, referenceImages: ReferenceImage[]) => {
-    await generatePrototype(editedPrompt, referenceImages);
+  const handleTitleSaved = (newTitle: string) => {
+    setBuildPlan((prev) => (prev ? { ...prev, title: newTitle } : prev));
   };
 
   const tabs: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
@@ -191,7 +158,7 @@ const Home = () => {
           <div className="w-full">
             {activeTab === "sidekick" && (
               <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
-                <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} prototypeSlot={prototype ? <PrototypePreview {...prototype} /> : null} />
+                <Sidekick fullPage onCreateBuildPlan={handleCreateBuildPlan} plansRemaining={plansRemaining} previewSlot={buildPlan ? <BuildPlanPreview plan={buildPlan} onTitleSaved={handleTitleSaved} /> : isGenerating ? <BuildPlanPreview plan={null} isGenerating /> : null} />
               </div>
             )}
             {activeTab === "events" && (
@@ -209,7 +176,7 @@ const Home = () => {
           <div className="max-w-[1400px] mx-auto flex gap-0">
             {/* Sidekick column */}
             <div className="flex-1 min-w-0 px-4 py-8 space-y-4">
-              <Sidekick fullPage onBuildIt={handleBuildIt} buildsRemaining={buildsRemaining} prototypeSlot={prototype ? <PrototypePreview {...prototype} /> : null} />
+              <Sidekick fullPage onCreateBuildPlan={handleCreateBuildPlan} plansRemaining={plansRemaining} previewSlot={buildPlan ? <BuildPlanPreview plan={buildPlan} onTitleSaved={handleTitleSaved} /> : isGenerating ? <BuildPlanPreview plan={null} isGenerating /> : null} />
             </div>
 
             {/* Sidebar toggle + sidebar */}
@@ -238,16 +205,6 @@ const Home = () => {
       </main>
 
       <Footer />
-
-      <PromptReviewModal
-        open={showPromptReview}
-        onOpenChange={setShowPromptReview}
-        prompt={pendingPrompt}
-        remaining={buildsRemaining}
-        onConfirm={handleConfirmBuild}
-        onCancel={handleCancelBuild}
-        isGenerating={isGenerating}
-      />
     </div>
   );
 };

@@ -105,76 +105,72 @@ export const MyPrototypes = () => {
     }
   };
 
+  // Loading or empty → render nothing. Past Prototypes is a legacy section that
+  // only appears when this builder has prototype builds from before the build-plan flow.
+  if (loading) return null;
+  if (items.length === 0) return null;
+
   return (
     <div className="mb-8 p-6 rounded-lg border border-border">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-semibold font-fraunces flex items-center gap-2">
-          <Hammer className="h-4 w-4 text-primary" />
-          My Prototypes
+          <Hammer className="h-4 w-4 text-muted-foreground" />
+          Past Prototypes
         </h2>
-        {!loading && items.length > 0 && (
-          <span className="text-xs text-muted-foreground">
-            {items.length} {items.length === 1 ? "build" : "builds"}
-          </span>
-        )}
+        <span className="text-xs text-muted-foreground">
+          {items.length} {items.length === 1 ? "build" : "builds"}
+        </span>
       </div>
+      <p className="text-xs text-muted-foreground italic mb-4">
+        Earlier prototype builds — kept here for reference.
+      </p>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-8 text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </div>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground italic py-4">
-          You haven't built any prototypes yet. Try building one from a Sidekick conversation.
-        </p>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {items.map((p) => (
-            <div
-              key={p.id}
-              className="flex flex-col p-4 rounded-lg bg-muted/40 border border-border hover:border-primary/40 transition-colors"
-            >
-              <p className="text-sm font-medium line-clamp-3 mb-2 break-words">{titleFor(p)}</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                {formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}
-              </p>
-              <div className="flex gap-2 mt-auto">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleOpen(p)}
-                  disabled={busyId === p.id}
-                >
-                  {busyId === p.id ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <ExternalLink className="h-3 w-3" />
-                  )}
-                  Open
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleCopyPrompt(p)}
-                  title="Copy prompt"
-                >
-                  {copiedPromptId === p.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleShare(p)}
-                  disabled={busyId === p.id}
-                  title="Copy share link"
-                >
-                  {copiedId === p.id ? <Check className="h-3 w-3" /> : <Share2 className="h-3 w-3" />}
-                </Button>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {items.map((p) => (
+          <div
+            key={p.id}
+            className="flex flex-col p-4 rounded-lg bg-muted/40 border border-border hover:border-primary/40 transition-colors"
+          >
+            <p className="text-sm font-medium line-clamp-3 mb-2 break-words">{titleFor(p)}</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              {formatDistanceToNow(new Date(p.created_at), { addSuffix: true })}
+            </p>
+            <div className="flex gap-2 mt-auto">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={() => handleOpen(p)}
+                disabled={busyId === p.id}
+              >
+                {busyId === p.id ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <ExternalLink className="h-3 w-3" />
+                )}
+                Open
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleCopyPrompt(p)}
+                title="Copy prompt"
+              >
+                {copiedPromptId === p.id ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleShare(p)}
+                disabled={busyId === p.id}
+                title="Copy share link"
+              >
+                {copiedId === p.id ? <Check className="h-3 w-3" /> : <Share2 className="h-3 w-3" />}
+              </Button>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileOnboarding } from "@/components/ProfileOnboarding";
 import { VisionBoard } from "@/components/VisionBoard";
+import { MyBuildPlans } from "@/components/MyBuildPlans";
 import { MyPrototypes } from "@/components/MyPrototypes";
 import { CommitmentsList } from "@/components/CommitmentsList";
 import { ServiceberriesCounter } from "@/components/ServiceberriesCounter";
@@ -269,7 +270,8 @@ const Profile = () => {
           <VisionBoard />
         </div>
 
-        {/* 5. My Prototypes */}
+        {/* 5. My Build Plans (and legacy Past Prototypes below) */}
+        <MyBuildPlans />
         <MyPrototypes />
 
         {/* 6. Serviceberries */}

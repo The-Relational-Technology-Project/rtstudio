@@ -50,6 +50,60 @@ export type Database = {
         }
         Relationships: []
       }
+      build_plans: {
+        Row: {
+          builder_id: string
+          created_at: string
+          detailed_prompt: string
+          id: string
+          is_shared: boolean
+          library_item_ids: Json
+          model: string
+          plan_markdown: string
+          recommended_track: string | null
+          share_id: string | null
+          share_view_count: number
+          source_chat_excerpt: string | null
+          title: string
+          tokens_used: number | null
+          updated_at: string
+        }
+        Insert: {
+          builder_id: string
+          created_at?: string
+          detailed_prompt: string
+          id?: string
+          is_shared?: boolean
+          library_item_ids?: Json
+          model?: string
+          plan_markdown: string
+          recommended_track?: string | null
+          share_id?: string | null
+          share_view_count?: number
+          source_chat_excerpt?: string | null
+          title: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Update: {
+          builder_id?: string
+          created_at?: string
+          detailed_prompt?: string
+          id?: string
+          is_shared?: boolean
+          library_item_ids?: Json
+          model?: string
+          plan_markdown?: string
+          recommended_track?: string | null
+          share_id?: string | null
+          share_view_count?: number
+          source_chat_excerpt?: string | null
+          title?: string
+          tokens_used?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_usage: {
         Row: {
           created_at: string
