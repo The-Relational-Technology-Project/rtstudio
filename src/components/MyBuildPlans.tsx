@@ -59,7 +59,7 @@ export const MyBuildPlans = () => {
       (typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID().replace(/-/g, "").slice(0, 12)
         : Math.random().toString(36).slice(2, 14));
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("build_plans")
       .update({ is_shared: true, share_id: newShareId })
       .eq("id", p.id)
@@ -70,8 +70,8 @@ export const MyBuildPlans = () => {
       toast({ title: "Couldn't make shareable", description: error?.message, variant: "destructive" });
       return null;
     }
-    setItems((prev) => prev.map((x) => (x.id === p.id ? (data as BuildPlanRow) : x)));
-    return data as BuildPlanRow;
+    setItems((prev) => prev.map((x) => (x.id === p.id ? (data as unknown as BuildPlanRow) : x)));
+    return data as unknown as BuildPlanRow;
   };
 
   const handleOpen = async (p: BuildPlanRow) => {
