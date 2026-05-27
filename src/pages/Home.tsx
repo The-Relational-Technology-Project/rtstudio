@@ -47,7 +47,7 @@ const Home = () => {
     return (data as BuildPlanData) ?? null;
   };
 
-  const handleCreateBuildPlan = async (draftPrompt: string, libraryItemIds: string[]) => {
+  const handleCreateBuildPlan = async (libraryItemIds: string[]) => {
     if (isGenerating) return;
     setIsGenerating(true);
     const startedAt = new Date().toISOString();
@@ -68,8 +68,8 @@ const Home = () => {
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({
-          draft_prompt: draftPrompt,
-          chat_messages: messages.slice(-12),
+          // No draft_prompt — the chat IS the brief now. Opus reads the transcript.
+          chat_messages: messages.slice(-20),
           library_item_ids: libraryItemIds,
         }),
         signal: controller.signal,
