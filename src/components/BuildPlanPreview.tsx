@@ -144,11 +144,13 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
 
   const focusSidekickChat = () => {
     const chat = document.getElementById("sidekick-chat");
-    if (!chat) return;
-    chat.scrollIntoView({ behavior: "smooth", block: "start" });
-    const textarea = chat.querySelector("textarea");
-    // Wait for scroll to begin, then focus so the cursor lands in the input.
-    window.setTimeout(() => (textarea as HTMLTextAreaElement | null)?.focus(), 250);
+    if (chat) chat.scrollIntoView({ behavior: "smooth", block: "start" });
+    const text =
+      "I'd like to talk with an RTP steward about this. Please share my build plan, and you can share our chat history too.";
+    // Sidekick listens for this event and prefills its textarea (without sending).
+    window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("sidekick:prefill", { detail: { text } }));
+    }, 250);
   };
 
   return (
