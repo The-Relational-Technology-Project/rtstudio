@@ -40,7 +40,7 @@ interface ContributionData {
   title: string;
 }
 
-export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot }: SidekickProps) => {
+export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot, buildPlanState = "idle" }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { messages, setMessages, clearMessages } = useSidekick();
