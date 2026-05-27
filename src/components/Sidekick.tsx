@@ -400,14 +400,36 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                       <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
                         <Button
                           onClick={() => onCreateBuildPlan(libraryItems.map((i) => i.id))}
-                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-                          disabled={plansRemaining <= 0}
+                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-100"
+                          disabled={
+                            plansRemaining <= 0 ||
+                            buildPlanState === "generating" ||
+                            buildPlanState === "ready"
+                          }
                         >
-                          <FileText className="w-4 h-4 mr-2" />
-                          Create build plan
+                          {buildPlanState === "generating" ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Creating build plan…
+                            </>
+                          ) : buildPlanState === "ready" ? (
+                            <>
+                              <Check className="w-4 h-4 mr-2" />
+                              Build plan created
+                            </>
+                          ) : (
+                            <>
+                              <FileText className="w-4 h-4 mr-2" />
+                              Create build plan
+                            </>
+                          )}
                         </Button>
                         <p className="text-xs text-muted-foreground text-center mt-2">
-                          Claude Opus will write a detailed prompt and a builder plan from this conversation.
+                          {buildPlanState === "generating"
+                            ? "Claude Opus is drafting your detailed prompt and plan — usually 20–40 seconds."
+                            : buildPlanState === "ready"
+                            ? "Your build plan is ready below."
+                            : "Claude Opus will write a detailed prompt and a builder plan from this conversation."}
                         </p>
                       </div>
                     )}
