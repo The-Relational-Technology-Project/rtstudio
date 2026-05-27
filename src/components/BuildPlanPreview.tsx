@@ -119,7 +119,7 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
       (typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID().replace(/-/g, "").slice(0, 12)
         : Math.random().toString(36).slice(2, 14));
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("build_plans")
       .update({ is_shared: true, share_id: newShareId })
       .eq("id", plan.id)
@@ -130,8 +130,8 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
       toast({ title: "Couldn't make shareable", description: error?.message, variant: "destructive" });
       return null;
     }
-    setShareState({ is_shared: true, share_id: (data as any).share_id as string });
-    return { shareId: (data as any).share_id as string };
+    setShareState({ is_shared: true, share_id: data.share_id as string });
+    return { shareId: data.share_id as string };
   };
 
   const handleShare = async () => {
