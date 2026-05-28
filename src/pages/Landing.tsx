@@ -24,12 +24,14 @@ const Landing = () => {
   const [selectedTool, setSelectedTool] = useState<GalleryTool | null>(null);
 
   useEffect(() => {
-    if (user) {
-      if (profile?.profile_completed) {
-        navigate("/home", { replace: true });
-      } else {
-        navigate("/profile", { replace: true });
-      }
+    if (!user) return;
+    // Wait for profile to load before deciding where to route, otherwise
+    // returning users briefly get sent to /profile while profile is still null.
+    if (profile === null) return;
+    if (profile?.profile_completed) {
+      navigate("/home", { replace: true });
+    } else {
+      navigate("/profile", { replace: true });
     }
   }, [user, profile, navigate]);
 
