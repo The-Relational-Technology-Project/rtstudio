@@ -25,15 +25,8 @@ const Landing = () => {
 
   useEffect(() => {
     if (!user) return;
-    // Wait for the profile fetch to resolve for THIS user before redirecting.
-    // Otherwise returning users get briefly bounced to /profile while profile is still null.
-    if (!profile || profile.id !== user.id) return;
-    if (profile.profile_completed) {
-      navigate("/home", { replace: true });
-    } else {
-      navigate("/profile", { replace: true });
-    }
-  }, [user, profile, navigate]);
+    navigate("/home", { replace: true });
+  }, [user, navigate]);
 
   useEffect(() => {
     const fetchGallery = async () => {
