@@ -274,6 +274,48 @@ export type Database = {
         }
         Relationships: []
       }
+      field_notes: {
+        Row: {
+          canvas_data: Json
+          date_created: string
+          date_edited: string | null
+          id: string
+          is_public: boolean
+          reminder_at: string | null
+          reminder_channel: string | null
+          reminder_contact: string | null
+          reminder_dismissed: boolean
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          canvas_data?: Json
+          date_created?: string
+          date_edited?: string | null
+          id?: string
+          is_public?: boolean
+          reminder_at?: string | null
+          reminder_channel?: string | null
+          reminder_contact?: string | null
+          reminder_dismissed?: boolean
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          canvas_data?: Json
+          date_created?: string
+          date_edited?: string | null
+          id?: string
+          is_public?: boolean
+          reminder_at?: string | null
+          reminder_channel?: string | null
+          reminder_contact?: string | null
+          reminder_dismissed?: boolean
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       gift_build_requests: {
         Row: {
           builder_email: string | null

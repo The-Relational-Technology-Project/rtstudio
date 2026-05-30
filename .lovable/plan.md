@@ -1,37 +1,95 @@
-## Goal
+# Field Notes
 
-Stop routing returning users to `/profile`. Onboarding still appears once for brand-new signups, but completing it (even with empty fields) lands on `/home`.
+A new authenticated tab in Studio for slow, intentional neighborhood noticing. Warm, journal-like aesthetic — Fraunces display headings, cream/terracotta tones, no SaaS polish.
 
-## Changes
+## Routes & nav
 
-**1. `src/pages/Landing.tsx`**
+- New route: `/field-notes` (ProtectedRoute) in `src/App.tsx`
+- Add `{ name: "Field Notes", path: "/field-notes" }` to `TopNav.tsx` nav items (between Library and Profile)
+- New page: `src/pages/FieldNotes.tsx` orchestrates the 3 states based on whether the user has saved notes
 
-Simplify the redirect effect so any signed-in user goes straight to `/home`, regardless of `profile_completed`:
+## Three states
 
-```ts
-useEffect(() => {
-  if (!user) return;
-  navigate("/home", { replace: true });
-}, [user, navigate]);
-```
+**State 1 — Welcome (no notes yet)**
+- Full-screen centered welcome with the provided copy in Fraunces serif, generous whitespace
+- Buttons: "Let's go" (primary) → switches to editor; "I need more info" → expandable section with warm RTP-voice blurb about noticing as care
+- Shown only when user has zero saved notes
 
-Drop the `profile` dependency and the `profile_completed` branch.
+**State 2 — Editor** (`src/components/field-notes/FieldNoteEditor.tsx`)
+- Muted prompt at top: "What do you notice right now — in yourself, in your neighbors, and in your place?"
+- Optional title input
+- Freeform canvas (single `<div>` with absolutely-positioned blocks + an overlay `<canvas>` for drawing)
+- Block types: text block, image upload, divider
+- Click empty canvas in text mode → place text block at cursor; blocks are draggable
+- Draw mode: freehand strokes saved as SVG paths
+- Floating toolbar: Undo / Redo / Text mode / Draw mode / Eraser / **Save** (prominent terracotta), with caption "There is no autosave."
+- Undo/redo via a local history stack of canvas snapshots
 
-**2. `src/components/ProfileOnboarding.tsx`**
+**State 3 — Gallery** (`src/components/field-notes/FieldNotesGallery.tsx`)
+- Grid of cards rendered from `canvas_data` using a lightweight thumbnail renderer (same component, scaled down, non-interactive)
+- Title (or "Untitled"), `date_created`, `date_edited` (smaller, only if exists)
+- "+ New Field Note" CTA opens blank editor
+- Clicking a card opens editor in edit mode
 
-`handleComplete` already sets `profile_completed: true` and navigates to `/home` even when fields are blank, so no behavior change is needed — but make the final step explicit that fields are optional (small copy tweak on the last step's primary button, e.g. "Finish" instead of forcing inputs) so users feel free to skip. No required-field validation is added.
+## Save flow
 
-**3. `src/pages/AuthCallback.tsx`** (unchanged on purpose)
+After pressing Save:
+1. Insert/update `field_notes` row (set `date_edited` only when canvas_data actually changed)
+2. Show `FieldNoteSaveModal`:
+   - "Share publicly with others on RTS?" Yes/No
+   - "Reminder to write another?" In a week / Let me choose / No thanks
+3. If reminder: ask channel (Email / Text / Here on Studio) and collect contact info if needed
+4. If shared publicly: call edge function `notify-field-note` → emails deborah@relationaltechproject.org with user name+email and a PDF export of the canvas (html2canvas + jsPDF, same pattern as VisionBoard export)
 
-Keep the existing branch: brand-new signups (no `profile_completed`) still land on `/profile` once so onboarding runs. Returning users with `profile_completed=true` continue to `/home`. Because Landing now always sends signed-in users to `/home`, the only path into onboarding is the first post-signup callback — which matches "onboarding once, then /home forever after".
+## Reminders
 
-## Result
+- Stored on the note as `reminder_at` + `reminder_channel`
+- "Here on Studio" channel: when `now >= reminder_at` and not dismissed, TopNav shows a small dot on Field Notes; opening the page shows a dismissible banner and clears the highlight
 
-- Returning user opens `studio.relationaltechproject.org` → `/home` immediately, no profile check.
-- New signup completes magic link → `/profile` (onboarding) → `/home` after clicking Finish, with or without filled fields.
-- A user who bailed mid-onboarding previously and signs back in → `/home` (no longer trapped in onboarding via Landing). They can edit their profile manually from `/profile` whenever.
+## Data model
 
-## Out of scope
+New migration creating `public.field_notes`:
 
-- No changes to `Profile.tsx`'s gate (`!profile_completed → ProfileOnboarding`). Users who navigate directly to `/profile` while incomplete will still see onboarding there, which is the intended manual entry point.
-- No backend/migration changes.
+| column | type |
+|---|---|
+| id | uuid pk |
+| user_id | uuid (auth.uid) |
+| title | text nullable |
+| canvas_data | jsonb (blocks + strokes) |
+| is_public | boolean default false |
+| reminder_at | timestamptz nullable |
+| reminder_channel | text nullable (`email` / `sms` / `studio`) |
+| reminder_contact | text nullable |
+| reminder_dismissed | boolean default false |
+| date_created | timestamptz default now() |
+| date_edited | timestamptz nullable |
+
+GRANTs to authenticated + service_role, RLS so users can only CRUD their own rows.
+
+## Edge function
+
+`supabase/functions/notify-field-note/index.ts` — accepts `{ noteId, pdfBase64 }`, validates the caller owns the note, sends Resend email to deborah@relationaltechproject.org with PDF attachment. Reuses the existing `RESEND_API_KEY`.
+
+## Styling
+
+- Cream/parchment background (`bg-background` with a subtle paper texture via CSS gradient)
+- Fraunces for the welcome copy and note titles
+- Terracotta primary for Save button
+- No new tokens needed — uses existing palette
+
+## What's intentionally out of scope
+
+- No autosave, no real-time collab, no rich text formatting beyond plain blocks
+- SMS reminders: store the phone number but actual SMS dispatch is out of scope for this PR (note in UI: "we'll text you" — backend cron + Twilio can be added later)
+- Email reminders also stored; cron-based dispatch can be added in a follow-up
+
+## Build order
+
+1. Migration for `field_notes` table
+2. `notify-field-note` edge function
+3. `FieldNoteEditor` (canvas + toolbar + history)
+4. `FieldNotesGallery` (thumbnail rendering)
+5. `FieldNoteSaveModal` (share + reminder flow)
+6. `FieldNotes.tsx` page wiring the three states
+7. Route + TopNav entry
+8. Reminder banner/highlight logic
