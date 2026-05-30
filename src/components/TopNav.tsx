@@ -17,6 +17,7 @@ import { useState } from "react";
 const navItems = [
   { name: "Home", path: "/home" },
   { name: "Library", path: "/library" },
+  { name: "Field Notes", path: "/field-notes" },
   { name: "Profile", path: "/profile" },
   { name: "Resources", path: "/support" },
 ];

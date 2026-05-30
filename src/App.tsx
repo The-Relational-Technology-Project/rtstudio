@@ -13,6 +13,7 @@ import Home from "./pages/Home";
 import Library from "./pages/Library";
 import Profile from "./pages/Profile";
 import Support from "./pages/Support";
+import FieldNotes from "./pages/FieldNotes";
 import PrototypeShare from "./pages/PrototypeShare";
 import PrototypeEmbed from "./pages/PrototypeEmbed";
 import BuildPlanShare from "./pages/BuildPlanShare";
@@ -70,6 +71,14 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <Support />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/field-notes"
+                  element={
+                    <ProtectedRoute>
+                      <FieldNotes />
                     </ProtectedRoute>
                   }
                 />
