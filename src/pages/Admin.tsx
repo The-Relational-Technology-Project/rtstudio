@@ -9,7 +9,6 @@ import { EmbeddingsTab } from "@/components/admin/EmbeddingsTab";
 const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
-      <TopNav />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h1 className="font-serif text-3xl mb-6">Studio Admin</h1>
         <Tabs defaultValue="library">
