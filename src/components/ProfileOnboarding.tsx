@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowRight, ArrowLeft, Sparkles, MapPin, User, Cpu, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Loader2, ArrowRight, ArrowLeft, Sparkles, MapPin, User, Cpu, Users, Shield } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
-type Step = "welcome" | "network" | "about" | "dreams" | "tech";
+type Step = "welcome" | "network" | "about" | "dreams" | "tech" | "consent";
 
 export const ProfileOnboarding = () => {
   const { user, refreshProfile } = useAuth();
@@ -27,6 +27,7 @@ export const ProfileOnboarding = () => {
   const [dreams, setDreams] = useState("");
   const [techFamiliarity, setTechFamiliarity] = useState<string>("");
   const [aiCodingExperience, setAiCodingExperience] = useState<string>("");
+  const [emailOptIn, setEmailOptIn] = useState<"yes" | "no" | "">("");
 
   const handleComplete = async () => {
     if (!user) return;
@@ -43,6 +44,7 @@ export const ProfileOnboarding = () => {
           dreams: dreams || null,
           tech_familiarity: techFamiliarity || null,
           ai_coding_experience: aiCodingExperience || null,
+          email_opt_in: emailOptIn === "yes",
           profile_completed: true,
         })
         .eq("id", user.id);
@@ -100,7 +102,7 @@ export const ProfileOnboarding = () => {
     }
   };
 
-  const steps: Step[] = ["welcome", "network", "about", "dreams", "tech"];
+  const steps: Step[] = ["welcome", "network", "about", "dreams", "tech", "consent"];
   const currentIndex = steps.indexOf(step);
 
   const goNext = () => {
@@ -187,6 +189,10 @@ export const ProfileOnboarding = () => {
                 </li>
               </ul>
             </div>
+
+            <p className="text-sm text-muted-foreground mb-6 italic">
+              This site doesn't record your Sidekick chats. Your specific chat history can be shared with a Steward if you wish.
+            </p>
 
             <div className="flex gap-3">
               <Button variant="outline" onClick={goBack} className="flex-1">
@@ -362,9 +368,72 @@ export const ProfileOnboarding = () => {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
               </Button>
+              <Button onClick={goNext} className="flex-1">
+                Next
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Step: Consent (privacy + email opt-in) */}
+        {step === "consent" && (
+          <div>
+            <div className="mb-6 flex justify-center">
+              <div className="rounded-full bg-primary/10 p-3">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-center mb-2 font-fraunces">
+              Privacy & Staying in Touch
+            </h2>
+            <p className="text-muted-foreground text-center mb-6 text-sm">
+              A few quick notes before you dive in. See our{" "}
+              <Link to="/privacy" target="_blank" className="text-primary hover:underline">
+                Privacy & Terms
+              </Link>{" "}
+              for the full picture.
+            </p>
+
+            <div className="bg-muted/50 rounded-lg p-4 mb-6 text-sm text-muted-foreground">
+              This site doesn't record your Sidekick chats. Your specific chat history can be shared with a Steward if you wish.
+            </div>
+
+            <div className="mb-2">
+              <Label className="text-base text-foreground">
+                Can we be in touch with you by email with updates, invitations, and messages of encouragement?
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1 mb-3">
+                You can change your mind any time by emailing us.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={emailOptIn === "yes" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setEmailOptIn("yes")}
+                >
+                  Yes, keep me posted
+                </Button>
+                <Button
+                  type="button"
+                  variant={emailOptIn === "no" ? "default" : "outline"}
+                  className="justify-start"
+                  onClick={() => setEmailOptIn("no")}
+                >
+                  No, opt me out
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <Button variant="outline" onClick={goBack} className="flex-1">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Button>
               <Button
                 onClick={handleComplete}
-                disabled={isSubmitting}
+                disabled={isSubmitting || emailOptIn === ""}
                 className="flex-1"
               >
                 {isSubmitting ? (

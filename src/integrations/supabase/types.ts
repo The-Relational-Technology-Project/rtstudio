@@ -538,6 +538,7 @@ export type Database = {
           display_name: string | null
           dreams: string | null
           email: string | null
+          email_opt_in: boolean | null
           full_name: string | null
           id: string
           local_tech_ecosystem: string | null
@@ -553,6 +554,7 @@ export type Database = {
           display_name?: string | null
           dreams?: string | null
           email?: string | null
+          email_opt_in?: boolean | null
           full_name?: string | null
           id: string
           local_tech_ecosystem?: string | null
@@ -568,6 +570,7 @@ export type Database = {
           display_name?: string | null
           dreams?: string | null
           email?: string | null
+          email_opt_in?: boolean | null
           full_name?: string | null
           id?: string
           local_tech_ecosystem?: string | null
