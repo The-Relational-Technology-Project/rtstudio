@@ -231,9 +231,9 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl font-serif">Contribute to the Commons</DialogTitle>
+              <DialogTitle className="text-xl font-serif">Contribute</DialogTitle>
               <p className="text-sm text-muted-foreground">
-                Share a story, a tool, an idea, feedback, resources — anything for the commons.
+                Share a story, a tool, an idea, feedback, resources. All of these are gifts to us.
               </p>
             </DialogHeader>
 
