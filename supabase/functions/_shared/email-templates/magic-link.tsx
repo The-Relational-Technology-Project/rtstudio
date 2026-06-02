@@ -29,8 +29,7 @@ export const MagicLinkEmail = ({
       <Container style={container}>
         <Heading style={h1}>Your login link</Heading>
         <Text style={text}>
-          Click the button below to log in to {siteName}. This link will expire
-          shortly.
+          Click the button below to log in to your Studio account. This link will expire shortly.
         </Text>
         <Button style={button} href={confirmationUrl}>
           Log In
