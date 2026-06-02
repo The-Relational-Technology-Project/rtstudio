@@ -102,7 +102,7 @@ export const ProfileOnboarding = () => {
     }
   };
 
-  const steps: Step[] = ["welcome", "network", "about", "dreams", "tech"];
+  const steps: Step[] = ["welcome", "network", "about", "dreams", "tech", "consent"];
   const currentIndex = steps.indexOf(step);
 
   const goNext = () => {
