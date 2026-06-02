@@ -201,7 +201,7 @@ const EditableSelectSection = ({
 };
 
 const Profile = () => {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, signOut } = useAuth();
 
   if (profile && !profile.profile_completed) {
     return <ProfileOnboarding />;
