@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { TopNav } from "@/components/TopNav";
+
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,7 +56,6 @@ const Support = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopNav />
       <div className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full">
         <h1 className="text-3xl font-bold font-fraunces mb-3">Resources</h1>
         <p className="text-muted-foreground mb-12">

@@ -258,6 +258,7 @@ export type Database = {
       }
       contributions: {
         Row: {
+          category: string | null
           contributor_email: string
           contributor_name: string
           created_at: string
@@ -272,6 +273,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           contributor_email: string
           contributor_name: string
           created_at?: string
@@ -286,6 +288,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           contributor_email?: string
           contributor_name?: string
           created_at?: string

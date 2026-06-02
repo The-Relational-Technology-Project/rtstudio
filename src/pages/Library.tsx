@@ -1,15 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LibraryCard } from "@/components/LibraryCard";
-import { ContributionDialog } from "@/components/ContributionDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Search, BookOpen, Star, User, Plus } from "lucide-react";
+import { Search, BookOpen, Star, User } from "lucide-react";
 import type { LibraryItem, ItemType } from "@/types/library";
 
 type ViewTab = "browse" | "my-items" | "bookmarks";
@@ -24,7 +22,7 @@ const Library = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<ItemType | "all">("all");
   const [viewTab, setViewTab] = useState<ViewTab>("browse");
-  const [isContributeOpen, setIsContributeOpen] = useState(false);
+  
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [promptParentMap, setPromptParentMap] = useState<Map<string, string>>(new Map());
@@ -201,8 +199,6 @@ const Library = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopNav />
-      
       <main className="flex-1 w-full">
         <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -212,17 +208,6 @@ const Library = () => {
                 Browse stories, tools, and tech from the community
               </p>
             </div>
-            {user && (
-              <Button onClick={() => setIsContributeOpen(true)} className="gap-2 self-start">
-                <Plus className="w-4 h-4" />
-                Contribute
-              </Button>
-            )}
-            <ContributionDialog 
-              open={isContributeOpen} 
-              onOpenChange={setIsContributeOpen}
-              onSuccess={fetchLibraryItems}
-            />
           </div>
 
           {/* View tabs */}

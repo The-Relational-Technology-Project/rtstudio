@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TopNav } from "@/components/TopNav";
+
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileOnboarding } from "@/components/ProfileOnboarding";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { User, MapPin, Sparkles, Network, Pencil, Check, X, Cpu, Bot } from "lucide-react";
+import { User, MapPin, Sparkles, Network, Pencil, Check, X, Cpu, Bot, LogOut } from "lucide-react";
 
 const EditableSection = ({
   icon,
@@ -201,7 +201,7 @@ const EditableSelectSection = ({
 };
 
 const Profile = () => {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, signOut } = useAuth();
 
   if (profile && !profile.profile_completed) {
     return <ProfileOnboarding />;
@@ -209,7 +209,6 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopNav />
       <div className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
         {/* Profile Header */}
         <div className="flex items-start mb-8">
@@ -302,6 +301,18 @@ const Profile = () => {
             />
           </div>
         )}
+
+        {/* Sign out */}
+        <div className="mt-12 pt-6 border-t border-border flex justify-end">
+          <Button
+            variant="outline"
+            onClick={signOut}
+            className="text-destructive border-destructive/50 hover:bg-destructive/10 gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
       </div>
       <Footer />
     </div>

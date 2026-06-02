@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { TopNav } from "@/components/TopNav";
+
 import { Footer } from "@/components/Footer";
 import { Sidekick } from "@/components/Sidekick";
 import { HomeSidebar } from "@/components/HomeSidebar";
@@ -130,7 +130,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopNav />
+
 
       {/* Mobile tab bar */}
       {isMobile && (

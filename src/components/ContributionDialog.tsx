@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,36 +20,44 @@ const MAX_IMAGES = 4;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
 const MAX_LINKS = 3;
 
+const CATEGORIES = [
+  { value: "Tool", label: "Tool" },
+  { value: "Story", label: "Story" },
+  { value: "Resource", label: "Resource" },
+  { value: "Idea", label: "Idea" },
+  { value: "Feedback", label: "Feedback" },
+  { value: "Other", label: "Other" },
+];
+
 export const ContributionDialog = ({ open, onOpenChange, onSuccess }: ContributionDialogProps) => {
   const { toast } = useToast();
   const { user, profile } = useAuth();
 
+  const [category, setCategory] = useState<string>("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [links, setLinks] = useState<string[]>([""]);
   const [images, setImages] = useState<File[]>([]);
-  const [contributorName, setContributorName] = useState("");
-  const [contributorEmail, setContributorEmail] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Prefill name/email from profile when opened
+  // Name/email come from the profile — not editable in the form
+  const contributorName =
+    profile?.display_name || profile?.full_name || "";
+  const contributorEmail = profile?.email || user?.email || "";
+
+  // Reset transient state when reopening
   useEffect(() => {
-    if (open && !submitted) {
-      if (profile?.display_name && !contributorName) setContributorName(profile.display_name);
-      if (profile?.email && !contributorEmail) setContributorEmail(profile.email);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, profile]);
+    if (open) setSubmitted(false);
+  }, [open]);
 
   const resetForm = () => {
+    setCategory("");
     setTitle("");
     setDescription("");
     setLinks([""]);
     setImages([]);
-    setContributorName(profile?.display_name ?? "");
-    setContributorEmail(profile?.email ?? "");
     setSubmitted(false);
   };
 
@@ -80,7 +89,7 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
       accepted.push(f);
     }
     setImages((prev) => [...prev, ...accepted]);
-    e.target.value = ""; // reset input
+    e.target.value = "";
   };
 
   const removeImage = (i: number) => {
@@ -97,10 +106,25 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
       });
       return;
     }
+    if (!category) {
+      toast({
+        title: "Pick a category",
+        description: "Let us know what kind of contribution this is.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!contributorEmail) {
+      toast({
+        title: "Missing email",
+        description: "We couldn't find your email on file. Update your profile and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      // 1. Upload images to contribution-uploads/{user_id}/{uuid}-{filename}
       const imagePaths: string[] = [];
       for (const file of images) {
         const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -112,12 +136,12 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
         imagePaths.push(path);
       }
 
-      // 2. Send email via edge function
       const { data: { session } } = await supabase.auth.getSession();
       const cleanedLinks = links.map((l) => l.trim()).filter(Boolean);
 
       const { error: fnErr } = await supabase.functions.invoke("notify-contribution", {
         body: {
+          category,
           title: title.trim(),
           description: description.trim(),
           links: cleanedLinks,
@@ -131,7 +155,6 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
       });
       if (fnErr) throw fnErr;
 
-      // 3. Award serviceberry (best-effort — don't block celebration on failure)
       const { error: berryErr } = await supabase.rpc("award_serviceberries", {
         p_user_id: user.id,
         p_amount: 1,
@@ -156,7 +179,6 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
   const handleClose = (nextOpen: boolean) => {
     onOpenChange(nextOpen);
     if (!nextOpen) {
-      // Reset after close animation
       setTimeout(resetForm, 200);
     }
   };
@@ -166,7 +188,6 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         {submitted ? (
           <div className="flex flex-col items-center text-center py-6 px-2">
-            {/* Animated serviceberry */}
             <div className="relative mb-5 animate-in zoom-in-50 duration-500">
               <div
                 className="w-16 h-16 rounded-full shadow-lg"
@@ -184,17 +205,15 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
               <DialogTitle className="text-2xl font-serif">Thank you for your gift</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground mb-2 max-w-sm">
-              You've added a serviceberry to the commons. We'll review your contribution and follow up soon.
+              You've added a serviceberry to the commons. We sent a copy to your email and to
+              Deborah Tien, one of the stewards — she'll be in touch soon.
             </p>
             <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-              Want to talk it through? Josh, one of the stewards, would love to chat.
+              Want to talk it through sooner? Josh, another steward, would love to chat.
             </p>
 
             <div className="flex flex-col gap-2 w-full max-w-xs">
-              <Button
-                asChild
-                className="gap-2"
-              >
+              <Button asChild className="gap-2">
                 <a
                   href="https://cal.com/joshnesbit"
                   target="_blank"
@@ -220,12 +239,28 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="title">Title</Label>
+                <Label htmlFor="category">Type of contribution</Label>
+                <Select value={category} onValueChange={setCategory}>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Choose a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="title">Short description</Label>
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="A short title for your contribution"
+                  placeholder="A short description of your contribution"
                   maxLength={120}
                   required
                 />
@@ -319,27 +354,20 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="name">Your name</Label>
-                  <Input
-                    id="name"
-                    value={contributorName}
-                    onChange={(e) => setContributorName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="email">Your email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={contributorEmail}
-                    onChange={(e) => setContributorEmail(e.target.value)}
-                    required
-                  />
-                </div>
+              {/* Read-only sender info from profile */}
+              <div className="rounded-md bg-muted/40 border border-border px-3 py-2.5 text-sm">
+                <p className="text-xs text-muted-foreground mb-0.5">Sending as</p>
+                <p className="text-foreground">
+                  {contributorName || "Builder"}
+                  {contributorEmail && (
+                    <span className="text-muted-foreground"> · {contributorEmail}</span>
+                  )}
+                </p>
               </div>
+
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                We'll send this to Deborah Tien, one of the stewards, and she'll be in touch with you.
+              </p>
 
               <div className="flex gap-2 pt-1">
                 <Button
@@ -353,7 +381,7 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
                 </Button>
                 <Button type="submit" disabled={isSubmitting} className="flex-1 gap-2">
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isSubmitting ? "Sharing…" : "Share with the Commons"}
+                  {isSubmitting ? "Submitting…" : "Submit"}
                 </Button>
               </div>
             </form>
