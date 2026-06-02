@@ -24,6 +24,7 @@ import { SidekickProvider } from "./contexts/SidekickContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Tour } from "./components/Tour";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AppLayout } from "./components/AppLayout";
 
 const queryClient = new QueryClient();
 
