@@ -1,65 +1,39 @@
-## Landing page overhaul + Contact page
 
-### Scope
-Add-and-adjust pass on `src/pages/Landing.tsx`. Match existing tokens (warm cream bg, Fraunces serif, terracotta primary, off-white rounded cards). No new fonts/colors/shadows.
+## Problem
 
-### 1. Landing.tsx edits
-- **Hero tagline**: change "Tap into a commons of relational tech. Remix a tool for your people and place." → "Create or remix a tool for your people and place."
-- **Remove** the standalone "What is Relational Tech?" band (its copy moves to FAQ #1).
-- **Add three new sections** after "What's Inside the Studio", in order:
+The `auth-email-hook` edge function is being called correctly by Supabase Auth (logs confirm "Received auth event" for both signup and magiclink), but every send fails with:
 
-  **a. Social signals band** — centered, slim
-  - H2: "You're not building alone."
-  - Line 1: "Join 300+ builders in diverse neighborhoods across the country."
-  - Line 2: "Tap into a commons with hundreds of tools, practices, and stories about relational tech."
-  - CTA button "Enter Your Studio" → `/auth`
+> Could not find the function public.enqueue_email(payload, queue_name)
 
-  **b. At-ease band** — centered, single paragraph, plain (no icons)
-  - "This Studio is free to use and stewarded by the Relational Tech Project, a nonprofit project. The Studio and the tool examples are open-source. We have a roadmap toward community ownership of the tools and the infrastructure we use to build them. More in the FAQs below."
+The hook enqueues emails into a pgmq queue (`auth_emails`) that a cron-driven dispatcher (`process-email-queue`) then drains via Resend. None of that backend plumbing exists in this project yet — only the hook and the templates were deployed earlier. As a result, no magic link or signup email has actually been sent in production, even though the UI shows "Check your email!".
 
-  **c. FAQs** — accordion (use existing `@/components/ui/accordion`), all collapsed by default. 6 Q+As exactly as in the prompt (verbatim). Closing line: "Have another question or idea? Please reach out." → link to `/contact`.
+This is also a hard blocker for tomorrow's 1,000+ signup spike.
 
-### 2. New `/contact` page
-- New file `src/pages/Contact.tsx`. Register route in `src/App.tsx` (public, above catch-all).
-- Centered cream card. H1 (Fraunces): "Have a question or an idea?" Intro: "Tell us what's on your mind. A real person reads these."
-- Fields: name (required), email (required, validated via zod), place (optional), message (required), hidden honeypot `website` field. Submit button "Send" (terracotta).
-- On submit: insert row into `contact_messages` then call edge function `notify-contact` to send email. On success replace form with: "Thanks. We'll be in touch." On error: calm retry, preserve input.
-- Add `/contact` link to `Footer.tsx` next to "Privacy & Terms".
+## Fix
 
-### 3. Database — new table `contact_messages`
-Via migration:
-```sql
-CREATE TABLE public.contact_messages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  email text NOT NULL,
-  place text,
-  message text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-GRANT INSERT ON public.contact_messages TO anon, authenticated;
-GRANT ALL ON public.contact_messages TO service_role;
-ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Anyone can submit contact messages"
-  ON public.contact_messages FOR INSERT TO anon, authenticated WITH CHECK (true);
--- no SELECT policy: only service_role / admins read it
-```
+1. **Provision email queue infrastructure** for this project. This creates:
+   - `pgmq` queues: `auth_emails` (priority) and `transactional_emails`
+   - RPC wrappers including `enqueue_email` (the missing function)
+   - `email_send_log`, `email_send_state`, `suppressed_emails`, `email_unsubscribe_tokens` tables
+   - `process-email-queue` edge function (the dispatcher)
+   - `pg_cron` job running every 5 seconds to drain the queues
+   - Vault secret for the dispatcher to authenticate
 
-### 4. New edge function `notify-contact`
-- `supabase/functions/notify-contact/index.ts`, public (no JWT).
-- Validates body with zod (name, email, message required; honeypot must be empty → silently 200).
-- Sends email via Resend (existing `RESEND_API_KEY` secret):
-  - From: `Relational Tech Studio <notifications@relationaltechproject.org>`
-  - To: `humans@relationaltechproject.org`
-  - Reply-To: submitter's email
-  - Subject: `New contact form message from {name}`
-  - Plain HTML body with name / email / place / message / timestamp, styled lightly to match brand.
-- Returns `{ success: true }`. CORS headers included.
+2. **Redeploy `auth-email-hook`** so it picks up the now-existing `enqueue_email` RPC (no code change needed, but a clean redeploy ensures the schema cache is refreshed).
 
-### 5. `index.html` meta
-- Update `<title>`, og/twitter title/description to: "Build what you need, with the people around you. A free, open-source studio for making small tools that help your neighborhood gather, share, and care for one another."
+3. **Verify in prod (Live)**: Because the Supabase cron job and vault secret only get provisioned on the dev instance by the infra setup tool, the Live project needs a **re-publish** to provision its own cron job + vault secret. Without re-publishing, magic links will work on the preview URL but still silently fail on `studio.relationaltechproject.org`.
 
-### Out of scope
-- No changes to Sidekick, library, auth, or other pages.
-- No animated counters in social signals band.
-- Community-ownership roadmap link deferred (Josh will publish separately).
+4. **Smoke test** after publish:
+   - Trigger a magic link to a real inbox from `studio.relationaltechproject.org`
+   - Confirm row in `email_send_log` flips from `pending` → `sent`
+   - Confirm the email actually arrives from `notify.studio.relationaltechproject.org`
+
+## Capacity note for tomorrow
+
+Default queue throughput is ~120 emails/min (batch 10, 200ms delay, 5s cron). For a 1,000+ signups/hour spike, default is sufficient (1,000/hour ≈ 17/min), but I'll bump `email_send_state` to `batch_size = 25, send_delay_ms = 100` after setup to give comfortable headroom in case signups cluster in the first few minutes after the newsletter drops.
+
+## What I will not touch
+
+- Existing `send-magic-link` / `verify-magic-link` functions (the app uses Supabase's native `signInWithOtp`, which routes through `auth-email-hook` — these legacy functions aren't on the live path).
+- Email template content (already branded in the previous turn).
+- Onboarding consent step (already shipped).
