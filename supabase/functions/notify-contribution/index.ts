@@ -54,6 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
     const user = userData.user;
 
     const body = (await req.json()) as Payload;
+    const category = body.category?.trim() || "Other";
     const title = body.title?.trim();
     const description = body.description?.trim();
     const links = (body.links ?? []).map((l) => l.trim()).filter(Boolean).slice(0, 5);
@@ -100,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
       : "";
 
     const imagesHtml = signedImages.length
-      ? `<p style="margin: 12px 0 4px 0;"><strong>Images (links expire in 7 days):</strong></p>${signedImages
+      ? `<p style="margin: 12px 0 4px 0;"><strong>Images (links active for 7 days):</strong></p>${signedImages
           .map(
             (img, i) =>
               `<div style="margin: 0 0 12px 0;">
@@ -111,32 +112,76 @@ const handler = async (req: Request): Promise<Response> => {
           .join("")}`
       : "";
 
-    const resend = new Resend(RESEND_API_KEY);
-    const emailResponse = await resend.emails.send({
-      from: "Relational Tech Studio <notifications@relationaltechproject.org>",
-      to: ["humans@relationaltechproject.org"],
-      subject: `🌿 Contribution: ${title} — from ${contributor_name}`,
-      html: `
-        <div style="font-family: Georgia, serif; max-width: 560px; padding: 20px;">
-          <h2 style="color: #3d3129; margin-bottom: 16px;">New Contribution to the Commons</h2>
-          <div style="background: #f7f0e8; padding: 16px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 0 0 8px 0;"><strong>Title:</strong> ${escapeHtml(title)}</p>
-            <p style="margin: 0 0 8px 0;"><strong>From:</strong> ${escapeHtml(contributor_name)} &lt;${escapeHtml(contributor_email)}&gt;</p>
-            <p style="margin: 0 0 8px 0; font-size: 13px; color: #7a6d61;"><strong>User ID:</strong> ${user.id}</p>
-            <p style="margin: 12px 0 4px 0;"><strong>Contribution:</strong></p>
-            <p style="margin: 0; color: #3d3129; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(description)}</p>
-            ${linksHtml}
-            ${imagesHtml}
-            <p style="margin: 16px 0 0 0; color: #7a6d61; font-size: 13px;">
-              <strong>Submitted:</strong> ${timestamp} ET
-            </p>
-          </div>
-          <p style="color: #7a6d61; font-size: 13px;">— Relational Tech Studio</p>
-        </div>
-      `,
-    });
+    // Subject is unique per submission so Deborah can reply directly in a fresh thread
+    const shortId = crypto.randomUUID().slice(0, 8);
+    const stewardSubject = `[${category}] ${title} — from ${contributor_name} (#${shortId})`;
 
-    console.log("Contribution notification sent:", emailResponse);
+    const stewardHtml = `
+      <div style="font-family: Georgia, serif; max-width: 560px; padding: 20px;">
+        <h2 style="color: #3d3129; margin-bottom: 16px;">New Contribution to the Commons</h2>
+        <div style="background: #f7f0e8; padding: 16px; border-radius: 8px; margin: 20px 0;">
+          <p style="margin: 0 0 8px 0;"><strong>Category:</strong> ${escapeHtml(category)}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Title:</strong> ${escapeHtml(title)}</p>
+          <p style="margin: 0 0 8px 0;"><strong>From:</strong> ${escapeHtml(contributor_name)} &lt;<a href="mailto:${escapeHtml(contributor_email)}" style="color: #7a4e2f;">${escapeHtml(contributor_email)}</a>&gt;</p>
+          <p style="margin: 0 0 8px 0; font-size: 13px; color: #7a6d61;">Reply directly to this email to reach ${escapeHtml(contributor_name)}.</p>
+          <p style="margin: 12px 0 4px 0;"><strong>Contribution:</strong></p>
+          <p style="margin: 0; color: #3d3129; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(description)}</p>
+          ${linksHtml}
+          ${imagesHtml}
+          <p style="margin: 16px 0 0 0; color: #7a6d61; font-size: 13px;">
+            <strong>Submitted:</strong> ${timestamp} ET<br/>
+            <strong>User ID:</strong> ${user.id}
+          </p>
+        </div>
+        <p style="color: #7a6d61; font-size: 13px;">— Relational Tech Studio</p>
+      </div>
+    `;
+
+    const resend = new Resend(RESEND_API_KEY);
+
+    // 1. Send to Deborah (steward) with reply_to = contributor so replies thread directly to them
+    const stewardEmail = await resend.emails.send({
+      from: "Relational Tech Studio <notifications@relationaltechproject.org>",
+      to: ["deborah@relationaltechproject.org"],
+      reply_to: contributor_email,
+      subject: stewardSubject,
+      html: stewardHtml,
+    });
+    console.log("Steward notification sent:", stewardEmail);
+
+    // 2. Send confirmation copy to the contributor
+    const contributorHtml = `
+      <div style="font-family: Georgia, serif; max-width: 560px; padding: 20px;">
+        <h2 style="color: #3d3129; margin-bottom: 16px;">Thank you for your contribution</h2>
+        <p style="color: #3d3129; line-height: 1.6;">
+          Hi ${escapeHtml(contributor_name)},
+        </p>
+        <p style="color: #3d3129; line-height: 1.6;">
+          We received your contribution to the Relational Tech Studio commons. Deborah Tien, one of
+          the stewards, has it and will be in touch with you soon — likely with a note of thanks and
+          a calendar link for a chat.
+        </p>
+        <p style="color: #3d3129; line-height: 1.6; margin-top: 18px;">Here's a copy for your records:</p>
+        <div style="background: #f7f0e8; padding: 16px; border-radius: 8px; margin: 12px 0;">
+          <p style="margin: 0 0 8px 0;"><strong>Category:</strong> ${escapeHtml(category)}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Title:</strong> ${escapeHtml(title)}</p>
+          <p style="margin: 12px 0 4px 0;"><strong>Your contribution:</strong></p>
+          <p style="margin: 0; color: #3d3129; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(description)}</p>
+          ${linksHtml}
+          ${imagesHtml}
+        </div>
+        <p style="color: #7a6d61; font-size: 13px;">— Relational Tech Studio</p>
+      </div>
+    `;
+
+    const contributorEmailResp = await resend.emails.send({
+      from: "Relational Tech Studio <notifications@relationaltechproject.org>",
+      to: [contributor_email],
+      reply_to: "deborah@relationaltechproject.org",
+      subject: `We received your contribution: ${title}`,
+      html: contributorHtml,
+    });
+    console.log("Contributor confirmation sent:", contributorEmailResp);
 
     // Persist contribution to DB (best-effort; email already sent)
     const { error: insertErr } = await admin.from("contributions").insert({
@@ -147,6 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
       description,
       links,
       image_paths: imagePaths,
+      category,
     });
     if (insertErr) {
       console.error("Failed to persist contribution:", insertErr);
