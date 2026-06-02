@@ -190,6 +190,10 @@ export const ProfileOnboarding = () => {
               </ul>
             </div>
 
+            <p className="text-sm text-muted-foreground mb-6 italic">
+              This site doesn't record your Sidekick chats. Your specific chat history can be shared with a Steward if you wish.
+            </p>
+
             <div className="flex gap-3">
               <Button variant="outline" onClick={goBack} className="flex-1">
                 <ArrowLeft className="mr-2 h-4 w-4" />
