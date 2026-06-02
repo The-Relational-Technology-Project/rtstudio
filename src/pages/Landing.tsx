@@ -69,14 +69,7 @@ const Landing = () => {
 
           {/* Gallery Grid */}
           {galleryTools.length > 0 && (
-            <div className="mb-12 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-              <h2 className="text-xl font-fraunces font-bold text-foreground text-center mb-1">
-                Remixable Tools
-              </h2>
-              <p className="text-muted-foreground text-center mb-8 text-sm">
-                Tools built by neighbors, ready to remix for your people and place. Enter the Studio to make one yours.
-              </p>
-
+            <div className="mb-4 animate-fade-in" style={{ animationDelay: "0.1s" }}>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {galleryTools.map((tool) => (
                   <ToolGalleryCard
@@ -90,32 +83,19 @@ const Landing = () => {
                 {/* "More tools" teaser card */}
                 <Link
                   to="/auth"
-                  className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/60 hover:border-primary/40 transition-all duration-300 aspect-[16/10] min-h-[200px]"
+                  className="group flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-muted/30 hover:bg-muted/60 hover:border-primary/40 transition-all duration-300 aspect-[16/10] min-h-[200px] text-center px-4"
                 >
                   <div className="text-4xl mb-2">🌱</div>
                   <p className="font-fraunces font-bold text-foreground group-hover:text-primary transition-colors">
                     And more inside…
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Enter the Studio to browse & remix all tools
+                    <span className="underline group-hover:text-primary transition-colors">Enter the Studio</span> to browse & remix all tools
                   </p>
                 </Link>
               </div>
             </div>
           )}
-
-          {/* CTA */}
-          <div className="text-center mb-4 animate-fade-in" style={{ animationDelay: "0.3s" }}>
-            <Link to="/auth">
-              <Button
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg px-8 py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover-scale"
-              >
-                Enter Your Studio
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-          </div>
         </div>
       </div>
 
