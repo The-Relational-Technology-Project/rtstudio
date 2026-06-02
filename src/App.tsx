@@ -43,48 +43,26 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route
-                  path="/home"
                   element={
                     <ProtectedRoute>
-                      <Home />
+                      <AppLayout />
                     </ProtectedRoute>
                   }
-                />
-                <Route path="/sidekick" element={<Navigate to="/home" replace />} />
-                <Route
-                  path="/library"
-                  element={
-                    <ProtectedRoute>
-                      <Library />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/profile"
-                  element={
-                    <ProtectedRoute>
-                      <Profile />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/support"
-                  element={
-                    <ProtectedRoute>
-                      <Support />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute>
+                >
+                  <Route path="/home" element={<Home />} />
+                  <Route path="/sidekick" element={<Navigate to="/home" replace />} />
+                  <Route path="/library" element={<Library />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route
+                    path="/admin"
+                    element={
                       <AdminRoute>
                         <Admin />
                       </AdminRoute>
-                    </ProtectedRoute>
-                  }
-                />
+                    }
+                  />
+                </Route>
                 <Route path="/change-password" element={<ChangePassword />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/contact" element={<Contact />} />
