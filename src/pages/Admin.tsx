@@ -5,6 +5,7 @@ import { ContributionsTab } from "@/components/admin/ContributionsTab";
 import { BuildersTab } from "@/components/admin/BuildersTab";
 import { StudioLogTab } from "@/components/admin/StudioLogTab";
 import { EmbeddingsTab } from "@/components/admin/EmbeddingsTab";
+import { FaqsTab } from "@/components/admin/FaqsTab";
 
 const Admin = () => {
   return (
