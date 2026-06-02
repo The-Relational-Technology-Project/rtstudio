@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import ChangePassword from "./pages/ChangePassword";
 import Privacy from "./pages/Privacy";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import Library from "./pages/Library";
