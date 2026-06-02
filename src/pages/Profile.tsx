@@ -301,6 +301,18 @@ const Profile = () => {
             />
           </div>
         )}
+
+        {/* Sign out */}
+        <div className="mt-12 pt-6 border-t border-border flex justify-end">
+          <Button
+            variant="outline"
+            onClick={signOut}
+            className="text-destructive border-destructive/50 hover:bg-destructive/10 gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
+          </Button>
+        </div>
       </div>
       <Footer />
     </div>
