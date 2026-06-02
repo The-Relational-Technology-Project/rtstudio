@@ -1,15 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { TopNav } from "@/components/TopNav";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { LibraryCard } from "@/components/LibraryCard";
-import { ContributionDialog } from "@/components/ContributionDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Search, BookOpen, Star, User, Plus } from "lucide-react";
+import { Search, BookOpen, Star, User } from "lucide-react";
 import type { LibraryItem, ItemType } from "@/types/library";
 
 type ViewTab = "browse" | "my-items" | "bookmarks";
