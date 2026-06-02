@@ -29,11 +29,23 @@ const Landing = () => {
   const { user, profile } = useAuth();
   const [galleryTools, setGalleryTools] = useState<GalleryTool[]>([]);
   const [selectedTool, setSelectedTool] = useState<GalleryTool | null>(null);
+  const [faqs, setFaqs] = useState<Faq[]>([]);
 
   useEffect(() => {
     if (!user) return;
     navigate("/home", { replace: true });
   }, [user, navigate]);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await (supabase as any)
+        .from("faqs")
+        .select("id, question, answer")
+        .eq("is_published", true)
+        .order("sort_order", { ascending: true });
+      if (data) setFaqs(data);
+    })();
+  }, []);
 
   useEffect(() => {
     const fetchGallery = async () => {
