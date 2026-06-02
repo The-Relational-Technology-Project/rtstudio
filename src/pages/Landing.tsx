@@ -18,6 +18,12 @@ interface GalleryTool {
   url: string | null;
 }
 
+interface Faq {
+  id: string;
+  question: string;
+  answer: string;
+}
+
 const Landing = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
