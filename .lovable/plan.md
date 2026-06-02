@@ -1,39 +1,45 @@
+## Goal
+Restore reliable magic-link login for existing and new users on `studio.relationaltechproject.org`, and remove the current 429 failure pattern.
 
-## Problem
+## What I found
+- The current 429 happens at the auth `/otp` step, before the custom email queue processes anything.
+- The queue infrastructure now exists and appears healthy:
+  - `process-email-queue` cron job exists and is active
+  - `email_send_state` is present and configured
+  - both queues are currently empty
+- Your main accounts are confirmed users, so this should be a standard login flow, not a first-time confirmation flow.
+- The current system has both an older `email-hook` implementation and the newer `auth-email-hook` implementation in the codebase, which makes the auth-email path more ambiguous than it should be.
 
-The `auth-email-hook` edge function is being called correctly by Supabase Auth (logs confirm "Received auth event" for both signup and magiclink), but every send fails with:
+## Plan
+1. **Audit the live auth email configuration end to end**
+   - Verify which auth email hook is actually active for the live backend.
+   - Confirm whether auth is still wired to an old hook, the new branded hook, or a mixed state.
+   - Check the relevant auth provider settings that govern email send limits and login email behavior.
 
-> Could not find the function public.enqueue_email(payload, queue_name)
+2. **Stabilize by choosing one auth email path**
+   - Remove the split-brain setup so auth uses exactly one delivery path.
+   - If the new branded path is correctly provisioned, keep it and finish the migration cleanly.
+   - If the new branded path is what introduced the regression, temporarily revert auth emails to the previously working default path so login works again first.
 
-The hook enqueues emails into a pgmq queue (`auth_emails`) that a cron-driven dispatcher (`process-email-queue`) then drains via Resend. None of that backend plumbing exists in this project yet — only the hook and the templates were deployed earlier. As a result, no magic link or signup email has actually been sent in production, even though the UI shows "Check your email!".
+3. **Fix the real source of the 429**
+   - Determine whether the auth service is hitting a project-level email throttle, a hook misconfiguration, or a login flow that is accidentally triggering extra auth sends.
+   - Adjust configuration so one login attempt results in one legitimate email send, with no accidental retries or misrouted auth actions.
 
-This is also a hard blocker for tomorrow's 1,000+ signup spike.
+4. **Harden the frontend login experience**
+   - Keep the current magic-link request code single-shot and verify no duplicate client requests are happening.
+   - Improve the user-facing error handling so throttling or backend auth-send failures produce a precise message instead of a generic failure.
 
-## Fix
+5. **Validate with live-path testing**
+   - Test the live login path with a confirmed existing account.
+   - Confirm the auth request succeeds, the email hook path is the intended one, and the email is actually delivered.
+   - Verify there are matching backend logs so future auth-email issues are easier to diagnose.
 
-1. **Provision email queue infrastructure** for this project. This creates:
-   - `pgmq` queues: `auth_emails` (priority) and `transactional_emails`
-   - RPC wrappers including `enqueue_email` (the missing function)
-   - `email_send_log`, `email_send_state`, `suppressed_emails`, `email_unsubscribe_tokens` tables
-   - `process-email-queue` edge function (the dispatcher)
-   - `pg_cron` job running every 5 seconds to drain the queues
-   - Vault secret for the dispatcher to authenticate
+## Technical notes
+- I will focus first on the auth/backend configuration, not the browser, because the 429 is happening upstream of the queue worker.
+- I’ll also clean up the old-vs-new hook ambiguity so there’s one clear source of truth for auth emails.
+- If needed for fastest recovery, I’ll prioritize restoring the older working behavior first, then reintroduce branded auth emails safely.
 
-2. **Redeploy `auth-email-hook`** so it picks up the now-existing `enqueue_email` RPC (no code change needed, but a clean redeploy ensures the schema cache is refreshed).
-
-3. **Verify in prod (Live)**: Because the Supabase cron job and vault secret only get provisioned on the dev instance by the infra setup tool, the Live project needs a **re-publish** to provision its own cron job + vault secret. Without re-publishing, magic links will work on the preview URL but still silently fail on `studio.relationaltechproject.org`.
-
-4. **Smoke test** after publish:
-   - Trigger a magic link to a real inbox from `studio.relationaltechproject.org`
-   - Confirm row in `email_send_log` flips from `pending` → `sent`
-   - Confirm the email actually arrives from `notify.studio.relationaltechproject.org`
-
-## Capacity note for tomorrow
-
-Default queue throughput is ~120 emails/min (batch 10, 200ms delay, 5s cron). For a 1,000+ signups/hour spike, default is sufficient (1,000/hour ≈ 17/min), but I'll bump `email_send_state` to `batch_size = 25, send_delay_ms = 100` after setup to give comfortable headroom in case signups cluster in the first few minutes after the newsletter drops.
-
-## What I will not touch
-
-- Existing `send-magic-link` / `verify-magic-link` functions (the app uses Supabase's native `signInWithOtp`, which routes through `auth-email-hook` — these legacy functions aren't on the live path).
-- Email template content (already branded in the previous turn).
-- Onboarding consent step (already shipped).
+## Expected outcome
+- Existing users can request a magic link without hitting the current unexplained rate error.
+- New users can still sign up by email.
+- There is one clear, reliable auth email path in production instead of a partial migration state.
