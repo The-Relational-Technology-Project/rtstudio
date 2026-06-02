@@ -245,16 +245,48 @@ const Landing = () => {
 
       {/* Social signals band */}
       <div className="border-t border-border">
-        <div className="max-w-3xl mx-auto px-6 py-14 text-center">
-          <h2 className="text-2xl md:text-3xl font-fraunces font-bold text-foreground mb-4">
+        <div className="max-w-5xl mx-auto px-6 py-20 text-center">
+          {/* Neighborhood roll call */}
+          <div className="flex flex-wrap justify-center gap-2 mb-8 opacity-70">
+            {[
+              "Outer Sunset, SF",
+              "Jackson Park, CHI",
+              "Oakland, CA",
+              "Detroit, MI",
+              "Queens, NY",
+            ].map((place) => (
+              <span
+                key={place}
+                className="text-[10px] font-semibold tracking-[0.2em] uppercase text-foreground px-3 py-1 rounded-full border border-border"
+              >
+                {place}
+              </span>
+            ))}
+          </div>
+
+          <h2 className="text-4xl md:text-5xl font-fraunces font-bold text-foreground tracking-tight leading-tight mb-12">
             You're not building alone.
           </h2>
-          <p className="text-muted-foreground leading-relaxed mb-1">
-            Join 300+ builders in diverse neighborhoods across the country.
-          </p>
-          <p className="text-muted-foreground leading-relaxed mb-7">
-            Tap into a commons with hundreds of tools, practices, and stories about relational tech.
-          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto mb-12">
+            <div className="p-8 rounded-2xl bg-muted/60 border border-transparent hover:border-primary/20 transition-all duration-300 flex flex-col items-center">
+              <div className="text-5xl font-fraunces font-bold text-primary mb-2">
+                300+
+              </div>
+              <p className="text-muted-foreground leading-relaxed max-w-[240px]">
+                Builders in diverse neighborhoods across the country.
+              </p>
+            </div>
+            <div className="p-8 rounded-2xl bg-muted/60 border border-transparent hover:border-primary/20 transition-all duration-300 flex flex-col items-center">
+              <div className="text-5xl font-fraunces font-bold text-primary mb-2">
+                100s
+              </div>
+              <p className="text-muted-foreground leading-relaxed max-w-[240px]">
+                Of tools, practices, and stories about relational tech.
+              </p>
+            </div>
+          </div>
+
           <Link to="/auth">
             <Button
               size="lg"
@@ -264,6 +296,10 @@ const Landing = () => {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
+
+          <p className="mt-8 text-xs font-semibold tracking-[0.18em] uppercase text-muted-foreground/70">
+            A multi-local US builder network
+          </p>
         </div>
       </div>
 
