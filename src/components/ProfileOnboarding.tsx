@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowRight, ArrowLeft, Sparkles, MapPin, User, Cpu, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Loader2, ArrowRight, ArrowLeft, Sparkles, MapPin, User, Cpu, Users, Shield } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 
-type Step = "welcome" | "network" | "about" | "dreams" | "tech";
+type Step = "welcome" | "network" | "about" | "dreams" | "tech" | "consent";
 
 export const ProfileOnboarding = () => {
   const { user, refreshProfile } = useAuth();
