@@ -72,7 +72,7 @@ export const FaqsTab = () => {
   };
 
   const add = async () => {
-    const nextOrder = (faqs.at(-1)?.sort_order ?? 0) + 10;
+    const nextOrder = (faqs.length ? faqs[faqs.length - 1].sort_order : 0) + 10;
     const { data, error } = await (supabase as any)
       .from("faqs")
       .insert({ question: "New question", answer: "Answer", sort_order: nextOrder, is_published: false })
