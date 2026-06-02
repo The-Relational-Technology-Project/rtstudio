@@ -27,6 +27,7 @@ export const ProfileOnboarding = () => {
   const [dreams, setDreams] = useState("");
   const [techFamiliarity, setTechFamiliarity] = useState<string>("");
   const [aiCodingExperience, setAiCodingExperience] = useState<string>("");
+  const [emailOptIn, setEmailOptIn] = useState<"yes" | "no" | "">("");
 
   const handleComplete = async () => {
     if (!user) return;
