@@ -199,8 +199,6 @@ const Library = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopNav />
-      
       <main className="flex-1 w-full">
         <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -210,17 +208,6 @@ const Library = () => {
                 Browse stories, tools, and tech from the community
               </p>
             </div>
-            {user && (
-              <Button onClick={() => setIsContributeOpen(true)} className="gap-2 self-start">
-                <Plus className="w-4 h-4" />
-                Contribute
-              </Button>
-            )}
-            <ContributionDialog 
-              open={isContributeOpen} 
-              onOpenChange={setIsContributeOpen}
-              onSuccess={fetchLibraryItems}
-            />
           </div>
 
           {/* View tabs */}
