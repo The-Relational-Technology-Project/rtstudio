@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { TopNav } from "@/components/TopNav";
+
 import { Footer } from "@/components/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileOnboarding } from "@/components/ProfileOnboarding";
