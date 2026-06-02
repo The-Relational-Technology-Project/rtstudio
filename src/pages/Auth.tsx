@@ -54,11 +54,26 @@ const Auth = () => {
       });
     } catch (error: any) {
       console.error("Magic link error:", error);
-      toast({
-        title: "Something went wrong",
-        description: error.message || "Failed to send link. Please try again.",
-        variant: "destructive",
-      });
+      const status = error?.status ?? error?.code;
+      const msg = String(error?.message || "");
+      const isRateLimited =
+        status === 429 ||
+        /rate limit|over_email_send_rate_limit|too many/i.test(msg);
+
+      if (isRateLimited) {
+        toast({
+          title: "Email sending is temporarily throttled",
+          description:
+            "The Studio's email service has hit a temporary send limit. Please wait a few minutes and try again. If this keeps happening, the project's auth email rate limit needs to be raised in Cloud settings.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Something went wrong",
+          description: error.message || "Failed to send link. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
