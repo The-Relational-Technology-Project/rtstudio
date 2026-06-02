@@ -1,43 +1,33 @@
 project_id = "ivrvpbqidysrwqrthpcp"
 
-[functions.verify-password]
-verify_jwt = false
-
-[functions.verify-session]
-verify_jwt = false
-
-[functions.update-password]
-verify_jwt = false
-
-[functions.send-magic-link]
-verify_jwt = false
-
-[functions.verify-magic-link]
-verify_jwt = false
-
-[functions.email-hook]
-verify_jwt = false
-
-[functions.notify-signup]
-verify_jwt = false
-
-[functions.notify-gift-build]
-verify_jwt = false
-
-[functions.admin-profiles]
-verify_jwt = false
-
-[functions.embed-library]
-verify_jwt = false
-
-[functions.generate-prototype]
-verify_jwt = false
-
-[functions.generate-build-plan]
-verify_jwt = false
-
-[functions.notify-steward-connect]
-verify_jwt = false
-
-[functions.notify-contact]
-verify_jwt = false
+[functions]
+  [functions.admin-profiles]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.email-hook]
+    verify_jwt = false
+  [functions.embed-library]
+    verify_jwt = false
+  [functions.generate-build-plan]
+    verify_jwt = false
+  [functions.generate-prototype]
+    verify_jwt = false
+  [functions.notify-contact]
+    verify_jwt = false
+  [functions.notify-gift-build]
+    verify_jwt = false
+  [functions.notify-signup]
+    verify_jwt = false
+  [functions.notify-steward-connect]
+    verify_jwt = false
+  [functions.send-magic-link]
+    verify_jwt = false
+  [functions.update-password]
+    verify_jwt = false
+  [functions.verify-magic-link]
+    verify_jwt = false
+  [functions.verify-password]
+    verify_jwt = false
+  [functions.verify-session]
+    verify_jwt = false
