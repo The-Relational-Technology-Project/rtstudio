@@ -298,7 +298,7 @@ const Landing = () => {
           </Link>
 
           <p className="mt-8 text-xs font-semibold tracking-[0.18em] uppercase text-muted-foreground/70">
-            A multi-local US builder network
+            A locality-to-locality builder network
           </p>
         </div>
       </div>
