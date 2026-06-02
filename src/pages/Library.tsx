@@ -22,7 +22,7 @@ const Library = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState<ItemType | "all">("all");
   const [viewTab, setViewTab] = useState<ViewTab>("browse");
-  const [isContributeOpen, setIsContributeOpen] = useState(false);
+  
   const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
   const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [promptParentMap, setPromptParentMap] = useState<Map<string, string>>(new Map());
