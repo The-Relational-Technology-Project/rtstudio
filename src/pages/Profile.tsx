@@ -209,7 +209,6 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <TopNav />
       <div className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
         {/* Profile Header */}
         <div className="flex items-start mb-8">
