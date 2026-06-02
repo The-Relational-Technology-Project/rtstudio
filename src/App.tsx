@@ -86,6 +86,7 @@ const App = () => (
                 />
                 <Route path="/change-password" element={<ChangePassword />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="/p/:shareId" element={<PrototypeShare />} />
                 <Route path="/p/:shareId/embed" element={<PrototypeEmbed />} />
                 <Route path="/plan/:shareId" element={<BuildPlanShare />} />
