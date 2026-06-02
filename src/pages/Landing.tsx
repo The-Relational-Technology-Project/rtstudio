@@ -7,6 +7,7 @@ import { Sparkles, BookOpen, Users, ArrowRight, MessageSquare, ExternalLink, Ham
 import { ToolGalleryCard } from "@/components/ToolGalleryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface GalleryTool {
   id: string;
