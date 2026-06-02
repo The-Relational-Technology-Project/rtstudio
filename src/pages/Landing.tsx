@@ -280,7 +280,7 @@ const Landing = () => {
       <div className="border-t border-border">
         <div className="max-w-3xl mx-auto px-6 py-16">
           <h2 className="text-2xl md:text-3xl font-fraunces font-bold text-foreground text-center mb-10">
-            Questions, answered
+            FAQs
           </h2>
           <div className="bg-card border border-border rounded-2xl shadow-sm px-2 md:px-6">
             <Accordion type="single" collapsible className="w-full">
