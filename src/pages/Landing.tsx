@@ -291,7 +291,7 @@ const Landing = () => {
       <div className="border-t border-border bg-card/40">
         <div className="max-w-2xl mx-auto px-6 py-12 text-center">
           <p className="text-muted-foreground leading-relaxed">
-            This Studio is free to use and stewarded by the Relational Tech Project, a nonprofit project. The Studio and the tool examples are open-source. We have a roadmap toward community ownership of the tools and the infrastructure we use to build them. More in the FAQs below.
+            This Studio is free to use and stewarded by the Relational Tech Project, a nonprofit project. The Studio and the tool examples are open-source. We have a roadmap toward community ownership of the tools and the infrastructure we use to build them.
           </p>
         </div>
       </div>
