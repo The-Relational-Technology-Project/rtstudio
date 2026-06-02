@@ -44,6 +44,7 @@ export const ProfileOnboarding = () => {
           dreams: dreams || null,
           tech_familiarity: techFamiliarity || null,
           ai_coding_experience: aiCodingExperience || null,
+          email_opt_in: emailOptIn === "yes",
           profile_completed: true,
         })
         .eq("id", user.id);
