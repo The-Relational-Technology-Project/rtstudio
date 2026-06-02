@@ -9,6 +9,8 @@ project_id = "ivrvpbqidysrwqrthpcp"
     verify_jwt = false
   [functions.embed-library]
     verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
   [functions.generate-build-plan]
     verify_jwt = false
   [functions.generate-prototype]
