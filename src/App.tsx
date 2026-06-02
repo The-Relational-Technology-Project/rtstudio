@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import ChangePassword from "./pages/ChangePassword";
 import Privacy from "./pages/Privacy";
+import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import Library from "./pages/Library";
@@ -85,6 +86,7 @@ const App = () => (
                 />
                 <Route path="/change-password" element={<ChangePassword />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="/p/:shareId" element={<PrototypeShare />} />
                 <Route path="/p/:shareId/embed" element={<PrototypeEmbed />} />
                 <Route path="/plan/:shareId" element={<BuildPlanShare />} />

@@ -9,6 +9,10 @@ export const Footer = () => {
         <Link to="/privacy" className="text-primary hover:underline">
           Privacy & Terms
         </Link>
+        <span className="hidden sm:inline">·</span>
+        <Link to="/contact" className="text-primary hover:underline">
+          Contact
+        </Link>
       </p>
     </footer>
   );

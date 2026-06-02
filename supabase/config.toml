@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.notify-steward-connect]
 verify_jwt = false
+
+[functions.notify-contact]
+verify_jwt = false

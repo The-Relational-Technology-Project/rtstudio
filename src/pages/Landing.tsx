@@ -7,6 +7,7 @@ import { Sparkles, BookOpen, Users, ArrowRight, MessageSquare, ExternalLink, Ham
 import { ToolGalleryCard } from "@/components/ToolGalleryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface GalleryTool {
   id: string;
@@ -52,7 +53,7 @@ const Landing = () => {
               You can build what you need
             </h1>
             <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-8 leading-relaxed">
-              Tap into a commons of relational tech. Remix a tool for your people and place.
+              Create or remix a tool for your people and place.
             </p>
             <Link to="/auth">
               <Button
@@ -262,16 +263,104 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* What is Relational Tech? */}
+      {/* Social signals band */}
       <div className="border-t border-border">
-        <div className="max-w-3xl mx-auto px-6 py-16 text-center">
+        <div className="max-w-3xl mx-auto px-6 py-14 text-center">
           <h2 className="text-2xl md:text-3xl font-fraunces font-bold text-foreground mb-4">
-            What is Relational Tech?
+            You're not building alone.
           </h2>
-          <p className="text-muted-foreground leading-relaxed mb-6">
-            Technology that helps us connect with and care for each other. Small software built by people for a place. Tools we can reuse and remix across our neighborhoods.
+          <p className="text-muted-foreground leading-relaxed mb-1">
+            Join 300+ builders in diverse neighborhoods across the country.
           </p>
-          <p className="text-sm text-muted-foreground/80">
+          <p className="text-muted-foreground leading-relaxed mb-7">
+            Tap into a commons with hundreds of tools, practices, and stories about relational tech.
+          </p>
+          <Link to="/auth">
+            <Button
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-base px-7 py-5 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover-scale"
+            >
+              Enter Your Studio
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      {/* At-ease band */}
+      <div className="border-t border-border bg-card/40">
+        <div className="max-w-2xl mx-auto px-6 py-12 text-center">
+          <p className="text-muted-foreground leading-relaxed">
+            This Studio is free to use and stewarded by the Relational Tech Project, a nonprofit project. The Studio and the tool examples are open-source. We have a roadmap toward community ownership of the tools and the infrastructure we use to build them. More in the FAQs below.
+          </p>
+        </div>
+      </div>
+
+      {/* FAQs */}
+      <div className="border-t border-border">
+        <div className="max-w-3xl mx-auto px-6 py-16">
+          <h2 className="text-2xl md:text-3xl font-fraunces font-bold text-foreground text-center mb-10">
+            Questions, answered
+          </h2>
+          <div className="bg-card border border-border rounded-2xl shadow-sm px-2 md:px-6">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="q1">
+                <AccordionTrigger className="font-fraunces text-lg text-foreground text-left hover:no-underline">
+                  What is relational tech?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed">
+                  Technology that helps us connect with and care for each other. Small software built by people for a place. Tools we can reuse and remix across our neighborhoods.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="q2">
+                <AccordionTrigger className="font-fraunces text-lg text-foreground text-left hover:no-underline">
+                  Do I need to know how to code?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed">
+                  No. You describe what your place needs in plain language, and the Studio's building partner, Sidekick, helps you turn that into a working tool. You can also remix something a neighbor in another place already made. The skills that matter most here aren't technical. They're knowing your neighbors and paying attention to what your place is asking for.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="q3">
+                <AccordionTrigger className="font-fraunces text-lg text-foreground text-left hover:no-underline">
+                  What can I build?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed">
+                  Whatever your block actually needs. The library is full of starting points: daily neighborhood digests, lending libraries, welcome guides, block-level hubs, directories of local groups and third spaces, walking guides layered with local history. Tools here are small and specific on purpose. One tool, one real need, the people right around you. We think in terms of 1:100, roughly one builder in relationship with a hundred neighbors. Fewer users, more co-creators.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="q4">
+                <AccordionTrigger className="font-fraunces text-lg text-foreground text-left hover:no-underline">
+                  Is it really free? How is this sustained?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed">
+                  Yes, free to use. The Studio is stewarded by the Relational Tech Project, a nonprofit project supported by funders who believe neighborhoods should be able to build what they need. There are no ads, no data extraction, and no engagement algorithms. We are not trying to grow your screen time. We are trying to help you spend more time with the people around you.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="q5">
+                <AccordionTrigger className="font-fraunces text-lg text-foreground text-left hover:no-underline">
+                  Who owns what I build, and what about my neighbors' privacy?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed">
+                  You do. The tools and the software that powers the Studio are open-source, so you can take what you make, host it yourself, fork it, or hand it to someone else. Your neighbors' information stays yours and theirs. We practice data minimalism: collect the least we need, never sell it, and never build surveillance into something meant to bring people together. We also have a roadmap toward community ownership of the tools and the infrastructure we build them on, so this stays a commons rather than a platform.
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="q6" className="border-b-0">
+                <AccordionTrigger className="font-fraunces text-lg text-foreground text-left hover:no-underline">
+                  Isn't AI the opposite of human connection?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed">
+                  A lot of it is, and we take that seriously. Our stance is simple: we put AI to work for us, to handle what's tedious about building, so you can spend your time with people instead of screens. Vision, relationship-building, and being present in your community stay fully human. AI never defines what your neighborhood needs or speaks for you. The Studio is built to send you back out to your block, not to keep you here.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+          <p className="text-center text-muted-foreground mt-8">
+            Have another question or idea?{" "}
+            <Link to="/contact" className="text-primary hover:underline font-medium">
+              Please reach out.
+            </Link>
+          </p>
+          <p className="text-center text-sm text-muted-foreground/80 mt-6">
             Part of the{" "}
             <a href="https://relationaltechproject.org" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
               Relational Tech Project
