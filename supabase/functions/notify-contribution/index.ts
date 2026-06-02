@@ -11,6 +11,7 @@ const corsHeaders = {
 const SEVEN_DAYS_SECONDS = 60 * 60 * 24 * 7;
 
 interface Payload {
+  category?: string;
   title?: string;
   description?: string;
   links?: string[];
