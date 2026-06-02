@@ -18,12 +18,14 @@ const Admin = () => {
             <TabsTrigger value="contributions">Contributions</TabsTrigger>
             <TabsTrigger value="builders">Builders</TabsTrigger>
             <TabsTrigger value="studio_log">Studio Log</TabsTrigger>
+            <TabsTrigger value="faqs">FAQs</TabsTrigger>
             <TabsTrigger value="embeddings">Embeddings</TabsTrigger>
           </TabsList>
           <TabsContent value="library" className="mt-6"><LibraryAdminTab /></TabsContent>
           <TabsContent value="contributions" className="mt-6"><ContributionsTab /></TabsContent>
           <TabsContent value="builders" className="mt-6"><BuildersTab /></TabsContent>
           <TabsContent value="studio_log" className="mt-6"><StudioLogTab /></TabsContent>
+          <TabsContent value="faqs" className="mt-6"><FaqsTab /></TabsContent>
           <TabsContent value="embeddings" className="mt-6"><EmbeddingsTab /></TabsContent>
         </Tabs>
       </div>
