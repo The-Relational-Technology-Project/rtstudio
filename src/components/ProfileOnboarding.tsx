@@ -173,7 +173,7 @@ export const ProfileOnboarding = () => {
               <ul className="space-y-3 text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
-                  <span>1:1 support and coaching calls with RTP stewards — bookable through Get Support</span>
+                  <span>1:1 support and coaching calls with RTP stewards</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
@@ -182,10 +182,6 @@ export const ProfileOnboarding = () => {
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
                   <span>Calendar of events, huddles, and workshops — join when you can</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>A Signal chat with local relational technologists — join through Get Support</span>
                 </li>
               </ul>
             </div>
