@@ -267,11 +267,11 @@ const Landing = () => {
           {/* Neighborhood roll call */}
           <div className="flex flex-wrap justify-center gap-2 mb-8 opacity-70">
             {[
-              "Outer Sunset, SF",
-              "Jackson Park, CHI",
               "Oakland, CA",
-              "Detroit, MI",
-              "Queens, NY",
+              "Akron, OH",
+              "Palouse, WA",
+              "London, UK",
+              "Lexington, KY",
             ].map((place) => (
               <span
                 key={place}
@@ -292,7 +292,7 @@ const Landing = () => {
                 300+
               </div>
               <p className="text-muted-foreground leading-relaxed max-w-[240px]">
-                Builders in diverse neighborhoods across the country.
+                Builders in diverse neighborhoods around the world.
               </p>
             </div>
             <div className="p-8 rounded-2xl bg-muted/60 border border-transparent hover:border-primary/20 transition-all duration-300 flex flex-col items-center">
