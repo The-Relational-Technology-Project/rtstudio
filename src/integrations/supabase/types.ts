@@ -1127,6 +1127,7 @@ export type Database = {
           name: string
           organizer_consent_to_contact: boolean
           screenshot_urls: string[] | null
+          show_on_landing: boolean
           sort_order: number
           summary: string | null
           tags: string[]
@@ -1151,6 +1152,7 @@ export type Database = {
           name: string
           organizer_consent_to_contact?: boolean
           screenshot_urls?: string[] | null
+          show_on_landing?: boolean
           sort_order?: number
           summary?: string | null
           tags?: string[]
@@ -1175,6 +1177,7 @@ export type Database = {
           name?: string
           organizer_consent_to_contact?: boolean
           screenshot_urls?: string[] | null
+          show_on_landing?: boolean
           sort_order?: number
           summary?: string | null
           tags?: string[]
