@@ -51,8 +51,9 @@ const Landing = () => {
     const fetchGallery = async () => {
       const { data } = await (supabase
         .from("tools")
-        .select("id, name, summary, description, image_url, url") as any)
+        .select("id, name, summary, description, image_url, url, show_on_landing") as any)
         .eq("tool_category", "relational_tech")
+        .eq("show_on_landing", true)
         .not("image_url", "is", null)
         .order("sort_order", { ascending: true });
       if (data) setGalleryTools(data);
