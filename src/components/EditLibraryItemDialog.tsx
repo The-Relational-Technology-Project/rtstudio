@@ -32,6 +32,13 @@ export const EditLibraryItemDialog = ({ item, open, onOpenChange, onSuccess }: E
   // Tool
   const [toolDescription, setToolDescription] = useState(item.summary);
   const [url, setUrl] = useState(item.url || "");
+  const [githubUrl, setGithubUrl] = useState(item.githubUrl || "");
+  const [lovableUrl, setLovableUrl] = useState(item.lovableUrl || "");
+  const [hostedUrl, setHostedUrl] = useState(item.hostedUrl || "");
+  const [hostedBy, setHostedBy] = useState(item.hostedBy || "");
+  const [creatorName, setCreatorName] = useState(item.creatorName || "");
+  const [creatorUrl, setCreatorUrl] = useState(item.creatorUrl || "");
+  const [lineageNote, setLineageNote] = useState(item.lineageNote || "");
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +66,13 @@ export const EditLibraryItemDialog = ({ item, open, onOpenChange, onSuccess }: E
         name: title,
         description: toolDescription,
         url,
+        github_url: githubUrl || null,
+        lovable_url: lovableUrl || null,
+        hosted_url: hostedUrl || null,
+        hosted_by: hostedBy || null,
+        creator_name: creatorName || null,
+        creator_url: creatorUrl || null,
+        lineage_note: lineageNote || null,
       }).eq("id", item.id);
       error = res.error;
     }
@@ -127,6 +141,38 @@ export const EditLibraryItemDialog = ({ item, open, onOpenChange, onSuccess }: E
               <div className="space-y-2">
                 <Label htmlFor="edit-url">URL</Label>
                 <Input id="edit-url" type="url" value={url} onChange={e => setUrl(e.target.value)} required />
+              </div>
+
+              <p className="text-xs font-medium text-muted-foreground pt-2">Deployment options — shown on the card and used in build plans</p>
+              <div className="space-y-2">
+                <Label htmlFor="edit-github">GitHub repo URL (enables the fork option)</Label>
+                <Input id="edit-github" type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="https://github.com/…" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-lovable">Lovable project URL (optional)</Label>
+                <Input id="edit-lovable" type="url" value={lovableUrl} onChange={e => setLovableUrl(e.target.value)} placeholder="https://lovable.dev/projects/…" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-hosted-url">Hosted version URL (if someone offers one)</Label>
+                <Input id="edit-hosted-url" type="url" value={hostedUrl} onChange={e => setHostedUrl(e.target.value)} placeholder="https://communitysupplies.org" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-hosted-by">Hosted by</Label>
+                <Input id="edit-hosted-by" value={hostedBy} onChange={e => setHostedBy(e.target.value)} placeholder="Who runs the hosted version" />
+              </div>
+
+              <p className="text-xs font-medium text-muted-foreground pt-2">Lineage — attribution that travels with remixes</p>
+              <div className="space-y-2">
+                <Label htmlFor="edit-creator">Creator</Label>
+                <Input id="edit-creator" value={creatorName} onChange={e => setCreatorName(e.target.value)} placeholder="Person or group who made this" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-creator-url">Creator link (optional)</Label>
+                <Input id="edit-creator-url" type="url" value={creatorUrl} onChange={e => setCreatorUrl(e.target.value)} placeholder="https://…" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-lineage">Lineage note</Label>
+                <Textarea id="edit-lineage" value={lineageNote} onChange={e => setLineageNote(e.target.value)} rows={2} placeholder="e.g. Adapted from BuildIRL with permission; remixed for the Outer Sunset." />
               </div>
             </>
           )}

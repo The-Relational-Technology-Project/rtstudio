@@ -326,7 +326,7 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
                 ? supabase.from('stories').select('id, title, story_text, attribution, full_story_text').in('id', storyIds)
                 : Promise.resolve({ data: [] }),
               toolMatchIds.length > 0
-                ? supabase.from('tools').select('id, name, description, url').in('id', toolMatchIds)
+                ? supabase.from('tools').select('id, name, description, url, github_url, hosted_url, hosted_by, creator_name, lineage_note').in('id', toolMatchIds)
                 : Promise.resolve({ data: [] }),
             ]);
 
@@ -383,7 +383,7 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
         const [promptsResult, storiesResult, toolsResult] = await Promise.all([
           supabase.from('prompts').select('id, title, category, description, example_prompt').or(promptSearchConditions).limit(5),
           supabase.from('stories').select('id, title, story_text, attribution, full_story_text').or(storySearchConditions).limit(5),
-          supabase.from('tools').select('id, name, description, url').or(toolSearchConditions).limit(5)
+          supabase.from('tools').select('id, name, description, url, github_url, hosted_url, hosted_by, creator_name, lineage_note').or(toolSearchConditions).limit(5)
         ]);
 
         const kwPrompts = promptsResult.data || [];
@@ -542,7 +542,15 @@ GUEST USER - This user is NOT signed in. You cannot save commitments to their pr
 
     if (relevantTools.length > 0) {
       libraryContext += `\n\nRELEVANT TOOLS FROM THE LIBRARY:\n${relevantTools.map(t => {
-        return `\n---\nID: ${t.id}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}\n---`;
+        // Deployment + lineage metadata — lets Sidekick speak to the real
+        // take-up paths: remix the prompt, fork the repo, or use a hosted version.
+        const extras = [
+          t.github_url ? `Forkable repo: ${t.github_url}` : null,
+          t.hosted_url ? `Hosted option: ${t.hosted_url}${t.hosted_by ? ` (run by ${t.hosted_by})` : ''}` : null,
+          t.creator_name ? `Creator: ${t.creator_name}` : null,
+          t.lineage_note ? `Lineage: ${t.lineage_note}` : null,
+        ].filter(Boolean).join('\n');
+        return `\n---\nID: ${t.id}\nName: ${t.name}\nDescription: ${t.description}\nURL: ${t.url}${extras ? `\n${extras}` : ''}\n---`;
       }).join('\n')}`;
     }
 

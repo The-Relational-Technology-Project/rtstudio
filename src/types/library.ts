@@ -27,4 +27,9 @@ export interface LibraryItem {
   isJoinable?: boolean;
   lovableUrl?: string;
   githubUrl?: string;
+  hostedUrl?: string;
+  hostedBy?: string;
+  creatorName?: string;
+  creatorUrl?: string;
+  lineageNote?: string;
 }

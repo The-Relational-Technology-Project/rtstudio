@@ -73,6 +73,12 @@ const Library = () => {
           isJoinable: tool.is_joinable || false,
           lovableUrl: tool.lovable_url,
           githubUrl: tool.github_url,
+          hostedUrl: tool.hosted_url,
+          hostedBy: tool.hosted_by,
+          author: tool.creator_name || undefined,
+          creatorName: tool.creator_name,
+          creatorUrl: tool.creator_url,
+          lineageNote: tool.lineage_note,
           childPrompts: promptsByTool.get(tool.id) || [],
         })),
       ];

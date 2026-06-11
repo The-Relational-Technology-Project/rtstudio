@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
-import { ExternalLink, MessageSquare, Sparkles, BookOpen, Bookmark, BookmarkCheck, Pencil, Trash2, Eye, Wrench, Code, Github, Users } from "lucide-react";
+import { ExternalLink, MessageSquare, Sparkles, BookOpen, Bookmark, BookmarkCheck, Pencil, Trash2, Eye, Wrench, Code, Github, Users, GitFork, GitBranch, Cloud } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { EditLibraryItemDialog } from "./EditLibraryItemDialog";
@@ -90,6 +90,24 @@ export const LibraryCard = ({
                 <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0">
                   <Users className="w-2.5 h-2.5 mr-0.5" />
                   join
+                </Badge>
+              )}
+              {isToolType && (item.childPrompts?.length || 0) > 0 && (
+                <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border text-[10px] px-1.5 py-0">
+                  <Code className="w-2.5 h-2.5 mr-0.5" />
+                  prompt
+                </Badge>
+              )}
+              {isToolType && item.githubUrl && (
+                <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border text-[10px] px-1.5 py-0">
+                  <GitFork className="w-2.5 h-2.5 mr-0.5" />
+                  fork
+                </Badge>
+              )}
+              {isToolType && item.hostedUrl && (
+                <Badge variant="outline" className="bg-secondary text-secondary-foreground border-border text-[10px] px-1.5 py-0">
+                  <Cloud className="w-2.5 h-2.5 mr-0.5" />
+                  hosted
                 </Badge>
               )}
             </div>
@@ -247,11 +265,40 @@ export const LibraryCard = ({
                   <img src={item.imageUrl} alt={item.title} className="w-full rounded-lg border border-border" />
                 )}
                 <p className="text-sm leading-relaxed">{item.summary}</p>
-                {item.url && (
-                  <Button variant="outline" onClick={() => window.open(item.url, "_blank")}>
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Visit
-                  </Button>
+                <div className="flex gap-2 flex-wrap">
+                  {item.url && (
+                    <Button variant="outline" onClick={() => window.open(item.url, "_blank")}>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Visit
+                    </Button>
+                  )}
+                  {item.hostedUrl && (
+                    <Button variant="outline" onClick={() => window.open(item.hostedUrl, "_blank")}>
+                      <Cloud className="w-4 h-4 mr-2" />
+                      {item.hostedBy ? `Hosted by ${item.hostedBy}` : "Use hosted version"}
+                    </Button>
+                  )}
+                </div>
+                {(item.lineageNote || item.creatorUrl) && (
+                  <div className="pt-3 border-t border-border space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                      <GitBranch className="w-3 h-3" />
+                      Lineage
+                    </p>
+                    {item.lineageNote && (
+                      <p className="text-xs text-muted-foreground">{item.lineageNote}</p>
+                    )}
+                    {item.creatorUrl && (
+                      <a
+                        href={item.creatorUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-primary hover:underline"
+                      >
+                        {item.creatorName ? `More from ${item.creatorName}` : "Creator's site"}
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
             )}
@@ -274,7 +321,7 @@ export const LibraryCard = ({
           <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-fraunces">Build "{item.title}"</DialogTitle>
-              <p className="text-sm text-muted-foreground">Three ways to get started</p>
+              <p className="text-sm text-muted-foreground">Ways to get started</p>
             </DialogHeader>
 
             <div className="space-y-4">
@@ -324,29 +371,60 @@ export const LibraryCard = ({
                 </Button>
               </div>
 
-              {/* Source on-ramp */}
+              {/* Fork on-ramp */}
               {(item.lovableUrl || item.githubUrl) && (
                 <div className="border border-border rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <ExternalLink className="w-4 h-4 text-primary" />
-                    <h3 className="font-semibold text-sm">Source</h3>
-                    <span className="text-xs text-muted-foreground">— See how it's built</span>
+                    <GitFork className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold text-sm">Fork</h3>
+                    <span className="text-xs text-muted-foreground">— Copy the code and make it yours</span>
                   </div>
                   <div className="flex gap-2 flex-wrap">
                     {item.lovableUrl && (
                       <Button size="sm" variant="outline" onClick={() => window.open(item.lovableUrl, "_blank")}>
                         <ExternalLink className="w-3 h-3 mr-1" />
-                        View on Lovable
+                        Remix on Lovable
                       </Button>
                     )}
                     {item.githubUrl && (
                       <Button size="sm" variant="outline" onClick={() => window.open(item.githubUrl, "_blank")}>
                         <Github className="w-3 h-3 mr-1" />
-                        View on GitHub
+                        Fork on GitHub
                       </Button>
                     )}
                   </div>
                 </div>
+              )}
+
+              {/* Hosted on-ramp */}
+              {item.hostedUrl && (
+                <div className="border border-border rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Cloud className="w-4 h-4 text-primary" />
+                    <h3 className="font-semibold text-sm">Hosted</h3>
+                    <span className="text-xs text-muted-foreground">— Use a version someone already runs</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {item.hostedBy
+                      ? `${item.hostedBy} runs a hosted version — no code to manage, just set it up for your neighborhood.`
+                      : "A hosted version is available — no code to manage, just set it up for your neighborhood."}
+                  </p>
+                  <Button size="sm" variant="outline" onClick={() => window.open(item.hostedUrl, "_blank")}>
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    {item.hostedBy ? `Visit ${item.hostedBy}` : "Use the hosted version"}
+                  </Button>
+                </div>
+              )}
+
+              {/* Lineage — carried forward by remixes */}
+              {(item.lineageNote || item.creatorName) && (
+                <p className="text-xs text-muted-foreground border-t border-border pt-3 flex items-start gap-1.5">
+                  <GitBranch className="w-3 h-3 mt-0.5 shrink-0" />
+                  <span>
+                    {item.lineageNote || `Created by ${item.creatorName}.`}{" "}
+                    If you remix this, carry the lineage forward in your README.
+                  </span>
+                </p>
               )}
             </div>
           </DialogContent>

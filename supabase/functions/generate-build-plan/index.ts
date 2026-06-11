@@ -23,6 +23,7 @@ You receive:
 - A chat transcript between the builder and Sidekick — THIS IS THE BRIEF. Read it carefully. The builder's actual idea, the specific neighborhood texture they shared, the audience, the constraints — all of it lives in here. Do not skim. Sidekick deliberately doesn't write prompts in chat anymore; you write the prompt from the conversation itself.
 - Optionally, a draft prompt (only present if a legacy caller sent one). Treat it as a seed, but the chat transcript is still the authoritative brief — if they diverge, trust the chat.
 - Library item bodies — patterns Sidekick referenced in the conversation. Draw on these for structure and texture, but do NOT copy verbatim. The builder's tool is theirs, not a fork of a library item.
+- Tool items may carry deployment and lineage metadata lines: "Forkable repo:", "Hosted option:", "Creator:", "Lineage:", and "Library page:". These are real, curated links — use them for the fork and hosted options in the plan and for lineage attribution in the prompt. Never invent a repo, hosted platform, or creator that isn't in this data or the chat.
 
 Always return your answer by calling the deliver_build_plan tool. Never reply with plain prose.
 
@@ -48,6 +49,26 @@ Sections to include, in this order:
    - Use a few accessible color choices rather than many. Keep type sizes large.
 9. **Tone of voice for future copy** — a one-paragraph note for the builder about the voice the tool should have, drawing on how they spoke in the chat (warm, dry, organizer-blunt, etc.).
 10. **What "good enough to share with one neighbor" looks like** — three concrete bullets describing the smallest first version. The bar is "would Maya from across the street actually click around this for a minute," not "is it complete."
+11. **Lineage (include in the README)** — every Studio build carries its lineage. Tell the downstream builder to include a short "Lineage" section in the repo README, written out ready to paste:
+   - "Built by {builder name} in {neighborhood}" when the profile gives them; otherwise a placeholder the builder fills in.
+   - "Created from a build plan made at the Relational Tech Studio (https://studio.relationaltechproject.org)."
+   - When a referenced library tool carries a Creator or Lineage line and this build remixes it: "Remixed from {tool name} by {creator} — {library page link}." Carry the tool's own lineage note forward so the chain stays unbroken.
+   - Keep it to 3–4 plain lines. Attribution is a gift, not a legal formality — name people only when the library data or chat provides them; never invent creators.
+12. **Join the relational tech network (repo setup)** — write this as a literal instruction block in the prompt so the AI builder (or the builder by hand) acts on it when the GitHub repo is created:
+   - Make the repo public if the builder is comfortable sharing their work.
+   - Add the \`relational-tech\` topic to the repo. From a terminal: \`gh repo edit <owner>/<repo> --add-topic relational-tech\`. In the GitHub UI: repo page → gear icon next to "About" → add \`relational-tech\` under Topics.
+   - One sentence on why: the RTP Watcher discovers public repos with this topic and shares what's being built in the network feed, so other neighborhoods can find and remix this work.
+   - Include an open-source license so others can remix (MIT is the RTP default).
+   - Optionally add a \`.reltech.yml\` file at the repo root so the project shows up in the network with the right name and place. Provide it with the builder's details filled in when known:
+
+     version: 1
+     project:
+       name: "{tool name}"
+       description: "{one sentence}"
+       neighborhood: "{builder's neighborhood}"
+       builder: "{builder name}"
+
+   - If building with Lovable (no terminal), the topic step happens by hand after connecting GitHub — tell the AI builder to leave a short "Join the network" TODO checklist in the README so it doesn't get lost.
 
 Format the detailed prompt as clean markdown with these sections as ## headers. No code fences around the whole thing. No conversational preamble. Start straight with the # title line.
 
@@ -59,11 +80,11 @@ This is the builder's how-to-build-it walkthrough. Three sections, in this order
 
 Three options. Order them by what fits this idea best:
 
-- **Fork from an existing codebase** — only mention this option if the chat explicitly identified a real fork-able codebase. If not, OMIT this option entirely. Do not invent forks.
+- **Fork an existing codebase** — include this option when the chat or a referenced library tool identifies a real, public repo (tool items carry a "Forkable repo:" link when one exists). Name the source tool, link the repo, and note that the fork keeps the README lineage section pointing back at the original. If no real repo exists, OMIT this option entirely. Do not invent forks.
 - **Build a fresh tool from the prompt above** — always available, always the default. Say so plainly. The detailed prompt is the spec.
-- **Use a hosted platform that already does this** — only mention this option if the chat explicitly identified a real multi-tenant platform that fits (e.g., communitysupplies.org for tool/supply sharing). If not, OMIT this option entirely.
+- **Use a hosted platform that already does this** — include this option when the chat or a referenced library tool identifies a real multi-tenant offering (tool items carry a "Hosted option:" link when one exists, e.g. communitysupplies.org for tool/supply sharing). Link it, name who runs it, and say plainly that this path needs no code — often the fastest way to get something into neighbors' hands. If none exists, OMIT this option entirely.
 
-End this section with a one-line note: "We're adding more fork and hosted-platform options to the Studio soon — for now, the fresh build path is the strongest one."
+If the fresh-build path is the only real option, end this section with: "We're adding more fork and hosted-platform options to the Studio as the commons grows — for now, the fresh build path is the strongest one." If a real fork or hosted option exists, instead end with one line noting that whichever path the builder picks, the lineage note and the relational-tech topic travel with it.
 
 ## 2. Pick your builder tech
 
@@ -96,6 +117,7 @@ Walk the builder through a concrete next-90-minutes path:
 - Pick one neighbor who you already know will care about this. Name a real candidate type ("the neighbor who runs the little free library," "the parent who organizes the block bbq").
 - Send them the link. Ask three specific questions about what they'd want different. Make it easy for them to be honest.
 - Set a coffee/tea date this week to sit down and edit copy together — this is where co-creation actually starts.
+- When the repo exists, make it public (if that feels right) and add the relational-tech GitHub topic — the steps are in the prompt above. That is what puts this build in the network feed where other neighborhoods can find it.
 
 Format the plan as clean markdown with the ## headers above. No code fences around the whole thing. Start with a single # title line that says something like "# Your build plan."
 
@@ -388,7 +410,7 @@ serve(async (req) => {
         ? supabase.from('prompts').select('id, title, example_prompt, description').in('id', libraryItemIds)
         : Promise.resolve({ data: [] as any[] }),
       libraryItemIds.length > 0
-        ? supabase.from('tools').select('id, name, description, url').in('id', libraryItemIds)
+        ? supabase.from('tools').select('id, name, description, url, github_url, hosted_url, hosted_by, creator_name, creator_url, lineage_note').in('id', libraryItemIds)
         : Promise.resolve({ data: [] as any[] }),
       libraryItemIds.length > 0
         ? supabase.from('stories').select('id, title, story_text, full_story_text').in('id', libraryItemIds)
@@ -406,12 +428,24 @@ serve(async (req) => {
         title: p.title,
         body: (p.example_prompt || p.description || '').toString().slice(0, BODY_CAP),
       })),
-      ...((toolsRes.data || []) as any[]).map((t: any) => ({
-        kind: 'tool' as const,
-        id: t.id,
-        title: t.name,
-        body: `${(t.description || '').toString()}\n\nURL: ${t.url || ''}`.slice(0, BODY_CAP),
-      })),
+      ...((toolsRes.data || []) as any[]).map((t: any) => {
+        // Deployment + lineage metadata — powers the fork/hosted options and
+        // lineage attribution in the plan. Only real, curated links appear here.
+        const metaLines = [
+          `URL: ${t.url || ''}`,
+          t.github_url ? `Forkable repo: ${t.github_url}` : null,
+          t.hosted_url ? `Hosted option: ${t.hosted_url}${t.hosted_by ? ` (run by ${t.hosted_by})` : ''}` : null,
+          t.creator_name ? `Creator: ${t.creator_name}${t.creator_url ? ` (${t.creator_url})` : ''}` : null,
+          t.lineage_note ? `Lineage: ${t.lineage_note}` : null,
+          `Library page: https://studio.relationaltechproject.org/library?item=${t.id}`,
+        ].filter(Boolean).join('\n');
+        return {
+          kind: 'tool' as const,
+          id: t.id,
+          title: t.name,
+          body: `${(t.description || '').toString()}\n\n${metaLines}`.slice(0, BODY_CAP),
+        };
+      }),
       ...((storiesRes.data || []) as any[]).map((s: any) => ({
         kind: 'story' as const,
         id: s.id,

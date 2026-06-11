@@ -39,12 +39,21 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
   const [url, setUrl] = useState("");
   const [toolCategory, setToolCategory] = useState("relational_tech");
   const [imageUrl, setImageUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [lovableUrl, setLovableUrl] = useState("");
+  const [hostedUrl, setHostedUrl] = useState("");
+  const [hostedBy, setHostedBy] = useState("");
+  const [creatorName, setCreatorName] = useState("");
+  const [creatorUrl, setCreatorUrl] = useState("");
+  const [lineageNote, setLineageNote] = useState("");
 
   const reset = () => {
     setTitle(""); setStoryText(""); setAuthor("");
     setCategory(""); setDescription(""); setExamplePrompt("");
     setToolDescription(""); setToolSummary(""); setUrl("");
     setToolCategory("relational_tech"); setImageUrl("");
+    setGithubUrl(""); setLovableUrl(""); setHostedUrl(""); setHostedBy("");
+    setCreatorName(""); setCreatorUrl(""); setLineageNote("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,6 +88,13 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
         url: url || null,
         tool_category: toolCategory,
         image_url: imageUrl || null,
+        github_url: githubUrl || null,
+        lovable_url: lovableUrl || null,
+        hosted_url: hostedUrl || null,
+        hosted_by: hostedBy || null,
+        creator_name: creatorName || null,
+        creator_url: creatorUrl || null,
+        lineage_note: lineageNote || null,
         user_id: user?.id ?? null,
       });
       error = res.error;
@@ -180,6 +196,38 @@ export const NewLibraryItemDialog = ({ open, onOpenChange, onSuccess }: Props) =
                     <SelectItem value="tech_for_building">Tech for building</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <p className="text-xs font-medium text-muted-foreground pt-2">Deployment options — shown on the card and used in build plans</p>
+              <div className="space-y-2">
+                <Label htmlFor="new-github">GitHub repo URL (enables the fork option)</Label>
+                <Input id="new-github" type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} placeholder="https://github.com/…" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-lovable">Lovable project URL (optional)</Label>
+                <Input id="new-lovable" type="url" value={lovableUrl} onChange={e => setLovableUrl(e.target.value)} placeholder="https://lovable.dev/projects/…" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-hosted-url">Hosted version URL (if someone offers one)</Label>
+                <Input id="new-hosted-url" type="url" value={hostedUrl} onChange={e => setHostedUrl(e.target.value)} placeholder="https://communitysupplies.org" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-hosted-by">Hosted by</Label>
+                <Input id="new-hosted-by" value={hostedBy} onChange={e => setHostedBy(e.target.value)} placeholder="Who runs the hosted version" />
+              </div>
+
+              <p className="text-xs font-medium text-muted-foreground pt-2">Lineage — attribution that travels with remixes</p>
+              <div className="space-y-2">
+                <Label htmlFor="new-creator">Creator</Label>
+                <Input id="new-creator" value={creatorName} onChange={e => setCreatorName(e.target.value)} placeholder="Person or group who made this" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-creator-url">Creator link (optional)</Label>
+                <Input id="new-creator-url" type="url" value={creatorUrl} onChange={e => setCreatorUrl(e.target.value)} placeholder="https://…" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-lineage">Lineage note</Label>
+                <Textarea id="new-lineage" value={lineageNote} onChange={e => setLineageNote(e.target.value)} rows={2} placeholder="e.g. Adapted from BuildIRL with permission; remixed for the Outer Sunset." />
               </div>
             </>
           )}

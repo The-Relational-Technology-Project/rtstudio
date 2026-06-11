@@ -1112,12 +1112,17 @@ export type Database = {
       tools: {
         Row: {
           created_at: string
+          creator_name: string | null
+          creator_url: string | null
           description: string
           github_url: string | null
+          hosted_by: string | null
+          hosted_url: string | null
           id: string
           image_url: string | null
           is_featured: boolean
           is_joinable: boolean
+          lineage_note: string | null
           lovable_url: string | null
           name: string
           organizer_consent_to_contact: boolean
@@ -1131,12 +1136,17 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          creator_name?: string | null
+          creator_url?: string | null
           description: string
           github_url?: string | null
+          hosted_by?: string | null
+          hosted_url?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean
           is_joinable?: boolean
+          lineage_note?: string | null
           lovable_url?: string | null
           name: string
           organizer_consent_to_contact?: boolean
@@ -1150,12 +1160,17 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          creator_name?: string | null
+          creator_url?: string | null
           description?: string
           github_url?: string | null
+          hosted_by?: string | null
+          hosted_url?: string | null
           id?: string
           image_url?: string | null
           is_featured?: boolean
           is_joinable?: boolean
+          lineage_note?: string | null
           lovable_url?: string | null
           name?: string
           organizer_consent_to_contact?: boolean
