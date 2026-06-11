@@ -61,13 +61,19 @@ Sections to include, in this order:
    - Include an open-source license so others can remix (MIT is the RTP default).
    - Optionally add a \`.reltech.yml\` file at the repo root so the project shows up in the network with the right name and place. Provide it with the builder's details filled in when known:
 
-     version: 1
+     version: 2
      project:
        name: "{tool name}"
        description: "{one sentence}"
        neighborhood: "{builder's neighborhood}"
        builder: "{builder name}"
+     lineage:
+       remixed_from: "{source tool name}"
+       remixed_from_url: "{the source tool's Library page link}"
+       creator: "{the source tool's creator, when the library data names one}"
+       note: "{the source tool's lineage note, carried forward}"
 
+   - Include the lineage block only when this build remixes a referenced library tool, and omit any lineage field you don't have real data for; leave the whole block out for original work. This is the machine-readable twin of the README lineage section — the network watcher uses it to connect remixes to their parents.
    - If building with Lovable (no terminal), the topic step happens by hand after connecting GitHub — tell the AI builder to leave a short "Join the network" TODO checklist in the README so it doesn't get lost.
 
 Format the detailed prompt as clean markdown with these sections as ## headers. No code fences around the whole thing. No conversational preamble. Start straight with the # title line.
