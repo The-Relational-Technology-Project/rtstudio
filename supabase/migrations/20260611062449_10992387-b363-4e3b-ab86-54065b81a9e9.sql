@@ -1,0 +1,2 @@
+ALTER TABLE public.tools ADD COLUMN IF NOT EXISTS show_on_landing boolean NOT NULL DEFAULT true;
+UPDATE public.tools SET show_on_landing = false WHERE name IN ('Privacy & Terms Page', 'Footer Component');
