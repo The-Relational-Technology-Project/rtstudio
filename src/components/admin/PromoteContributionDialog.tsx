@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ type Contribution = {
   title: string;
   description: string;
   links: string[];
+  image_paths: string[];
   contributor_name: string;
   user_id: string;
 };
@@ -38,8 +39,56 @@ export const PromoteContributionDialog = ({ contribution, open, onOpenChange, on
   const [author, setAuthor] = useState(contribution.contributor_name);
   const [category, setCategory] = useState("");
   const [examplePrompt, setExamplePrompt] = useState("");
-  const [url, setUrl] = useState(contribution.links?.[0] || "");
+  const [tryUrl, setTryUrl] = useState(contribution.links?.[0] || "");
+  const [githubUrl, setGithubUrl] = useState(
+    contribution.links?.find(l => /github\.com/i.test(l)) || ""
+  );
+  const [selectedImagePath, setSelectedImagePath] = useState<string | null>(
+    contribution.image_paths?.[0] || null
+  );
+  const [imagePreviews, setImagePreviews] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const paths = contribution.image_paths || [];
+      if (paths.length === 0) return;
+      const entries: Record<string, string> = {};
+      await Promise.all(paths.map(async (p) => {
+        const { data } = await supabase.storage
+          .from("contribution-uploads")
+          .createSignedUrl(p, 3600);
+        if (data?.signedUrl) entries[p] = data.signedUrl;
+      }));
+      if (!cancelled) setImagePreviews(entries);
+    })();
+    return () => { cancelled = true; };
+  }, [contribution.image_paths]);
+
+  // Copy a selected private contribution image into the public story-images bucket
+  // and return the public URL. Returns null if nothing selected or copy fails.
+  const publishSelectedImage = async (): Promise<string | null> => {
+    if (!selectedImagePath) return null;
+    const { data: blob, error: dlErr } = await supabase.storage
+      .from("contribution-uploads")
+      .download(selectedImagePath);
+    if (dlErr || !blob) {
+      toast({ title: "Image copy failed", description: dlErr?.message || "download error", variant: "destructive" });
+      return null;
+    }
+    const ext = selectedImagePath.split(".").pop() || "png";
+    const destPath = `promoted/${contribution.id}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from("story-images")
+      .upload(destPath, blob, { contentType: blob.type, upsert: false });
+    if (upErr) {
+      toast({ title: "Image copy failed", description: upErr.message, variant: "destructive" });
+      return null;
+    }
+    const { data: pub } = supabase.storage.from("story-images").getPublicUrl(destPath);
+    return pub.publicUrl;
+  };
 
   const handlePromote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +109,14 @@ export const PromoteContributionDialog = ({ contribution, open, onOpenChange, on
       }).select("id").single();
       promotedId = data?.id || null; error = e;
     } else {
+      const imageUrl = await publishSelectedImage();
       const { data, error: e } = await supabase.from("tools").insert({
-        name: title, description, url: url || null, user_id: contribution.user_id,
+        name: title,
+        description,
+        url: tryUrl || null,
+        github_url: githubUrl || null,
+        image_url: imageUrl,
+        user_id: contribution.user_id,
       }).select("id").single();
       promotedId = data?.id || null; error = e;
     }
@@ -82,6 +137,8 @@ export const PromoteContributionDialog = ({ contribution, open, onOpenChange, on
     setSaving(false);
     onSuccess();
   };
+
+  const imagePaths = contribution.image_paths || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -109,7 +166,7 @@ export const PromoteContributionDialog = ({ contribution, open, onOpenChange, on
           </div>
 
           <div className="space-y-2">
-            <Label>{targetType === "tool" ? "Description" : targetType === "prompt" ? "Description" : "Story text"}</Label>
+            <Label>{targetType === "story" ? "Story text" : "Description"}</Label>
             <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={5} required />
           </div>
 
@@ -134,10 +191,63 @@ export const PromoteContributionDialog = ({ contribution, open, onOpenChange, on
           )}
 
           {targetType === "tool" && (
-            <div className="space-y-2">
-              <Label>URL</Label>
-              <Input type="url" value={url} onChange={e => setUrl(e.target.value)} />
-            </div>
+            <>
+              <div className="space-y-2">
+                <Label>Try It URL <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                <Input
+                  type="url"
+                  value={tryUrl}
+                  onChange={e => setTryUrl(e.target.value)}
+                  placeholder="https://…"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>GitHub repo URL <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                <Input
+                  type="url"
+                  value={githubUrl}
+                  onChange={e => setGithubUrl(e.target.value)}
+                  placeholder="https://github.com/…"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Screenshot</Label>
+                {imagePaths.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No images attached to this contribution.</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2">
+                    {imagePaths.map((p) => {
+                      const isSel = selectedImagePath === p;
+                      return (
+                        <button
+                          type="button"
+                          key={p}
+                          onClick={() => setSelectedImagePath(isSel ? null : p)}
+                          className={`relative aspect-square overflow-hidden rounded-md border-2 transition ${
+                            isSel ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-muted-foreground"
+                          }`}
+                        >
+                          {imagePreviews[p] ? (
+                            <img src={imagePreviews[p]} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full bg-muted animate-pulse" />
+                          )}
+                          {isSel && (
+                            <span className="absolute bottom-1 right-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                              Selected
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Selected image becomes the tool's screenshot (visible on the card and in the detail view).
+                </p>
+              </div>
+            </>
           )}
 
           <div className="flex gap-2">

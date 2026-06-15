@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { PromoteContributionDialog } from "./PromoteContributionDialog";
 
-type Contribution = {
+export type Contribution = {
   id: string;
   title: string;
   description: string;
