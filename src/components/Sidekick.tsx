@@ -340,172 +340,186 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     }
   };
 
-  return (
-    <div id="sidekick-chat" className={`w-full ${fullPage ? 'max-w-4xl' : 'max-w-5xl'} mx-auto ${!fullPage && 'mb-8'} scroll-mt-20 flex flex-col gap-4`}>
-      <Card className={`flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background ${fullPage ? 'h-[500px]' : 'h-[500px]'}`}>
-        <div className="flex items-center justify-between p-4 sm:p-6 pb-0 shrink-0">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
-          </div>
-          {messages.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => { clearMessages(); setLibraryItems([]); setRecentContribution(null); setContributionHistory([]); }}
-              className="text-xs text-muted-foreground"
-            >
-              <RotateCcw className="w-3 h-3 mr-1" />
-              New Chat
-            </Button>
-          )}
+  const chatBody = (
+    <>
+      <div className={`flex items-center justify-between ${fullPage ? "px-4 sm:px-6 py-3 border-b border-border/50" : "p-4 sm:p-6 pb-0"} shrink-0`}>
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          <h2 className="text-xl font-bold font-fraunces">Sidekick</h2>
         </div>
+        {messages.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { clearMessages(); setLibraryItems([]); setRecentContribution(null); setContributionHistory([]); }}
+            className="text-xs text-muted-foreground"
+          >
+            <RotateCcw className="w-3 h-3 mr-1" />
+            New Chat
+          </Button>
+        )}
+      </div>
 
-        {messages.length === 0 ? (
-          <div className="flex items-center justify-center text-center px-4 py-8 sm:py-12 flex-1">
-            <div className="space-y-4 max-w-lg">
-              <p className="text-base sm:text-lg text-foreground leading-relaxed">
-                {getWelcomeMessage()}
-              </p>
-              <div className="flex flex-wrap gap-2 justify-center pt-4" data-tour="quick-actions">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setInput("I'd like to remix a tool for my neighborhood")}
-                  className="text-xs"
-                >
-                  Remix a tool
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setInput("I have an idea for something I want to build for my neighborhood")}
-                  className="text-xs"
-                >
-                  Discuss an idea
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setInput("I'd like to contribute something to the commons")}
-                  className="text-xs"
-                >
-                  <Gift className="w-3 h-3 mr-1" />
-                  Contribute something
-                </Button>
-              </div>
+      {messages.length === 0 ? (
+        <div className="flex items-center justify-center text-center px-4 py-8 sm:py-12 flex-1">
+          <div className="space-y-4 max-w-lg">
+            <p className="text-base sm:text-lg text-foreground leading-relaxed">
+              {getWelcomeMessage()}
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center pt-4" data-tour="quick-actions">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInput("I'd like to remix a tool for my neighborhood")}
+                className="text-xs"
+              >
+                Remix a tool
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInput("I have an idea for something I want to build for my neighborhood")}
+                className="text-xs"
+              >
+                Discuss an idea
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInput("I'd like to contribute something to the commons")}
+                className="text-xs"
+              >
+                <Gift className="w-3 h-3 mr-1" />
+                Contribute something
+              </Button>
             </div>
           </div>
-        ) : (
-          <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto px-4 sm:px-6 py-4">
-            {messages.map((message, idx) => {
-              if (message.role === "user") {
-                return (
-                  <div key={idx} data-message-index={idx} className="flex justify-end">
-                    <div className="max-w-[85%]">
-                      <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-foreground">
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              const parsed = formatMessageContent(message.content);
-
+        </div>
+      ) : (
+        <div ref={messagesContainerRef} className="flex-1 space-y-4 overflow-y-auto px-4 sm:px-6 py-4">
+          {messages.map((message, idx) => {
+            if (message.role === "user") {
               return (
-                <div key={idx} data-message-index={idx} className="flex justify-start">
-                  <div className="max-w-[85%] space-y-3">
-                    {parsed.text && (
-                      <div className="p-3 rounded-xl bg-secondary/50 border border-border">
-                        <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderFormattedText(parsed.text)}</p>
-                      </div>
-                    )}
-                    {parsed.readyForBuildPlan && onCreateBuildPlan && (
-                      <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
-                        <Button
-                          onClick={() => onCreateBuildPlan(libraryItems.map((i) => i.id))}
-                          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-100"
-                          disabled={
-                            plansRemaining <= 0 ||
-                            buildPlanState === "generating" ||
-                            buildPlanState === "ready"
-                          }
-                        >
-                          {buildPlanState === "generating" ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Creating build plan…
-                            </>
-                          ) : buildPlanState === "ready" ? (
-                            <>
-                              <Check className="w-4 h-4 mr-2" />
-                              Build plan created
-                            </>
-                          ) : (
-                            <>
-                              <FileText className="w-4 h-4 mr-2" />
-                              Create build plan
-                            </>
-                          )}
-                        </Button>
-                        <p className="text-xs text-muted-foreground text-center mt-2">
-                          {buildPlanState === "generating"
-                            ? "Claude Opus is drafting your detailed prompt and plan — usually 20–40 seconds."
-                            : buildPlanState === "ready"
-                            ? "Your build plan is ready below."
-                            : "Claude Opus will write a detailed prompt and a builder plan from this conversation."}
-                        </p>
-                      </div>
-                    )}
-                    {!parsed.readyForBuildPlan && (
-                      <Button
-                        onClick={() => copyToClipboard(message.content)}
-                        variant="ghost"
-                        size="sm"
-                        className="mt-1 h-7 text-xs"
-                      >
-                        <Copy className="w-3 h-3 mr-1" />
-                        Copy
-                      </Button>
-                    )}
+                <div key={idx} data-message-index={idx} className="flex justify-end">
+                  <div className="max-w-[85%]">
+                    <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 text-foreground">
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                    </div>
                   </div>
                 </div>
               );
-            })}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="max-w-[85%] p-3 rounded-xl bg-secondary/50 border border-border">
-                  <p className="text-sm text-muted-foreground animate-pulse">
-                    {loadingMessages[loadingPhase]}
-                  </p>
+            }
+
+            const parsed = formatMessageContent(message.content);
+
+            return (
+              <div key={idx} data-message-index={idx} className="flex justify-start">
+                <div className="max-w-[85%] space-y-3">
+                  {parsed.text && (
+                    <div className="p-3 rounded-xl bg-secondary/50 border border-border">
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{renderFormattedText(parsed.text)}</p>
+                    </div>
+                  )}
+                  {parsed.readyForBuildPlan && onCreateBuildPlan && (
+                    <div className="rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+                      <Button
+                        onClick={() => onCreateBuildPlan(libraryItems.map((i) => i.id))}
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-100"
+                        disabled={
+                          plansRemaining <= 0 ||
+                          buildPlanState === "generating" ||
+                          buildPlanState === "ready"
+                        }
+                      >
+                        {buildPlanState === "generating" ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Creating build plan…
+                          </>
+                        ) : buildPlanState === "ready" ? (
+                          <>
+                            <Check className="w-4 h-4 mr-2" />
+                            Build plan created
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-4 h-4 mr-2" />
+                            Create build plan
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        {buildPlanState === "generating"
+                          ? "Claude Opus is drafting your detailed prompt and plan — usually 20–40 seconds."
+                          : buildPlanState === "ready"
+                          ? "Your build plan is ready in the side panel."
+                          : "Claude Opus will write a detailed prompt and a builder plan from this conversation."}
+                      </p>
+                    </div>
+                  )}
+                  {!parsed.readyForBuildPlan && (
+                    <Button
+                      onClick={() => copyToClipboard(message.content)}
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 h-7 text-xs"
+                    >
+                      <Copy className="w-3 h-3 mr-1" />
+                      Copy
+                    </Button>
+                  )}
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            );
+          })}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-[85%] p-3 rounded-xl bg-secondary/50 border border-border">
+                <p className="text-sm text-muted-foreground animate-pulse">
+                  {loadingMessages[loadingPhase]}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
+      <form onSubmit={handleSend} className={`flex gap-2 shrink-0 ${fullPage ? "px-4 sm:px-6 py-3 border-t border-border/50" : "p-4 sm:p-6 pt-0 border-t border-border/50"}`} data-tour="chat-input">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Chat here..."
+          className="min-h-[60px] resize-none"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend(e);
+            }
+          }}
+        />
+        <Button type="submit" disabled={isLoading || !input.trim()} className="self-end bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Send className="w-4 h-4" />
+        </Button>
+      </form>
+    </>
+  );
 
-        <form onSubmit={handleSend} className="flex gap-2 shrink-0 p-4 sm:p-6 pt-0 border-t border-border/50" data-tour="chat-input">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Chat here..."
-            className="min-h-[60px] resize-none"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend(e);
-              }
-            }}
-          />
-          <Button type="submit" disabled={isLoading || !input.trim()} className="self-end bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Send className="w-4 h-4" />
-          </Button>
-        </form>
+  if (fullPage) {
+    // Full-bleed mode: chat fills its parent's height; no Card chrome.
+    // Parent (Home) renders referenced library items + build plan in a side panel.
+    return (
+      <div id="sidekick-chat" className="flex flex-col h-full w-full bg-background">
+        {chatBody}
+      </div>
+    );
+  }
+
+  return (
+    <div id="sidekick-chat" className="w-full max-w-5xl mx-auto mb-8 scroll-mt-20 flex flex-col gap-4">
+      <Card className="flex flex-col border-2 border-primary/30 shadow-xl bg-gradient-to-b from-primary/5 to-background h-[500px]">
+        {chatBody}
       </Card>
 
-      {/* Recent contribution banner */}
       {recentContribution && (
         <Card className="p-4 bg-primary/5 border-primary/20">
           <div className="flex items-center justify-between">
@@ -523,7 +537,6 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
         </Card>
       )}
 
-      {/* Prototype slot - renders between chat and library items */}
       {previewSlot}
 
       {libraryItems.length > 0 && (
