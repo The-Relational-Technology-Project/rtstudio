@@ -452,7 +452,7 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                         {buildPlanState === "generating"
                           ? "Claude Opus is drafting your detailed prompt and plan — usually 20–40 seconds."
                           : buildPlanState === "ready"
-                          ? "Your build plan is ready in the side panel."
+                          ? "Your build plan is ready below."
                           : "Claude Opus will write a detailed prompt and a builder plan from this conversation."}
                       </p>
                     </div>
