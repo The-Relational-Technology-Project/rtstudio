@@ -115,16 +115,16 @@ const BuildPlanShare = () => {
             )}
           </div>
 
-          <Tabs defaultValue="prompt" className="w-full">
+          <Tabs defaultValue="plan" className="w-full">
             <div className="px-4 sm:px-6 pt-3">
               <TabsList>
-                <TabsTrigger value="prompt" className="text-xs">
-                  <FileText className="h-3.5 w-3.5 mr-1" />
-                  Detailed prompt
-                </TabsTrigger>
                 <TabsTrigger value="plan" className="text-xs">
                   <Map className="h-3.5 w-3.5 mr-1" />
                   Plan
+                </TabsTrigger>
+                <TabsTrigger value="prompt" className="text-xs">
+                  <FileText className="h-3.5 w-3.5 mr-1" />
+                  Detailed prompt
                 </TabsTrigger>
               </TabsList>
             </div>
