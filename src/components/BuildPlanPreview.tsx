@@ -270,6 +270,9 @@ export const BuildPlanPreview = ({ plan, onTitleSaved, isGenerating }: BuildPlan
           <div className="prose prose-sm max-w-none prose-headings:font-fraunces prose-headings:text-foreground prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-foreground">
             <ReactMarkdown>{plan.detailed_prompt ?? ""}</ReactMarkdown>
           </div>
+          <p className="text-xs text-muted-foreground italic border-t border-border/50 pt-3">
+            Want to tweak this? Copy the prompt and edit it in a doc, or start a new chat with Sidekick to generate a fresh plan.
+          </p>
         </TabsContent>
 
         <TabsContent value="plan" className="px-4 sm:px-6 pb-4 pt-3 space-y-3 mt-0">
