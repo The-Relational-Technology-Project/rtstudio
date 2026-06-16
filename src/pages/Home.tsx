@@ -122,47 +122,47 @@ const Home = () => {
     setBuildPlan((prev) => (prev ? { ...prev, title: newTitle } : prev));
   };
 
-  const showSidePanel = !!buildPlan || libraryItems.length > 0;
-
-  const sidePanel = showSidePanel ? (
-    <div className="space-y-6">
-      {buildPlan && (
-        <BuildPlanPreview plan={buildPlan} onTitleSaved={handleTitleSaved} />
-      )}
-      {libraryItems.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-muted-foreground px-1">
-            Referenced Library Items
-          </h3>
-          <div className="space-y-2">
-            {libraryItems.map((item) => (
-              <LibraryItemPreview key={item.id} {...item} />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  ) : null;
+  const showLibraryAside = libraryItems.length > 0;
 
   return (
     // Full-bleed chat: fills viewport minus the TopNav (h-14 mobile, h-16 desktop).
-    <div className="flex flex-col lg:flex-row w-full h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] bg-background">
-      {/* Chat column */}
-      <div className="flex-1 min-h-0 lg:min-w-0 lg:border-r lg:border-border h-[60vh] lg:h-auto">
-        <Sidekick
-          fullPage
-          onCreateBuildPlan={handleCreateBuildPlan}
-          plansRemaining={plansRemaining}
-          buildPlanState={buildPlan ? "ready" : isGenerating ? "generating" : "idle"}
-          onLibraryItemsChange={handleLibraryItemsChange}
-        />
+    // Build plan renders full-width below the chat row when present.
+    <div className="flex flex-col w-full min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] bg-background">
+      {/* Top row: chat + optional library aside */}
+      <div className="flex flex-col lg:flex-row w-full h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)]">
+        <div className="flex-1 min-h-0 lg:min-w-0 lg:border-r lg:border-border h-[60vh] lg:h-auto">
+          <Sidekick
+            fullPage
+            onCreateBuildPlan={handleCreateBuildPlan}
+            plansRemaining={plansRemaining}
+            buildPlanState={buildPlan ? "ready" : isGenerating ? "generating" : "idle"}
+            onLibraryItemsChange={handleLibraryItemsChange}
+          />
+        </div>
+
+        {showLibraryAside && (
+          <aside className="w-full lg:w-[380px] xl:w-[420px] lg:shrink-0 overflow-y-auto border-t lg:border-t-0 border-border bg-muted/20 p-4 lg:p-5">
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-muted-foreground px-1">
+                Referenced Library Items
+              </h3>
+              <div className="space-y-2">
+                {libraryItems.map((item) => (
+                  <LibraryItemPreview key={item.id} {...item} />
+                ))}
+              </div>
+            </div>
+          </aside>
+        )}
       </div>
 
-      {/* Side panel: desktop right, mobile below */}
-      {sidePanel && (
-        <aside className="w-full lg:w-[380px] xl:w-[420px] lg:shrink-0 overflow-y-auto border-t lg:border-t-0 border-border bg-muted/20 p-4 lg:p-5">
-          {sidePanel}
-        </aside>
+      {/* Full-width build plan below the chat */}
+      {buildPlan && (
+        <section className="w-full border-t border-border bg-muted/20 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-5xl mx-auto">
+            <BuildPlanPreview plan={buildPlan} onTitleSaved={handleTitleSaved} />
+          </div>
+        </section>
       )}
     </div>
   );
