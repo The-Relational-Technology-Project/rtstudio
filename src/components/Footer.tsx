@@ -11,7 +11,7 @@ export const Footer = () => {
         </Link>
         <span className="hidden sm:inline">·</span>
         <Link to="/contact" className="text-primary hover:underline">
-          Contact
+          Gift Build Request and Contact
         </Link>
       </p>
     </footer>

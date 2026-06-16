@@ -17,6 +17,8 @@ project_id = "ivrvpbqidysrwqrthpcp"
     verify_jwt = false
   [functions.notify-gift-build]
     verify_jwt = false
+  [functions.notify-jam-session]
+    verify_jwt = false
   [functions.notify-signup]
     verify_jwt = false
   [functions.notify-steward-connect]

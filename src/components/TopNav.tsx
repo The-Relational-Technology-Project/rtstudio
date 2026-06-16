@@ -11,7 +11,7 @@ import { ContributionDialog } from "@/components/ContributionDialog";
 const navItems = [
   { name: "Home", path: "/home" },
   { name: "Library", path: "/library" },
-  { name: "Resources", path: "/support" },
+  { name: "Network", path: "/network" },
   { name: "Profile", path: "/profile" },
 ];
 

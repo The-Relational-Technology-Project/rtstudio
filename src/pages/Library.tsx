@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LibraryCard } from "@/components/LibraryCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Search, BookOpen, Star, User } from "lucide-react";
+import { Search, BookOpen, Bookmark, User } from "lucide-react";
 import type { LibraryItem, ItemType } from "@/types/library";
 
 type ViewTab = "browse" | "my-items" | "bookmarks";
@@ -230,7 +230,7 @@ const Library = () => {
               >
                 {tab === "browse" && <BookOpen className="h-3.5 w-3.5" />}
                 {tab === "my-items" && <User className="h-3.5 w-3.5" />}
-                {tab === "bookmarks" && <Star className="h-3.5 w-3.5" />}
+                {tab === "bookmarks" && <Bookmark className="h-3.5 w-3.5" />}
                 {tab === "browse" ? "Browse" : tab === "my-items" ? "My Items" : "Bookmarks"}
               </button>
             ))}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Calendar, Radio, Wrench, ChevronDown, ChevronRight } from "lucide-react";
+import { ExternalLink, Radio, Wrench } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface RSSItem {
@@ -19,13 +19,8 @@ interface StudioLogEntry {
   url: string | null;
 }
 
-interface HomeSidebarProps {
-  section?: "events" | "updates";
-}
-
 const RSS_CACHE_KEY = "rt_network_feed";
 const RSS_CACHE_DURATION = 5 * 60 * 1000;
-const EVENT_COUNT_CACHE_KEY = "rt_event_count";
 
 function parseRSS(xml: string): RSSItem[] {
   try {
@@ -41,15 +36,13 @@ function parseRSS(xml: string): RSSItem[] {
         description: item.querySelector("description")?.textContent || "",
       });
     });
-    // Sort newest first, then take top 3
     result.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
-    return result.slice(0, 3);
+    return result.slice(0, 6);
   } catch {
     return [];
   }
 }
 
-/** Extract project name from RSS title like "cozy-corner: 15 commits by lovable-dev[bot]" */
 function extractProjectName(title: string): string {
   const colonIdx = title.indexOf(":");
   if (colonIdx > 0) return title.slice(0, colonIdx).trim();
@@ -81,109 +74,7 @@ function cacheFeedWithSummaries(items: RSSItem[], summaries: string[]) {
   );
 }
 
-function getCachedEventCount(): number | null {
-  try {
-    const cached = localStorage.getItem(EVENT_COUNT_CACHE_KEY);
-    if (!cached) return null;
-    const parsed = JSON.parse(cached);
-    if (Date.now() - parsed.timestamp > RSS_CACHE_DURATION) return null;
-    return parsed.count;
-  } catch {
-    return null;
-  }
-}
-
-function cacheEventCount(count: number) {
-  localStorage.setItem(
-    EVENT_COUNT_CACHE_KEY,
-    JSON.stringify({ count, timestamp: Date.now() })
-  );
-}
-
-const EventsSection = () => {
-  const [expanded, setExpanded] = useState(false);
-  const [eventCount, setEventCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    const cached = getCachedEventCount();
-    if (cached !== null) {
-      setEventCount(cached);
-      return;
-    }
-
-    fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/luma-event-count`,
-      {
-        headers: {
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-      }
-    )
-      .then((r) => r.json())
-      .then((data) => {
-        if (typeof data.count === "number") {
-          setEventCount(data.count);
-          cacheEventCount(data.count);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const countLabel =
-    eventCount !== null && eventCount > 0
-      ? `${eventCount} upcoming`
-      : "Upcoming events";
-
-  return (
-    <section>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between text-sm font-fraunces font-bold text-foreground mb-3 hover:text-primary transition-colors"
-      >
-        <span className="flex items-center gap-1.5">
-          <Calendar className="h-3.5 w-3.5 text-primary" />
-          RT Events — {countLabel}
-        </span>
-        {expanded ? (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-        )}
-      </button>
-      {expanded && (
-        eventCount !== null && eventCount > 0 ? (
-          <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
-            <iframe
-              src="https://luma.com/embed/calendar/cal-nic0320bsY3RbWC/events?compact=true&lt=light"
-              className="w-full border-0"
-              style={{ height: 300 }}
-              allowFullScreen
-              aria-hidden="false"
-              tabIndex={0}
-              title="Relational Tech Events"
-            />
-          </div>
-        ) : (
-          <div className="rounded-lg border border-border p-4 bg-card shadow-sm">
-            <p className="text-sm text-muted-foreground">
-              No events coming up, check back soon.{" "}
-              <a
-                href="https://luma.com/relationaltech"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline inline-flex items-center gap-1"
-              >
-                View calendar <ExternalLink className="h-3 w-3" />
-              </a>
-            </p>
-          </div>
-        )
-      )}
-    </section>
-  );
-};
-
-const RTUpdatesSection = () => {
+const RTUpdates = () => {
   const [items, setItems] = useState<RSSItem[]>([]);
   const [summaries, setSummaries] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -201,7 +92,6 @@ const RTUpdatesSection = () => {
       .then((r) => r.text())
       .then(async (xml) => {
         const parsed = parseRSS(xml);
-
         let aiSummaries: string[] = [];
         try {
           const descriptions = parsed.map((p) => p.description).filter(Boolean);
@@ -223,9 +113,8 @@ const RTUpdatesSection = () => {
             }
           }
         } catch {
-          // Summaries are optional
+          // optional
         }
-
         cacheFeedWithSummaries(parsed, aiSummaries);
         setItems(parsed);
         setSummaries(aiSummaries);
@@ -236,32 +125,31 @@ const RTUpdatesSection = () => {
 
   return (
     <section>
-      <h3 className="text-sm font-fraunces font-bold text-foreground flex items-center gap-1.5 mb-3">
-        <Radio className="h-3.5 w-3.5 text-primary" />
+      <h3 className="text-lg font-fraunces font-bold text-foreground flex items-center gap-2 mb-4">
+        <Radio className="h-4 w-4 text-primary" />
         Network Updates
       </h3>
       {loading ? (
-        <p className="text-xs text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">Loading…</p>
       ) : items.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No recent updates.</p>
+        <p className="text-sm text-muted-foreground">No recent updates.</p>
       ) : (
         <div className="space-y-3">
           {items.map((item, i) => {
             const displayText = summaries[i] || item.description || item.title;
             const projectName = extractProjectName(item.title);
-
             return (
               <a
                 key={i}
                 href={item.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors group"
+                className="block rounded-lg border border-border p-4 hover:bg-muted/50 transition-colors group bg-card"
               >
                 <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">
                   {displayText}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1.5">
                   {projectName}
                 </p>
                 {item.pubDate && (
@@ -276,7 +164,7 @@ const RTUpdatesSection = () => {
             href="https://updates.relationaltechproject.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-sm text-primary hover:underline pt-1"
           >
             View all updates <ExternalLink className="h-3 w-3" />
           </a>
@@ -286,44 +174,44 @@ const RTUpdatesSection = () => {
   );
 };
 
-const StudioUpdatesSection = () => {
+const StudioUpdates = () => {
   const [entries, setEntries] = useState<StudioLogEntry[]>([]);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchEntries = async () => {
       const { data } = await (supabase
         .from("studio_log" as any)
         .select("*")
         .order("created_at", { ascending: false })
-        .limit(4)) as any;
+        .limit(8)) as any;
       if (data) setEntries(data);
     };
-    fetch();
+    fetchEntries();
   }, []);
 
   if (entries.length === 0) return null;
 
   return (
     <section>
-      <h3 className="text-sm font-fraunces font-bold text-foreground flex items-center gap-1.5 mb-3">
-        <Wrench className="h-3.5 w-3.5 text-primary" />
+      <h3 className="text-lg font-fraunces font-bold text-foreground flex items-center gap-2 mb-4">
+        <Wrench className="h-4 w-4 text-primary" />
         Studio Updates
       </h3>
       <div className="space-y-3">
         {entries.map((entry) => (
-          <div key={entry.id} className="rounded-lg border border-border p-3">
-            <div className="flex items-start gap-2">
-              <span className="text-xs mt-0.5">
+          <div key={entry.id} className="rounded-lg border border-border p-4 bg-card">
+            <div className="flex items-start gap-2.5">
+              <span className="text-sm mt-0.5">
                 {entry.log_type === "contribution" ? "🌱" : "✨"}
               </span>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground leading-snug">
                   {entry.title}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                   {entry.description}
                 </p>
-                <p className="text-[11px] text-muted-foreground/70 mt-1">
+                <p className="text-[11px] text-muted-foreground/70 mt-1.5">
                   {formatDistanceToNow(new Date(entry.created_at), { addSuffix: true })}
                 </p>
               </div>
@@ -335,22 +223,19 @@ const StudioUpdatesSection = () => {
   );
 };
 
-export const HomeSidebar = ({ section }: HomeSidebarProps) => {
-  if (section === "events") return <EventsSection />;
-  if (section === "updates") {
-    return (
-      <div className="space-y-8">
-        <RTUpdatesSection />
-        <StudioUpdatesSection />
-      </div>
-    );
-  }
-
+export const NetworkUpdatesSection = () => {
   return (
-    <div className="space-y-8">
-      <EventsSection />
-      <RTUpdatesSection />
-      <StudioUpdatesSection />
+    <div className="space-y-10">
+      <div>
+        <h2 className="text-2xl font-fraunces font-bold text-foreground mb-2">
+          What's shipping
+        </h2>
+        <p className="text-sm text-muted-foreground mb-5">
+          Live updates from across the relational tech network and from this Studio.
+        </p>
+      </div>
+      <RTUpdates />
+      <StudioUpdates />
     </div>
   );
 };
