@@ -23,6 +23,7 @@ interface SidekickProps {
   plansRemaining?: number;
   previewSlot?: React.ReactNode;
   buildPlanState?: "idle" | "generating" | "ready";
+  onLibraryItemsChange?: (items: LibraryItemData[]) => void;
 }
 
 interface LibraryItemData {
@@ -40,7 +41,7 @@ interface ContributionData {
   title: string;
 }
 
-export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot, buildPlanState = "idle" }: SidekickProps) => {
+export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot, buildPlanState = "idle", onLibraryItemsChange }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { messages, setMessages, clearMessages } = useSidekick();
