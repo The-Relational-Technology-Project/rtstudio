@@ -198,6 +198,11 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
     });
   }, [messages]);
 
+  // Notify parent of library item changes (used by Home to render in side panel)
+  useEffect(() => {
+    onLibraryItemsChange?.(libraryItems);
+  }, [libraryItems, onLibraryItemsChange]);
+
   // Auto-send new user messages from context (e.g., from Library remix)
   useEffect(() => {
     const processNewUserMessage = async () => {
