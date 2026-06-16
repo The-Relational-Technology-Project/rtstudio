@@ -1,35 +1,37 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
-import { Footer } from "@/components/Footer";
 import { Sidekick } from "@/components/Sidekick";
-import { HomeSidebar } from "@/components/HomeSidebar";
+import { LibraryItemPreview } from "@/components/LibraryItemPreview";
 import { BuildPlanPreview, type BuildPlanData } from "@/components/BuildPlanPreview";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSidekick } from "@/contexts/SidekickContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import { MessageSquare, Calendar, Bell, ChevronLeft, ChevronRight } from "lucide-react";
 
-type MobileTab = "sidekick" | "events" | "updates";
+interface LibraryItemData {
+  id: string;
+  type: "story" | "prompt" | "tool";
+  title: string;
+  summary: string;
+  author?: string;
+  category?: string;
+}
 
 const Home = () => {
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const { messages, setMessages } = useSidekick();
   const { toast } = useToast();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState<MobileTab>("sidekick");
 
-  // Build plan state
   const [buildPlan, setBuildPlan] = useState<BuildPlanData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [plansRemaining, setPlansRemaining] = useState(10);
+  const [libraryItems, setLibraryItems] = useState<LibraryItemData[]>([]);
   const buildAbortRef = useRef<AbortController | null>(null);
 
-  // Recovery lookup: if the response never makes it back, the plan row may
-  // still have been written. Find the most recent plan for this builder.
+  const handleLibraryItemsChange = useCallback((items: LibraryItemData[]) => {
+    setLibraryItems(items);
+  }, []);
+
   const findRecentBuildPlan = async (sinceISO: string): Promise<BuildPlanData | null> => {
     if (!user?.id) return null;
     const { data, error } = await supabase
@@ -53,7 +55,6 @@ const Home = () => {
     const startedAt = new Date().toISOString();
     const controller = new AbortController();
     buildAbortRef.current = controller;
-    // 4-minute ceiling — Opus 4.7 with caching should be much faster, but allow headroom.
     const timeoutId = window.setTimeout(() => controller.abort("timeout"), 4 * 60 * 1000);
 
     try {
@@ -68,7 +69,6 @@ const Home = () => {
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({
-          // No draft_prompt — the chat IS the brief now. Opus reads the transcript.
           chat_messages: messages.slice(-20),
           library_item_ids: libraryItemIds,
         }),
@@ -85,7 +85,7 @@ const Home = () => {
 
       setMessages((prev) => [...prev, {
         role: "assistant" as const,
-        content: "Your build plan is ready below. Copy the detailed prompt into your builder of choice, and walk through the plan when you're ready to share with a neighbor.\n\nWhen you're set with it: want me to introduce you to an RTP steward (Josh from the team), or to someone in the network building something adjacent? Either way I'd share your plan — and you can choose whether to include our chat.\n\nAnd if there are concrete next steps for you — \"show this to Maya by Saturday,\" \"sign up for Lovable\" — I can save those to your profile so you don't lose them.",
+        content: "Your build plan is ready in the side panel. Copy the detailed prompt into your builder of choice, and walk through the plan when you're ready to share with a neighbor.\n\nWhen you're set with it: want me to introduce you to an RTP steward (Josh from the team), or to someone in the network building something adjacent? Either way I'd share your plan — and you can choose whether to include our chat.\n\nAnd if there are concrete next steps for you — \"show this to Maya by Saturday,\" \"sign up for Lovable\" — I can save those to your profile so you don't lose them.",
       }]);
     } catch (error) {
       console.error("Build plan generation error:", error);
@@ -96,7 +96,7 @@ const Home = () => {
         setBuildPlan(recovered);
         setMessages((prev) => [...prev, {
           role: "assistant" as const,
-          content: "Your build plan finished — it's below. (The connection dropped on the way back, but the plan itself made it through.)\n\nWhen you're set with it: want me to introduce you to an RTP steward, or someone in the network building something adjacent? I'd share your plan with them — your call on whether to share our chat. And if there are concrete next steps you want saved to your profile, just tell me.",
+          content: "Your build plan finished — it's in the side panel. (The connection dropped on the way back, but the plan itself made it through.)\n\nWhen you're set with it: want me to introduce you to an RTP steward, or someone in the network building something adjacent? I'd share your plan with them — your call on whether to share our chat. And if there are concrete next steps you want saved to your profile, just tell me.",
         }]);
       } else if (aborted) {
         toast({
@@ -122,89 +122,48 @@ const Home = () => {
     setBuildPlan((prev) => (prev ? { ...prev, title: newTitle } : prev));
   };
 
-  const tabs: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
-    { id: "sidekick", label: "Sidekick", icon: <MessageSquare className="h-4 w-4" /> },
-    { id: "events", label: "Events", icon: <Calendar className="h-4 w-4" /> },
-    { id: "updates", label: "Updates", icon: <Bell className="h-4 w-4" /> },
-  ];
+  const showSidePanel = !!buildPlan || libraryItems.length > 0;
 
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
-
-
-      {/* Mobile tab bar */}
-      {isMobile && (
-        <div className="flex border-b border-border bg-card/50 sticky top-14 z-40">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-medium transition-colors",
-                activeTab === tab.id
-                  ? "text-primary border-b-2 border-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+  const sidePanel = showSidePanel ? (
+    <div className="space-y-6">
+      {buildPlan && (
+        <BuildPlanPreview plan={buildPlan} onTitleSaved={handleTitleSaved} />
+      )}
+      {libraryItems.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-muted-foreground px-1">
+            Referenced Library Items
+          </h3>
+          <div className="space-y-2">
+            {libraryItems.map((item) => (
+              <LibraryItemPreview key={item.id} {...item} />
+            ))}
+          </div>
         </div>
       )}
+    </div>
+  ) : null;
 
-      <main className="flex-1 w-full">
-        {isMobile ? (
-          <div className="w-full">
-            {activeTab === "sidekick" && (
-              <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
-                <Sidekick fullPage onCreateBuildPlan={handleCreateBuildPlan} plansRemaining={plansRemaining} buildPlanState={buildPlan ? "ready" : isGenerating ? "generating" : "idle"} previewSlot={buildPlan ? <BuildPlanPreview plan={buildPlan} onTitleSaved={handleTitleSaved} /> : null} />
-              </div>
-            )}
-            {activeTab === "events" && (
-              <div className="px-4 py-6">
-                <HomeSidebar section="events" />
-              </div>
-            )}
-            {activeTab === "updates" && (
-              <div className="px-4 py-6">
-                <HomeSidebar section="updates" />
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="max-w-[1400px] mx-auto flex gap-0">
-            {/* Sidekick column */}
-            <div className="flex-1 min-w-0 px-4 py-8 space-y-4">
-              <Sidekick fullPage onCreateBuildPlan={handleCreateBuildPlan} plansRemaining={plansRemaining} buildPlanState={buildPlan ? "ready" : isGenerating ? "generating" : "idle"} previewSlot={buildPlan ? <BuildPlanPreview plan={buildPlan} onTitleSaved={handleTitleSaved} /> : null} />
-            </div>
+  return (
+    // Full-bleed chat: fills viewport minus the TopNav (h-14 mobile, h-16 desktop).
+    <div className="flex flex-col lg:flex-row w-full h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] bg-background">
+      {/* Chat column */}
+      <div className="flex-1 min-h-0 lg:min-w-0 lg:border-r lg:border-border h-[60vh] lg:h-auto">
+        <Sidekick
+          fullPage
+          onCreateBuildPlan={handleCreateBuildPlan}
+          plansRemaining={plansRemaining}
+          buildPlanState={buildPlan ? "ready" : isGenerating ? "generating" : "idle"}
+          onLibraryItemsChange={handleLibraryItemsChange}
+        />
+      </div>
 
-            {/* Sidebar toggle + sidebar */}
-            <div className="flex">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="self-start mt-8 w-8 h-8 flex items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-              >
-                {sidebarOpen ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-              </button>
-
-              <div
-                className={cn(
-                  "transition-all duration-300 overflow-hidden",
-                  sidebarOpen ? "w-[280px] opacity-100" : "w-0 opacity-0"
-                )}
-              >
-                <div className="w-[280px] pt-16 py-8 pr-4">
-                  <HomeSidebar />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      <Footer />
+      {/* Side panel: desktop right, mobile below */}
+      {sidePanel && (
+        <aside className="w-full lg:w-[380px] xl:w-[420px] lg:shrink-0 overflow-y-auto border-t lg:border-t-0 border-border bg-muted/20 p-4 lg:p-5">
+          {sidePanel}
+        </aside>
+      )}
     </div>
   );
 };

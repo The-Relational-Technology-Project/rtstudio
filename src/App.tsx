@@ -13,7 +13,7 @@ import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import Library from "./pages/Library";
 import Profile from "./pages/Profile";
-import Support from "./pages/Support";
+import Network from "./pages/Network";
 import PrototypeShare from "./pages/PrototypeShare";
 import PrototypeEmbed from "./pages/PrototypeEmbed";
 import BuildPlanShare from "./pages/BuildPlanShare";
@@ -53,7 +53,7 @@ const App = () => (
                   <Route path="/sidekick" element={<Navigate to="/home" replace />} />
                   <Route path="/library" element={<Library />} />
                   <Route path="/profile" element={<Profile />} />
-                  <Route path="/support" element={<Support />} />
+                  <Route path="/network" element={<Network />} />
                   <Route
                     path="/admin"
                     element={
