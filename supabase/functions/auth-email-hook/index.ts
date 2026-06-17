@@ -17,9 +17,9 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
+  signup: 'Enter Relational Tech Studio',
   invite: "You've been invited",
-  magiclink: 'Your login link',
+  magiclink: 'Your Studio login link',
   recovery: 'Reset your password',
   email_change: 'Confirm your new email',
   reauthentication: 'Your verification code',
@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "rtstudio"
+const SITE_NAME = "Relational Tech Studio"
 const SENDER_DOMAIN = "notify.studio.relationaltechproject.org"
 const ROOT_DOMAIN = "studio.relationaltechproject.org"
 const FROM_DOMAIN = "notify.studio.relationaltechproject.org" // Domain shown in From address (may be root or sender subdomain)
