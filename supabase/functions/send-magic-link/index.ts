@@ -62,33 +62,18 @@ const handler = async (req: Request): Promise<Response> => {
       identifier: normalizedEmail,
     });
 
-    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+    // Try to create the user. If they already exist, that's fine — we'll just send them a login link.
+    const { error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email: normalizedEmail,
+      email_confirm: true,
+    });
 
-    if (listError) {
-      console.error("Failed to check user:", listError);
+    if (createError && (createError as any).code !== "email_exists" && !/already/i.test(createError.message || "")) {
+      console.error("Failed to create user:", createError);
       return new Response(
         JSON.stringify({ error: "Failed to prepare login link" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
-    }
-
-    const existingUser = existingUsers?.users?.find(
-      (user) => user.email?.toLowerCase() === normalizedEmail
-    );
-
-    if (!existingUser) {
-      const { error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: normalizedEmail,
-        email_confirm: true,
-      });
-
-      if (createError) {
-        console.error("Failed to create user:", createError);
-        return new Response(
-          JSON.stringify({ error: "Failed to create account" }),
-          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-        );
-      }
     }
 
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
