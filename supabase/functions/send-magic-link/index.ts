@@ -18,13 +18,6 @@ interface MagicLinkRequest {
   redirectUrl: string;
 }
 
-// Generate a cryptographically secure token
-function generateToken(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -69,29 +62,52 @@ const handler = async (req: Request): Promise<Response> => {
       identifier: normalizedEmail,
     });
 
-    // Generate secure token
-    const token = generateToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+    const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
 
-    // Store token in database
-    const { error: insertError } = await supabaseAdmin
-      .from("magic_link_tokens")
-      .insert({
+    if (listError) {
+      console.error("Failed to check user:", listError);
+      return new Response(
+        JSON.stringify({ error: "Failed to prepare login link" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const existingUser = existingUsers?.users?.find(
+      (user) => user.email?.toLowerCase() === normalizedEmail
+    );
+
+    if (!existingUser) {
+      const { error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: normalizedEmail,
-        token,
-        expires_at: expiresAt.toISOString(),
+        email_confirm: true,
       });
 
-    if (insertError) {
-      console.error("Failed to store token:", insertError);
+      if (createError) {
+        console.error("Failed to create user:", createError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create account" }),
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: "magiclink",
+      email: normalizedEmail,
+      options: {
+        redirectTo: redirectUrl,
+      },
+    });
+
+    const magicLinkUrl = linkData?.properties?.action_link;
+
+    if (linkError || !magicLinkUrl) {
+      console.error("Failed to generate magic link:", linkError);
       return new Response(
         JSON.stringify({ error: "Failed to create magic link" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-
-    // Build magic link URL
-    const magicLinkUrl = `${redirectUrl}?token=${token}`;
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
@@ -107,15 +123,15 @@ const handler = async (req: Request): Promise<Response> => {
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #1a1a1a; font-size: 24px; margin-bottom: 10px;">Relational Tech Studio</h1>
+            <h1 style="color: #4a332a; font-size: 24px; margin-bottom: 10px;">Relational Tech Studio</h1>
           </div>
           
-          <div style="background: #f9f9f9; border-radius: 8px; padding: 30px; text-align: center;">
-            <h2 style="color: #1a1a1a; font-size: 20px; margin-bottom: 15px;">Sign in to your account</h2>
-            <p style="color: #666; margin-bottom: 25px;">Click the button below to sign in. This link will expire in 1 hour.</p>
+          <div style="background: #f7f1e9; border-radius: 12px; padding: 30px; text-align: center;">
+            <h2 style="color: #4a332a; font-size: 20px; margin-bottom: 15px;">Log in to your Studio account</h2>
+            <p style="color: #7a6258; margin-bottom: 25px;">Click the button below to log in to your Studio account. This link will expire shortly.</p>
             
-            <a href="${magicLinkUrl}" style="display: inline-block; background: #2563eb; color: white; text-decoration: none; padding: 14px 30px; border-radius: 6px; font-weight: 600; font-size: 16px;">
-              Sign In
+            <a href="${magicLinkUrl}" style="display: inline-block; background: #c75f3d; color: #fbf8f3; text-decoration: none; padding: 14px 30px; border-radius: 12px; font-weight: 600; font-size: 16px;">
+              Enter the Studio
             </a>
             
             <p style="color: #999; font-size: 12px; margin-top: 25px;">
