@@ -33,18 +33,21 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      // Use Supabase's native magic link - single email for both sign-up and sign-in
-      // Redirect to /auth/callback which will check profile status and route accordingly
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.toLowerCase().trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          shouldCreateUser: true, // Automatically creates account if doesn't exist
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-magic-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
+        body: JSON.stringify({
+          email: email.toLowerCase().trim(),
+          redirectUrl: `${window.location.origin}/auth/callback`,
+        }),
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload.error || "Failed to send link. Please try again.");
       }
 
       setMagicLinkSent(true);
