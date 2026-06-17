@@ -17,9 +17,9 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Confirm your email',
+  signup: 'Enter Relational Tech Studio',
   invite: "You've been invited",
-  magiclink: 'Your login link',
+  magiclink: 'Your Studio login link',
   recovery: 'Reset your password',
   email_change: 'Confirm your new email',
   reauthentication: 'Your verification code',

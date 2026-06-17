@@ -29,26 +29,27 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Confirm your email for {siteName}</Preview>
+    <Preview>Enter {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email</Heading>
+        <Heading style={h1}>Enter the Studio</Heading>
         <Text style={text}>
-          Thanks for signing up for{' '}
+          Use this private link to enter{' '}
           <Link href={siteUrl} style={link}>
             <strong>{siteName}</strong>
           </Link>
-          !
+          .
         </Text>
         <Text style={text}>
-          Please confirm your email address (
+          This link is for (
           <Link href={`mailto:${recipient}`} style={link}>
             {recipient}
           </Link>
-          ) by clicking the button below:
+          ) and will create your account automatically if this is your first
+          time here.
         </Text>
         <Button style={button} href={confirmationUrl}>
-          Verify Email
+          Enter the Studio
         </Button>
         <Text style={footer}>
           If you didn't create an account, you can safely ignore this email.
@@ -60,12 +61,12 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, -apple-system, Helvetica, Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, Arial, sans-serif' }
+const container = { padding: '28px 25px' }
 const h1 = {
-  fontSize: '22px',
   fontFamily: 'Fraunces, Georgia, serif',
-  fontWeight: 'bold' as const,
+  fontSize: '24px',
+  fontWeight: '700' as const,
   color: 'hsl(20, 30%, 22%)',
   margin: '0 0 20px',
 }
@@ -84,4 +85,4 @@ const button = {
   padding: '12px 20px',
   textDecoration: 'none',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const footer = { fontSize: '12px', color: 'hsl(20, 25%, 48%)', margin: '30px 0 0' }
