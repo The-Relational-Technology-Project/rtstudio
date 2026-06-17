@@ -18,13 +18,6 @@ interface MagicLinkRequest {
   redirectUrl: string;
 }
 
-// Generate a cryptographically secure token
-function generateToken(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
