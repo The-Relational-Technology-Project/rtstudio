@@ -143,7 +143,13 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      const cleanedLinks = links.map((l) => l.trim()).filter(Boolean);
+      // Prepend dedicated tool URLs into the generic links array so they
+      // travel through the existing notify-contribution + promote pipeline
+      // (PromoteContributionDialog already auto-detects github.com URLs).
+      const toolLinks = isToolCategory
+        ? [githubUrl.trim(), liveUrl.trim()].filter(Boolean)
+        : [];
+      const cleanedLinks = [...toolLinks, ...links.map((l) => l.trim()).filter(Boolean)];
 
       const { error: fnErr } = await supabase.functions.invoke("notify-contribution", {
         body: {
