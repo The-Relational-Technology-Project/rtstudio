@@ -36,11 +36,15 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
   const [category, setCategory] = useState<string>("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [liveUrl, setLiveUrl] = useState("");
   const [links, setLinks] = useState<string[]>([""]);
   const [images, setImages] = useState<File[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const isToolCategory = category === "Tool";
 
   // Name/email come from the profile — not editable in the form
   const contributorName =
@@ -56,6 +60,8 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
     setCategory("");
     setTitle("");
     setDescription("");
+    setGithubUrl("");
+    setLiveUrl("");
     setLinks([""]);
     setImages([]);
     setSubmitted(false);
