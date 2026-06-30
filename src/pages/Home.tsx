@@ -127,21 +127,24 @@ const Home = () => {
   return (
     // Full-bleed chat: fills viewport minus the TopNav (h-14 mobile, h-16 desktop).
     // Build plan renders full-width below the chat row when present.
+    // Mobile: chat fills viewport; library items render inline inside Sidekick.
+    // Desktop (lg+): chat + library aside side-by-side.
     <div className="flex flex-col w-full min-h-[calc(100vh-3.5rem)] sm:min-h-[calc(100vh-4rem)] bg-background">
-      {/* Top row: chat + optional library aside */}
+      {/* Top row: chat + optional library aside (desktop only) */}
       <div className="flex flex-col lg:flex-row w-full h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)]">
-        <div className="flex-1 min-h-0 lg:min-w-0 lg:border-r lg:border-border h-[60vh] lg:h-auto">
+        <div className="flex-1 min-h-0 lg:min-w-0 lg:border-r lg:border-border">
           <Sidekick
             fullPage
             onCreateBuildPlan={handleCreateBuildPlan}
             plansRemaining={plansRemaining}
             buildPlanState={buildPlan ? "ready" : isGenerating ? "generating" : "idle"}
             onLibraryItemsChange={handleLibraryItemsChange}
+            showInlineLibraryItems
           />
         </div>
 
         {showLibraryAside && (
-          <aside className="w-full lg:w-[380px] xl:w-[420px] lg:shrink-0 overflow-y-auto border-t lg:border-t-0 border-border bg-muted/20 p-4 lg:p-5">
+          <aside className="hidden lg:block lg:w-[380px] xl:w-[420px] lg:shrink-0 overflow-y-auto border-t lg:border-t-0 border-border bg-muted/20 p-4 lg:p-5">
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-muted-foreground px-1">
                 Referenced Library Items

@@ -1,60 +1,45 @@
+Three changes, all driven by Deb's feedback.
 
-## Summary
+## 1. Mobile chat UI fix
 
-Full-bleed Sidekick chat on Home, new `/network` page consolidating Events/Updates/Dev Resources/Suggest-a-Jam, Builder's Guide moved into the library as a "Tech for Building" tool (migration already applied), Gift Build form merged into Contact, Resources page + nav removed, Bookmarks tab icon updated.
+**Problem:** On mobile (`/` Home), the chat row is locked to `h-[60vh]` and the library aside renders directly underneath in normal page flow. Result (per screenshot): the chat messages area is squeezed to a sliver — only one message visible above the input — and the "Referenced Library Items" panel competes for screen real estate below.
 
-## File changes
+**Fix in `src/pages/Home.tsx`:**
+- On mobile (below `lg`), give the chat the full available viewport (`min-h-[calc(100vh-3.5rem)]`) instead of `h-[60vh]`, so the conversation reads like a normal chat app.
+- Move the "Referenced Library Items" panel **inside the Sidekick component on mobile** (collapsed by default, expandable), or render it as a separate full-width section *below* the chat with a clear heading — but no longer share the same row. Preferred approach: render library items inline at the bottom of the chat scroll area on mobile (matching the existing non-fullPage Sidekick pattern), and keep the side aside only on `lg+`.
+- Keep desktop layout (chat + 380px aside + build plan below) exactly as it is today.
 
-### Backend
-- **New edge function** `supabase/functions/notify-jam-session/index.ts` — mirrors `notify-gift-build`, emails stewards via Resend, rate-limited 3/hr per identifier. No DB writes (kept lightweight; no new table).
-- **`supabase/config.toml`** — register `notify-jam-session` with `verify_jwt = false`.
-- **Migration** (already applied) — inserted `Relational Tech Process Guide` tool row in `tech_for_building` category, `sort_order = 0`, `url = /Builders_Guide_RTP.pdf`, full guide text in `description`, `show_on_landing = false`.
+**Fix in `src/components/Sidekick.tsx`:** when `fullPage` and on mobile, render `libraryItems` inline after the message list (the same `LibraryItemPreview` list already used in the non-fullPage branch), so the items appear in the natural scroll flow rather than competing with the chat for height.
 
-### New components
-- `src/components/network/EventsSection.tsx` — lift `EventsSection` from `HomeSidebar.tsx` (with the Luma embed + count logic).
-- `src/components/network/NetworkUpdatesSection.tsx` — lift `RTUpdatesSection` (GitHub feed + AI summaries).
-- `src/components/network/StudioUpdatesSection.tsx` — lift `StudioUpdatesSection` (studio_log entries).
-- `src/components/network/SuggestJamSession.tsx` — form (name, email, neighborhood, topic, description, preferred timing) calling `notify-jam-session`, success state inline.
-- `src/components/network/DeveloperResources.tsx` — move the three Dev Resources sections from `Support.tsx` ("Connect Your AI Tool", "How It Fits Together", "Explore and Contribute").
+## 2. Slow down idea → directions → build plan; make "Remix" enter conversation mode
 
-### New page
-- `src/pages/Network.tsx` — top-level page with shadcn `Tabs`: **Events**, **Suggest a Jam**, **Network Updates**, **Developer Resources**. Each tab renders the corresponding component(s). Studio Updates rolled into the Network Updates tab.
+Deb's two observations:
+- Hitting Remix on Danny's tool gave three *other* directions instead of engaging with Danny's tool.
+- Sidekick jumped to three options without asking why she cared (the identity/Antler angle) or what she actually wanted to learn from Danny's code.
 
-### Home + Sidekick refactor
-- `src/components/Sidekick.tsx`:
-  - When `fullPage`, drop the `Card`/border chrome and the fixed `h-[500px]`. Use `flex-1 flex flex-col` so messages area fills available height; composer sticks at the bottom. Outer wrapper becomes `h-full` (parent supplies height).
-  - Add `onLibraryItemsChange?: (items: LibraryItemData[]) => void` prop, fire whenever `libraryItems` state changes.
-  - When `fullPage`, do **not** render the inline "Referenced Library Items" list at the bottom or the `previewSlot` — Home will render those in the side panel. Keep current inline behavior for non-fullPage callers.
-- `src/pages/Home.tsx`:
-  - Remove `HomeSidebar` import + the mobile tab bar + collapsible sidebar entirely.
-  - Layout: `<main class="flex-1 min-h-0 flex">` with two regions inside `max-w-[1400px] mx-auto w-full`:
-    - Desktop (`lg:`): left = Sidekick (`flex-1`, fills height), right panel (`w-[380px] shrink-0 border-l overflow-y-auto`) shown only when there's a build plan or referenced items. Each region scrolls independently.
-    - Mobile: single column; right-panel content stacks below the chat.
-  - Track `libraryItems` state via `onLibraryItemsChange` callback from Sidekick; render `<BuildPlanPreview>` + `<LibraryItemPreview>` list in the side panel.
-  - Remove `Footer` so chat truly fills the viewport (Home is the only route where it disappears; everywhere else keeps it).
+**Fix in `src/components/LibraryCard.tsx` (`handleDiscussInSidekick`):** when remixing a *specific* library item, send a richer opening message that names the item, asks the builder to share their context, and signals to Sidekick to engage with **that item first** before branching. E.g.:
 
-### Contact page becomes "Gift Build Request and Contact"
-- `src/pages/Contact.tsx` — rename heading, add Gift Build form section above the existing contact form (lifted from `Support.tsx`, reuses `notify-gift-build`). Two clearly-divided sections with their own intro copy.
-- `src/components/Footer.tsx` — rename link label "Contact" → "Gift Build Request and Contact".
+> "I want to remix \"{item.title}\" — [LIBRARY_ITEM:{type}:{id}:{title}]. Before suggesting other directions, help me understand this one: what's interesting about how it's built, and ask me about my context (what I'm trying to do, who it's for, what I'd want to keep or change) so the remix actually fits."
 
-### Nav + Resources removal
-- `src/components/TopNav.tsx` — replace `{ name: "Resources", path: "/support" }` with `{ name: "Network", path: "/network" }`.
-- `src/App.tsx` — add `/network` route inside `AppLayout`; remove `/support` route and `Support` import.
-- Delete `src/pages/Support.tsx` and `src/components/HomeSidebar.tsx` (no longer referenced).
-- `src/components/Sidekick.tsx` quick-actions reference `/sidekick` indirectly — check for any "Resources"/"/support" links and update (Support page links to Sidekick, not the other way).
+This keeps the original item at the center of the conversation and explicitly asks for context-gathering before branching.
 
-### Library
-- `src/pages/Library.tsx` — swap `Star` icon import for `Bookmark` (from lucide-react), use it on the Bookmarks tab. Card already uses `Bookmark`/`BookmarkCheck`.
+**Fix in `supabase/functions/chat-remix/index.ts` system prompt (sections "OFFER 2–3 BUILD DIRECTIONS" + "EXPLORE BUILD DIRECTIONS"):** tighten the sequencing so context comes *before* options and *before* readiness:
 
-## Implementation notes
-- After deploy, run admin "Re-embed library" so Sidekick can RAG-search the new Process Guide.
-- Edge function deploys automatically when the file is written.
-- No database schema changes beyond the already-applied tool row.
+1. Add an explicit rule: **when the user's opening message references a specific library item (a `[LIBRARY_ITEM:...]` marker is present), engage with THAT item first** — surface what's distinctive about it, ask 1–2 specific questions about the builder's context (why this one, what they want to learn or keep), and only branch into 2–3 alternative directions if/when the builder signals they want to explore beyond it. Do not immediately list three *other* tools as alternatives to the one they picked.
+2. Add a "depth check" before `[READY_FOR_BUILD_PLAN]`: require at least one round of follow-up questions on the builder's specific context (neighborhood, audience, what already exists, what they've tried, what would make it feel right) after they pick a direction — not just acceptance of one of the three options. Update the example dialogue in the system prompt to model "pick a direction → one more round of context → readiness," not "pick a direction → readiness."
+3. Reinforce: Sidekick should ask about the *why* and the specifics ("what drew you to this one?", "what's the part you want to learn from?") before proposing alternatives.
 
-## Verification
-- Build runs clean (`bun run build`).
-- Visit `/home`: chat fills viewport, no sidebar/footer; side panel appears only when items/build plan exist.
-- Visit `/network`: all four tabs render; submit a jam session test.
-- Visit `/library`: Process Guide appears first in the Tech for Building filter; Bookmarks tab uses bookmark icon.
-- Visit `/contact`: both forms present; footer link reads new label.
-- `/support` returns 404.
+## 3. Let contributors submit a GitHub repo URL
+
+Deb's wanted-to-look-at-Danny's-code use case: today the contribution form (`ContributionDialog`) has no field for a GitHub repo, so builders can't share their source even when they want to. The `tools` table already has `github_url`, `lovable_url`, and `hosted_url` columns; we just don't expose them at submission.
+
+**Fix in `src/components/ContributionDialog.tsx`:** add three optional URL fields (GitHub repo, Lovable project, hosted/live URL) when the contribution type is a tool. Pass them through to the contribution payload.
+
+**Fix in `supabase/functions/notify-contribution/index.ts`** (and the admin promote flow in `src/components/admin/PromoteContributionDialog.tsx`): include the submitted URLs in the email to stewards and prefill them when promoting the contribution into a real `tools` row, so Danny-style entries arrive with their repo link intact.
+
+No DB migration needed — the columns already exist on `tools` and the contribution payload is freeform JSON.
+
+## Out of scope
+- No changes to the build plan generator itself; the "slow down" change happens entirely in the chat-remix system prompt and the remix entry point.
+- No changes to auth, magic link, or email infrastructure.
+- No schema changes.

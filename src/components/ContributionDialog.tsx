@@ -36,11 +36,15 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
   const [category, setCategory] = useState<string>("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [liveUrl, setLiveUrl] = useState("");
   const [links, setLinks] = useState<string[]>([""]);
   const [images, setImages] = useState<File[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const isToolCategory = category === "Tool";
 
   // Name/email come from the profile — not editable in the form
   const contributorName =
@@ -56,6 +60,8 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
     setCategory("");
     setTitle("");
     setDescription("");
+    setGithubUrl("");
+    setLiveUrl("");
     setLinks([""]);
     setImages([]);
     setSubmitted(false);
@@ -137,7 +143,13 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      const cleanedLinks = links.map((l) => l.trim()).filter(Boolean);
+      // Prepend dedicated tool URLs into the generic links array so they
+      // travel through the existing notify-contribution + promote pipeline
+      // (PromoteContributionDialog already auto-detects github.com URLs).
+      const toolLinks = isToolCategory
+        ? [githubUrl.trim(), liveUrl.trim()].filter(Boolean)
+        : [];
+      const cleanedLinks = [...toolLinks, ...links.map((l) => l.trim()).filter(Boolean)];
 
       const { error: fnErr } = await supabase.functions.invoke("notify-contribution", {
         body: {
@@ -278,8 +290,39 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
                 />
               </div>
 
+              {isToolCategory && (
+                <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Tool details (optional, but helpful)
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="github-url">GitHub repo URL</Label>
+                    <Input
+                      id="github-url"
+                      type="url"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      placeholder="https://github.com/you/your-tool"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      So other builders can learn from your code or fork it.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="live-url">Live / hosted URL</Label>
+                    <Input
+                      id="live-url"
+                      type="url"
+                      value={liveUrl}
+                      onChange={(e) => setLiveUrl(e.target.value)}
+                      placeholder="https://your-tool.example"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1.5">
-                <Label>Links <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Label>Other links <span className="text-muted-foreground font-normal">(optional)</span></Label>
                 {links.map((link, i) => (
                   <div key={i} className="flex gap-2">
                     <Input

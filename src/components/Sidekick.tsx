@@ -24,6 +24,10 @@ interface SidekickProps {
   previewSlot?: React.ReactNode;
   buildPlanState?: "idle" | "generating" | "ready";
   onLibraryItemsChange?: (items: LibraryItemData[]) => void;
+  /** When true, render referenced library items inline at the bottom of the
+   * message scroll area on mobile. Used by Home so the aside collapses into
+   * the chat flow below `lg` (where the side aside is hidden). */
+  showInlineLibraryItems?: boolean;
 }
 
 interface LibraryItemData {
@@ -41,7 +45,7 @@ interface ContributionData {
   title: string;
 }
 
-export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot, buildPlanState = "idle", onLibraryItemsChange }: SidekickProps) => {
+export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false, onCreateBuildPlan, plansRemaining = 10, previewSlot, buildPlanState = "idle", onLibraryItemsChange, showInlineLibraryItems = false }: SidekickProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { messages, setMessages, clearMessages } = useSidekick();
@@ -478,6 +482,20 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
                 <p className="text-sm text-muted-foreground animate-pulse">
                   {loadingMessages[loadingPhase]}
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Inline library items for mobile (when the side aside is hidden) */}
+          {showInlineLibraryItems && libraryItems.length > 0 && (
+            <div className="lg:hidden space-y-3 pt-2 border-t border-border/50 mt-4">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Referenced Library Items
+              </h3>
+              <div className="space-y-2">
+                {libraryItems.map((item) => (
+                  <LibraryItemPreview key={item.id} {...item} />
+                ))}
               </div>
             </div>
           )}
