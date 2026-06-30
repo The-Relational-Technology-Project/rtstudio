@@ -290,8 +290,39 @@ export const ContributionDialog = ({ open, onOpenChange, onSuccess }: Contributi
                 />
               </div>
 
+              {isToolCategory && (
+                <div className="space-y-3 rounded-md border border-border bg-muted/30 p-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Tool details (optional, but helpful)
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="github-url">GitHub repo URL</Label>
+                    <Input
+                      id="github-url"
+                      type="url"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      placeholder="https://github.com/you/your-tool"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      So other builders can learn from your code or fork it.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="live-url">Live / hosted URL</Label>
+                    <Input
+                      id="live-url"
+                      type="url"
+                      value={liveUrl}
+                      onChange={(e) => setLiveUrl(e.target.value)}
+                      placeholder="https://your-tool.example"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1.5">
-                <Label>Links <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                <Label>Other links <span className="text-muted-foreground font-normal">(optional)</span></Label>
                 {links.map((link, i) => (
                   <div key={i} className="flex gap-2">
                     <Input
