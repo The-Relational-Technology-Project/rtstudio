@@ -485,6 +485,20 @@ export const Sidekick = ({ initialPrompt, onClearInitialPrompt, fullPage = false
               </div>
             </div>
           )}
+
+          {/* Inline library items for mobile (when the side aside is hidden) */}
+          {showInlineLibraryItems && libraryItems.length > 0 && (
+            <div className="lg:hidden space-y-3 pt-2 border-t border-border/50 mt-4">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Referenced Library Items
+              </h3>
+              <div className="space-y-2">
+                {libraryItems.map((item) => (
+                  <LibraryItemPreview key={item.id} {...item} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

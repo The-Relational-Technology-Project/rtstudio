@@ -65,9 +65,12 @@ export const LibraryCard = ({
   };
 
   const handleDiscussInSidekick = () => {
-    const contextMessage = item.type === "tool"
-      ? `I'd like to remix the "${item.title}" tool for my neighborhood`
-      : `I'd like to discuss "${item.title}"`;
+    const marker = `[LIBRARY_ITEM:${item.type}:${item.id}:${item.title}]`;
+    const contextMessage = item.type === "tool" || item.type === "tech_for_building"
+      ? `I want to remix "${item.title}" ${marker}. Before suggesting other directions, help me understand this one — what's interesting or distinctive about how it's built, and ask me about my context (what I'm trying to do, who it's for, what I'd want to keep or change from this specific tool) so the remix actually fits.`
+      : item.type === "prompt"
+      ? `I want to remix the "${item.title}" prompt ${marker}. Before branching to other options, walk me through what this prompt is doing well, and ask about my context (who I'm building for, what's different about my situation) so we can adapt this one rather than jumping to alternatives.`
+      : `I'd like to discuss "${item.title}" ${marker}. Engage with this specific item first — what stands out about it — and ask me what drew me to it before suggesting related items.`;
     setMessages([{ role: "user", content: contextMessage }]);
     navigate("/");
   };
