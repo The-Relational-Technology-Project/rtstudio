@@ -3,6 +3,8 @@ project_id = "ivrvpbqidysrwqrthpcp"
 [functions]
   [functions.admin-profiles]
     verify_jwt = false
+  [functions.admin-build-plans]
+    verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.embed-library]
