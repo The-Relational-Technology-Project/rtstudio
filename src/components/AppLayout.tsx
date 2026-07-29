@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { TopNav } from "@/components/TopNav";
+import { RelationalBuilderBanner } from "@/components/RelationalBuilderBanner";
 
 /**
  * Shared layout for authenticated app pages. Keeps TopNav mounted across
@@ -10,6 +11,7 @@ export const AppLayout = () => {
   return (
     <>
       <TopNav />
+      <RelationalBuilderBanner />
       <Outlet />
     </>
   );
